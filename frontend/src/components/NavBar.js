@@ -7,7 +7,7 @@ export const NavBar = () => {
                 <div className="flex flex-col items-center bg-white p-6">
                 {/* Logo Image */}
                 <div className="logo">
-                    <img src="https://via.placeholder.com/150" alt="Logo" />
+                    <img src="https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/04/cfrb_logo4.jpg" alt="Logo" />
                 </div>
                 <ul className="flex items-center space-x-4">
                     <li><NavLink to="/" className={({ isActive }) => isActive ? "text-light-blue" : ""}>Home</NavLink></li>
@@ -16,7 +16,7 @@ export const NavBar = () => {
                     <li><NavLink to="/checklists" className={({ isActive }) => isActive ? "text-light-blue" : ""}>Checklists</NavLink></li>
                     <li><NavLink to="/resources" className={({ isActive }) => isActive ? "text-light-blue" : ""}>Resources</NavLink></li>
                     <li><NavLink to="/contact" className={({ isActive }) => isActive ? "text-light-blue" : ""}>Contact</NavLink></li>
-                    <li><NavLink to="/api" className={({ isActive }) => isActive ? "text-light-blue" : ""}>API Test</NavLink></li>
+                    <li><NavLink to="/api" className={({ isActive }) => isActive ? "text-light-blue" : ""}>API</NavLink></li>
                 </ul>
                 </div>
             </nav>

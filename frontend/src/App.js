@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import apiService from './services/apiService';
-import { Layout } from './components/Layout/Layout';
+import { Layout } from './components/Layout';
+import { Wildlife } from './pages/Wildlife';
 
 function App() {
   const [message, setMessage] = useState('')
@@ -27,7 +28,7 @@ function App() {
           <Routes>
             <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
             <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
-            <Route path="/wildlife" element={<h1 className="text-3xl font-bold underline">Wildlife</h1>} />
+            <Route path="/wildlife" element={<Wildlife/>} />
             <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
             <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
             <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
