@@ -25,13 +25,13 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<h1>Home</h1>} />
-            <Route path="/about" element={<h1>About</h1>} />
-            <Route path="/wildlife" element={<h1>Wildlife</h1>} />
-            <Route path="/checklists" element={<h1>Checklists</h1>} />
-            <Route path="/resources" element={<h1>Resources</h1>} />
-            <Route path="/contact" element={<h1>Contact Us</h1>} />
-            <Route path="/api" element={<h1>{message}</h1>} />
+            <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
+            <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
+            <Route path="/wildlife" element={<h1 className="text-3xl font-bold underline">Wildlife</h1>} />
+            <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
+            <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
+            <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
+            <Route path="/api" element={<h1 className="text-3xl font-bold underline">{message}</h1>} />
           </Routes>
         </Layout>
       </Router>
