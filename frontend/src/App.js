@@ -27,11 +27,7 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
-            <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
             <Route path="/wildlife" element={<Wildlife/>} />
-            <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
-            <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
-            <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
             <Route path="/api" element={<h1 className="text-3xl font-bold underline">{message}</h1>} />
           </Routes>
         </Layout>

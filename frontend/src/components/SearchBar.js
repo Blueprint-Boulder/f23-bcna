@@ -2,7 +2,7 @@ import { ActionButton } from "./ActionButton"
 
 export const SearchBar = () => {
     return (
-        <div className="searchbar flex items-center rounded-md overflow-hidden">
+        <div className="searchbar flex items-center rounded-md overflow-hidden bg-white">
         <input
             type="text"
             placeholder="Search..."
