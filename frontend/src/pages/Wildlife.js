@@ -1,33 +1,8 @@
 import { SearchBar } from "../components/SearchBar"
 import Card from "../components/Card"
+import Filters from "../components/Filters"
 
 export const Wildlife = () => {
-
-    // List of categories to filter by with their respective keys and subcategories
-    const categories = [
-        {
-            id: 0,
-            label: "Family",
-            subcategories: [
-                "Mammal",
-                "Bird",
-                "Reptile",
-                "Amphibian",
-                "Fish",
-                "Invertebrate"
-            ]
-        },
-        {
-            id: 1,
-            label: "Color",
-            subcategories: [
-                "Red",
-                "Orange",
-                "Yellow",
-                "Green"
-            ]
-        }
-    ]
 
     // List of results to display
     const results = [
@@ -51,45 +26,7 @@ export const Wildlife = () => {
         </div>
         {/* Search Results */}
         <div className="search-results flex mx-5 md:mx-20 my-10 gap-5">
-            <div className="search-results__filters w-1/4 hidden md:block">
-
-                {/* Filter Search Results Options */}
-                <div className="flex flex-col items-left">
-                    {/* Title */}
-                    <div className="my-2">
-                        <label htmlFor="titleFilter" className="text-lg font-bold">Filter by</label>
-                    </div>
-
-                    {/* Filter by category */}
-                    {categories.map((category) => {
-                        return (
-                            <div key={category.id}>
-                                <hr className="my-2 border-t border-gray-300 w-3/4"/>
-                                <div className="flex flex-row justify-between w-3/4">
-                                    <label htmlFor="categoryFilter" className="text-lg font-bold">{category.label}</label>
-                                    <button className="text-lg">+</button>
-                                </div>
-                                {/* Category subcategories */}
-                                <div className="flex flex-col items-left">
-                                    {category.subcategories.map((subcategory) => {
-                                        return (
-                                            <div key={subcategory}>
-                                                <label htmlFor={subcategory}>{subcategory}</label>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )
-                    })}
-                    {/* Final Horizontal Line */}
-                    <hr className="my-2 border-t border-gray-300 w-3/4"/>
-
-
-
-
-                </div>
-            </div>
+            <Filters />
             {/* Search Results */}
             <div className="search-results__list w-full md:w-3/4">
                 <div className="flex flex-col">
