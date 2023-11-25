@@ -1,4 +1,5 @@
 import { SearchBar } from "../components/SearchBar"
+import { useEffect, useState } from "react"
 
 export const Wildlife = () => {
 
@@ -28,10 +29,69 @@ export const Wildlife = () => {
         }
     ]
 
-    // List of results to display
-    const results = [
-        {}
+    // Dummy data for testing
+    const data = [
+        {
+            id: 0,
+            name: "Two-Tailed Swallowtail",
+            subcategory: "Invertebrate",
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/09/Swallowtail_Two-tailed_CFriedman.jpg"
+        },
+        {
+            id: 1,
+            name: "Western Tiger Swallowtail",
+            subcategory: "Invertebrate",
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL1.jpe"
+        },
+        {
+            id: 2,
+            name: "Black Swallowtail",
+            subcategory: "Invertebrate",
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/10/Swallowtail_Black-female_SJones.jpg"
+        },
+        {
+            id: 3,
+            name: "Pine White",
+            subcategory: "Invertebrate",
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/PINE_WHITE1.jpe"
+        }
     ]
+
+
+
+
+
+    // State for determining which categories are expanded in filters section
+    const [expandedCategories, setExpandedCategories] = useState([])
+    // State for determining which subcategories are selected in filters section
+    const [selectedSubcategories, setSelectedSubcategories] = useState([])
+    // State for determining which results to display
+    const [results, setResults] = useState(data)
+
+
+    const toggleCategory = (categoryId) => {
+        if (expandedCategories.includes(categoryId)) {
+          setExpandedCategories(expandedCategories.filter(id => id !== categoryId));
+        } else {
+          setExpandedCategories([...expandedCategories, categoryId]);
+        }
+    }
+
+
+    // Filter results by selected subcategories
+    useEffect(() => {
+        // If no subcategories are selected, show all results
+        if (selectedSubcategories.length === 0) {
+          setResults(data);
+        } else {
+          // Filter results by selected subcategories
+          const filteredResults = data.filter((result) => {
+            return selectedSubcategories.includes(result.subcategory);
+          });
+      
+          setResults(filteredResults);
+        }
+    }, [selectedSubcategories]);
 
 
 
@@ -61,23 +121,46 @@ export const Wildlife = () => {
 
                     {/* Filter by category */}
                     {categories.map((category) => {
+
+                        const isCategoryExpanded = expandedCategories.includes(category.id)
+
                         return (
                             <div key={category.id}>
                                 <hr class="my-2 border-t border-gray-300 w-3/4"/>
                                 <div class="flex flex-row justify-between w-3/4">
                                     <label for="categoryFilter" class="text-lg font-bold">{category.label}</label>
-                                    <button class="text-lg">+</button>
+                                    <button class="text-lg" onClick={() => toggleCategory(category.id)}>
+                                        {isCategoryExpanded ? '-' : '+'}
+                                    </button>
                                 </div>
                                 {/* Category subcategories */}
-                                <div class="flex flex-col items-left">
-                                    {category.subcategories.map((subcategory) => {
-                                        return (
-                                            <div key={subcategory}>
-                                                <label for={subcategory}>{subcategory}</label>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                                {isCategoryExpanded &&
+                                    <div class="flex flex-col items-left">
+                                        {category.subcategories.map((subcategory) => {
+                                            const isSelected = selectedSubcategories.includes(subcategory)
+                                            return (
+                                                <div class="flex flex-row justify-left gap-2">
+                                                    
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                            if (isSelected) {
+                                                                setSelectedSubcategories(selectedSubcategories.filter((selectedSubcategory) => {
+                                                                    return selectedSubcategory !== subcategory
+                                                                }))
+                                                            } else {
+                                                                setSelectedSubcategories([...selectedSubcategories, subcategory])
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label for="subcategoryFilter" class="text-lg">{subcategory}</label>
+                                                </div>
+                                            )
+                                        }
+                                        )}
+                                    </div>
+                                }
                             </div>
                         )
                     })}
@@ -96,32 +179,41 @@ export const Wildlife = () => {
                     <div className="flex flex-row justify-around">
                         {/* Number of Results */}
                         <div className="flex-1">
-                            <p># results</p>
+                            <p>{results.length} results</p>
                         </div>
                         
-                        {/* Sort by */}
-                        <div className="flex">
+                        
+                        {/* <div className="flex">
                             <p>Sort by: </p>
                             <p>Alphabetical</p>
                         </div>
 
-                        {/* Page Navigation */}
+                        
                         <div className="flex">
                             <button>{"<"}</button>
                             <p>1/12</p>
                             <button>{">"}</button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Results */}
                     <div className="flex flex-col">
 
-
-                        {/* Result */}
-                        <div className="flex flex-row border border-gray-300 p-4 rounded">
-                            {/* Butterfly result */}
-                            <img src="https://www.butterfliesandmoths.org/sites/default/files/styles/featured/public/featured/IMG_20190804_131724.jpg?itok=Z3Z3Z3Z3" alt="Butterfly" className="w-1/4"/>
+                    {results.map((result, index) => (
+                    <div key={index} className="border p-4 mb-4 rounded-lg">
+                        <div className="flex items-center">
+                        <img
+                            src={result.image}
+                            alt={result.name}
+                            className="h-40 w-70 mr-4"
+                        />
+                        <div className="flex flex-col">
+                            <p className="text-lg font-bold mb-2">{result.name}</p>
+                            <p className="text-sm">{result.subcategory}</p>
                         </div>
+                        </div>
+                    </div>
+                    ))}
 
                     </div>
 
