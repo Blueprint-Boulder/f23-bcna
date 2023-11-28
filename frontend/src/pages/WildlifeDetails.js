@@ -9,7 +9,7 @@ export default function WildlifeDetails({wildlife}) {
     const [highlight, setHighlight] = useState(wildlife.images[0])
 
     return(
-        <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] w-screen h-screen">
+        <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] w-screen h-[120vh]">
             <div className="h-8"></div>
             <div className="bg-neutral-50 rounded-lg w-11/12 mx-auto shadow-lg">
                 <h2 className="text-center text-2xl md:text-3xl pt-4 font-bold text-green-900 mb-8">{wildlife.name}</h2>
@@ -30,7 +30,8 @@ export default function WildlifeDetails({wildlife}) {
                         <div className="flex justify-center gap-3">
                             {wildlife.images.map((image) => (
                                 <button onClick={() => setHighlight(image)}>
-                                    <img className="object-cover w-16 h-8 md:w-36 md:h-16" src={image.file} alt={image.alt} />
+                                    <img draggable="false" className={"object-cover w-16 h-8 md:w-36 md:h-16 rounded-md " + (highlight === image ? " border-blue-500 border-2" : "hover:border-blue-300 hover:border-2")} 
+                                        src={image.file} alt={image.alt} />
                                 </button>
                             ))}
                         </div>
