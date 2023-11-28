@@ -3,7 +3,7 @@ import { useState } from "react";
 export default function WildlifeDetails({wildlife}) {
     
     const uppercase = (str) => {
-        return str.charAt(0).toUpperCase() + str.slice(1);;
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     const [highlight, setHighlight] = useState(wildlife.images[0])
