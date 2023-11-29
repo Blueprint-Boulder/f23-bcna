@@ -1,5 +1,7 @@
-import { SearchBar } from "../components/SearchBar"
 import { useEffect, useState } from "react"
+
+import { SearchBar } from "../components/SearchBar"
+import { GridResult, ListResult, CardResult } from "../components/ResultTypes"
 
 export const Wildlife = () => {
 
@@ -59,8 +61,8 @@ export const Wildlife = () => {
 
 
 
-
-
+    // Display type
+    const [displayType, setDisplayType] = useState("cards")
     // State for determining which categories are expanded in filters section
     const [expandedCategories, setExpandedCategories] = useState([])
     // State for determining which subcategories are selected in filters section
@@ -74,6 +76,39 @@ export const Wildlife = () => {
           setExpandedCategories(expandedCategories.filter(id => id !== categoryId));
         } else {
           setExpandedCategories([...expandedCategories, categoryId]);
+        }
+    }
+
+    const renderResults = () => {
+        switch (displayType) {
+            case 'grid':
+                return (
+                    <table className="table-auto">
+                        <thead>
+                        <tr>
+                            <th className="text-left">Name</th>
+                            <th className="text-left">Subcategory</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {results.map((result,index) => {return <GridResult key={index} data={result}/>})}
+                        </tbody>
+                    </table>
+                )
+            case 'list':
+                return results.map((result,index) => {return <ListResult key={index} data={result}/>})
+            case 'cards':
+                return (
+                    <div className="grid grid-cols-3 gap-2">
+                      {results.map((result, index) => (
+                        <div key={index} className="w-full">
+                          <CardResult data={result} />
+                        </div>
+                      ))}
+                    </div>
+                  )
+            default:
+                return null;
         }
     }
 
@@ -176,46 +211,41 @@ export const Wildlife = () => {
             <div className="search-results__list w-3/4">
                 <div className="flex flex-col">
                     {/* Results Navigation */}
-                    <div className="flex flex-row justify-around">
-                        {/* Number of Results */}
-                        <div className="flex-1">
-                            <p>{results.length} results</p>
-                        </div>
-                        
-                        
-                        {/* <div className="flex">
-                            <p>Sort by: </p>
-                            <p>Alphabetical</p>
-                        </div>
-
-                        
-                        <div className="flex">
-                            <button>{"<"}</button>
-                            <p>1/12</p>
-                            <button>{">"}</button>
-                        </div> */}
+                    <div className="flex flex-row justify-between items-center p-4 rounded-md">
+                    {/* Number of Results */}
+                    <div className="">
+                        <p className="text-gray-700">{results.length} results</p>
                     </div>
+
+                    <div className="flex items-center space-x-2">
+                        <p className="text-gray-700">Display:</p>
+                        <button onClick={() => setDisplayType('grid')}>Grid</button>
+                        <button onClick={() => setDisplayType('list')}>List</button>
+                        <button onClick={() => setDisplayType('cards')}>Cards</button>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <p className="text-gray-700">Sort by:</p>
+                        <select className="border border-solid border-gray-300 rounded px-2 py-1">
+                        <option value={null}>Name</option>
+                        <option value="subcategory">Subcategory</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                        <button className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full">
+                        {"<"}
+                        </button>
+                        <p className="text-gray-700">1/12</p>
+                        <button className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full">
+                        {">"}
+                        </button>
+                    </div>
+                    </div>
+
 
                     {/* Results */}
-                    <div className="flex flex-col">
-
-                    {results.map((result, index) => (
-                    <div key={index} className="border p-4 mb-4 rounded-lg">
-                        <div className="flex items-center">
-                        <img
-                            src={result.image}
-                            alt={result.name}
-                            className="h-40 w-70 mr-4"
-                        />
-                        <div className="flex flex-col">
-                            <p className="text-lg font-bold mb-2">{result.name}</p>
-                            <p className="text-sm">{result.subcategory}</p>
-                        </div>
-                        </div>
-                    </div>
-                    ))}
-
-                    </div>
+                    {renderResults()}
 
                 </div>
             </div>
