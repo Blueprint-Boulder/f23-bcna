@@ -13,6 +13,20 @@ def hello_world():
     return 'Hello, from Flask!'
 
 
+@app.route("/api/create-wildlife/", methods=["POST"])
+def create_wildlife():
+    name = request.form["name"]
+    category_id = request.form["category_id"]
+
+    # Check if the category exists
+    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
+    if not category_exists:
+        return jsonify({"error": "Category not found"}), 400
+
+    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, category_id) VALUES (?, ?)", (name, category_id))
+    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
+
+
 @app.route("/api/create-category/", methods=["POST"])
 def create_category():
     name = request.form["name"]

@@ -29,14 +29,17 @@ def select_multiple(query: str, params: Sequence[Any] = ()) -> list[dict[str, An
     return [dict(row) for row in results]
 
 
-def select_one(query: str, params: Sequence[Any] = ()) -> dict[str, Any]:
+def select_one(query: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
     """Executes a SELECT query and returns the first result as a dict"""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, params)
     result = cursor.fetchone()
     conn.close()
-    return dict(result)
+    if result:
+        return dict(result)
+    else:
+        return None
 
 
 def init_db():
