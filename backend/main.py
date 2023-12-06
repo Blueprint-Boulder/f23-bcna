@@ -29,7 +29,7 @@ def create_wildlife():
 
 @app.route("/api/search-wildlife/", methods=["GET"])
 def search_wildlife():
-    """Recursively search the provided category for a Wildlife whose name contains the query.
+    """Recursively search the provided category for a Wildlife whose name or scientific name contains the query.
     If no category is provided, search across all Wildlife."""
     category_id = request.args.get("category_id")
     user_query = request.args.get("query")
@@ -44,12 +44,12 @@ def search_wildlife():
         )
         SELECT w.* FROM Wildlife w
         INNER JOIN subcategories sc ON w.category_id = sc.id
-        WHERE w.name LIKE ?
+        WHERE w.name LIKE ? OR w.scientific_name LIKE ?
         """
         params = (category_id, f'%{user_query}%')
     else:
         # Search across all wildlife if a category isn't provided
-        sql_query = "SELECT * FROM Wildlife WHERE name LIKE ?"
+        sql_query = "SELECT * FROM Wildlife WHERE name LIKE ? OR scientific_name LIKE ?"
         params = (f'%{user_query}%',)
 
     wildlife_results = db_helpers.select_multiple(sql_query, params)
