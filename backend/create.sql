@@ -9,7 +9,15 @@ CREATE TABLE IF NOT EXISTS Wildlife (
     id INTEGER PRIMARY KEY,
     category_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    scientific_name TEXT NOT NULL,
     FOREIGN KEY(category_id) REFERENCES Categories(id)
+);
+
+CREATE TABLE IF NOT EXISTS Images (
+    filename TEXT PRIMARY KEY,
+    wildlife_id INTEGER NOT NULL,
+    alt_text TEXT,
+    caption TEXT
 );
 
 CREATE TABLE IF NOT EXISTS Fields (
