@@ -77,6 +77,13 @@ def get_categories():
     return jsonify(categories), 200
 
 
+@app.route("/api/get-categories-and-fields/", methods=["GET"])
+def get_categories_and_fields():
+    categories = db_helpers.select_multiple("SELECT * FROM Categories")
+    fields = db_helpers.select_multiple("SELECT * FROM Fields")
+    return jsonify({"categories": categories, "fields": fields}), 200
+
+
 @app.route("/api/create-field/", methods=["POST"])
 def create_field():
     name = request.form["name"]
