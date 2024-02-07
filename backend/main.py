@@ -79,9 +79,32 @@ def get_categories():
 
 @app.route("/api/get-categories-and-fields/", methods=["GET"])
 def get_categories_and_fields():
-    categories = db_helpers.select_multiple("SELECT * FROM Categories")
-    fields = db_helpers.select_multiple("SELECT * FROM Fields")
-    return jsonify({"categories": categories, "fields": fields}), 200
+    def get_fields_for_category(category_id):
+        # Retrieve fields for a specific category
+        return db_helpers.select_multiple(
+            "SELECT type, name FROM Fields WHERE category_id = ?", [category_id])
+
+    def construct_category_structure(category_id=None):
+        # Base query to select categories. If category_id is provided, it selects subcategories; otherwise, top-level categories
+        category_query = "SELECT id, name FROM Categories WHERE parent_id = ?" if category_id else "SELECT id, name FROM Categories WHERE parent_id IS NULL"
+        categories = db_helpers.select_multiple(category_query, [category_id] if category_id else [])
+
+        category_list = []
+        for category in categories:
+            # Construct the category object
+            category_obj = {
+                "name": category['name'],
+                "fields": get_fields_for_category(category['id']),
+                "subcategories": construct_category_structure(category['id'])  # Recursively get subcategories
+            }
+            category_list.append(category_obj)
+
+        return category_list
+
+    # Start constructing the structure from top-level categories (those without a parent)
+    categories_structure = construct_category_structure()
+
+    return jsonify({"categories": categories_structure}), 200
 
 
 @app.route("/api/create-field/", methods=["POST"])
