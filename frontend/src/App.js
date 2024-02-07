@@ -3,6 +3,7 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import apiService from './services/apiService';
 import { Layout } from './components/Layout';
 import { Wildlife } from './pages/Wildlife';
+import { WildlifePage } from './pages/WildlifePage';
 
 function App() {
   const [message, setMessage] = useState('')
@@ -27,7 +28,8 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
-            <Route path="/wildlife" element={<Wildlife/>} />
+            <Route path="/wildlife" element={<Wildlife/>}/>
+            <Route path='/wildlife/*' element={<WildlifePage/>}/>
             <Route path="/api" element={<h1 className="text-3xl font-bold underline">{message}</h1>} />
           </Routes>
         </Layout>

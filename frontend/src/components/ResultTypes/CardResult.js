@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 const CardResult = ({ data }) => {
     return (
       <div className="card-result p-4 border mb-4 rounded-lg">
@@ -7,7 +9,7 @@ const CardResult = ({ data }) => {
         {/* Details underneath */}
         <div className="flex flex-col">
           {/* Name */}
-          <div className="text-lg font-bold mb-2">{data.name}</div>
+          <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.name}`}>{data.name}</Link>
           
           {/* Subcategory */}
           <p className="text-sm">{data.subcategory}</p>
