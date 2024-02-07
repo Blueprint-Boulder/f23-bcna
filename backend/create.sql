@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS Categories (
     id INTEGER PRIMARY KEY,
     parent_id INTEGER,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     FOREIGN KEY(parent_id) REFERENCES Categories(id)
 );
 
 CREATE TABLE IF NOT EXISTS Wildlife (
     id INTEGER PRIMARY KEY,
     category_id INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    scientific_name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    scientific_name TEXT NOT NULL UNIQUE,
     FOREIGN KEY(category_id) REFERENCES Categories(id)
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
     category_id INTEGER NOT NULL,
     type TEXT NOT NULL,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     FOREIGN KEY(category_id) REFERENCES Categories(id)
 );
 
