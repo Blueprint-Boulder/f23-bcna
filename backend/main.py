@@ -16,6 +16,7 @@ def hello_world():
 @app.route("/api/create-wildlife/", methods=["POST"])
 def create_wildlife():
     name = request.form["name"]
+    scientific_name = request.form["scientific_name"]
     category_id = request.form["category_id"]
 
     # Check if the category exists
@@ -23,34 +24,103 @@ def create_wildlife():
     if not category_exists:
         return jsonify({"error": "Category not found"}), 400
 
-    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, category_id) VALUES (?, ?)", (name, category_id))
+    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)", (name, scientific_name, category_id))
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
 
-@app.route("/api/search-wildlife/", methods=["GET"])
-def search_wildlife():
-    """Recursively search the provided category for a Wildlife whose name or scientific name contains the query.
-    If no category is provided, search across all Wildlife."""
-    category_id = request.args.get("category_id")
+def get_all_category_ids(top_level_category_ids):
+    """
+    Extracts all category IDs, including subcategories, from a list of top-level category IDs.
+    """
+    if not top_level_category_ids:
+        return []
+
+    placeholders = ','.join('?' for _ in top_level_category_ids)  # Create a placeholder string for SQL query
+
+    # Construct the recursive query to find all subcategories
+    sql_query = f"""
+    WITH RECURSIVE subcategories(id) AS (
+        SELECT id FROM Categories WHERE id IN ({placeholders})
+        UNION ALL
+        SELECT c.id FROM Categories c INNER JOIN subcategories sc ON c.parent_id = sc.id
+    )
+    SELECT DISTINCT id FROM subcategories
+    """
+    all_category_ids = db_helpers.select_multiple(sql_query, top_level_category_ids)
+    return [row['id'] for row in all_category_ids]
+
+
+@app.route("/api/search-wildlife-names/", methods=["GET"])
+def search_wildlife_names():
+    """
+    Search within the provided set of categories for Wildlife whose name or scientific name contains the query.
+    Searches all wildlife if no categories are provided.
+    Case-insensitive.
+    """
+    category_ids = request.args.getlist("category_id", type=int)
     user_query = request.args.get("query")
 
-    if category_id:
-        # Recursively search the category if it's provided
-        sql_query = """
-        WITH RECURSIVE subcategories(id) AS (
-            SELECT id FROM Categories WHERE id = ?
-            UNION ALL
-            SELECT c.id FROM Categories c INNER JOIN subcategories sc ON c.parent_id = sc.id
+    if category_ids:
+        all_category_ids = get_all_category_ids(category_ids)
+        # This special case is necessary because "IN ()" is invalid syntax (it needs at least one value inside the parenthesis)
+        if not all_category_ids:
+            return jsonify([]), 200  # Return an empty list if no categories found
+
+        placeholders = ','.join('?' for _ in all_category_ids)  # Create a placeholder string for SQL query
+
+        sql_query = f"""
+        SELECT w.* FROM Wildlife w
+        WHERE w.category_id IN ({placeholders})
+        AND (w.name LIKE ? OR w.scientific_name LIKE ?)
+        """
+
+        params = all_category_ids + [f'%{user_query}%', f'%{user_query}%']
+    else:
+        # If no category IDs are provided, search across all wildlife
+        sql_query = "SELECT * FROM Wildlife WHERE name LIKE ? OR scientific_name LIKE ?"
+        params = [f'%{user_query}%', f'%{user_query}%']
+
+    wildlife_results = db_helpers.select_multiple(sql_query, params)
+    return jsonify(wildlife_results), 200
+
+
+@app.route("/api/search-wildlife-text-field/", methods=["GET"])
+def search_wildlife_text_field():
+    category_ids = request.args.getlist("category_id", type=int)
+    field_id = request.args.get("field_id", type=int)
+    user_query = request.args.get("query")
+
+    # Check if the field_id corresponds to a TEXT type field
+    field_info = db_helpers.select_one("SELECT type FROM Fields WHERE id = ?", (field_id,))
+    if not field_info or field_info["type"] != "TEXT":
+        return jsonify({"error": "Field not found or not of type TEXT"}), 400
+
+    if category_ids:
+        all_category_ids = get_all_category_ids(category_ids)
+        if not all_category_ids:
+            # If there are no categories found, return an empty list
+            return jsonify([]), 200
+
+        placeholders = ','.join('?' for _ in all_category_ids)  # Create a placeholder string for SQL query
+
+        sql_query = f"""
+        WITH RECURSIVE wildlife_in_categories(id) AS (
+            SELECT id FROM Wildlife WHERE category_id IN ({placeholders})
         )
         SELECT w.* FROM Wildlife w
-        INNER JOIN subcategories sc ON w.category_id = sc.id
-        WHERE w.name LIKE ? OR w.scientific_name LIKE ?
+        JOIN FieldValues fv ON fv.wildlife_id = w.id
+        JOIN wildlife_in_categories wic ON wic.id = w.id
+        WHERE fv.field_id = ? AND fv.value LIKE ?
         """
-        params = (category_id, f'%{user_query}%')
+        params = all_category_ids + [field_id, f'%{user_query}%']
     else:
-        # Search across all wildlife if a category isn't provided
-        sql_query = "SELECT * FROM Wildlife WHERE name LIKE ? OR scientific_name LIKE ?"
-        params = (f'%{user_query}%',)
+        # If no category IDs are provided, search across all wildlife
+        sql_query = """
+        SELECT w.* FROM Wildlife w
+        JOIN FieldValues fv ON fv.wildlife_id = w.id
+        WHERE fv.field_id = ? AND fv.value LIKE ?
+        """
+        params = [field_id, f'%{user_query}%']
 
     wildlife_results = db_helpers.select_multiple(sql_query, params)
     return jsonify(wildlife_results), 200
