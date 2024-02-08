@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS Images (
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
     type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER')),
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name'))
 );
 
 CREATE TABLE IF NOT EXISTS FieldsToCategories (
