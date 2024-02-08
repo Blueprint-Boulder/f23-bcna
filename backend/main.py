@@ -26,6 +26,8 @@ def create_wildlife():
     """
     Creates a new wildlife entry.
     Requires 'name', 'scientific_name', and 'category_id' in the form data.
+    Doesn't accept custom field values yet, but it will soon.
+    For now, if you want to add field values to wildlife, you'll have to do it yourself in SQL. The database is backend/database.db.
 
     Example request:
     POST /api/create-wildlife/
@@ -197,6 +199,7 @@ def search_wildlife_text_field():
 
 @app.route("/api/create-category/", methods=["POST"])
 def create_category():
+    # TODO add nesting limit of 5
     """
     Creates a new category with an optional parent category.
     Requires 'name'. 'parent_id' is optional.
