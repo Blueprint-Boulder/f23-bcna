@@ -1,35 +1,50 @@
 import { useEffect, useState } from "react"
 
 import { SearchBar } from "../components/SearchBar"
+import { FilterBar } from "../components/FilterBar"
 import { GridResult, ListResult, CardResult } from "../components/ResultTypes"
 
 export const Wildlife = () => {
 
     // List of categories to filter by with their respective keys and subcategories
     const categories = [
-        {
-            id: 0,
-            label: "Family",
-            subcategories: [
-                "Mammal",
-                "Bird",
-                "Reptile",
-                "Amphibian",
-                "Fish",
-                "Invertebrate"
-            ]
-        },
-        {
-            id: 1,
-            label: "Color",
-            subcategories: [
-                "Red",
-                "Orange",
-                "Yellow",
-                "Green"
-            ]
-        }
+            {
+                "id" : 1,
+                "field_ids": [
+                    1,
+                    2
+                ],
+                "name": "Animals",
+                "subcategories": [
+                    {
+                        "id" : 2,
+                        "field_ids": [
+                            3
+                        ],
+                        "name": "Birds",
+                        "subcategories": [
+                            {
+                                "id" : 3,
+                                "field_ids": [
+                                    3
+                                ],
+                                "name": "Swallows",
+                                "subcategories": []
+                            }
+                        ]
+                    },
+                    {
+                        "id" : 4,
+                        "field_ids": [],
+                        "name": "Cats",
+                        "subcategories": []
+                    }
+                ]
+            },
     ]
+
+
+    
 
     // Dummy data for testing
     const data = [
@@ -63,21 +78,19 @@ export const Wildlife = () => {
 
     // Display type
     const [displayType, setDisplayType] = useState("cards")
+
     // State for determining which categories are expanded in filters section
     const [expandedCategories, setExpandedCategories] = useState([])
+
     // State for determining which subcategories are selected in filters section
     const [selectedSubcategories, setSelectedSubcategories] = useState([])
+
     // State for determining which results to display
     const [results, setResults] = useState(data)
 
 
-    const toggleCategory = (categoryId) => {
-        if (expandedCategories.includes(categoryId)) {
-          setExpandedCategories(expandedCategories.filter(id => id !== categoryId));
-        } else {
-          setExpandedCategories([...expandedCategories, categoryId]);
-        }
-    }
+
+
 
     const renderResults = () => {
         switch (displayType) {
@@ -113,6 +126,7 @@ export const Wildlife = () => {
     }
 
 
+
     // Filter results by selected subcategories
     useEffect(() => {
         // If no subcategories are selected, show all results
@@ -130,6 +144,7 @@ export const Wildlife = () => {
 
 
 
+
     return (
         <>
         {/* Image and Search Bar */}
@@ -143,72 +158,24 @@ export const Wildlife = () => {
             <SearchBar className=""/>
         </div>
         </div>
+
+        
+    
         {/* Search Results */}
         <div className="search-results flex mx-20 my-10 gap-5">
+
+            {/* Filter Bar */}
             <div className="search-results__filters w-1/4">
-
-                {/* Filter Search Results Options */}
-                <div class="flex flex-col items-left">
-                    {/* Title */}
-                    <div class="my-2">
-                        <label for="titleFilter" class="text-lg font-bold">Filter by</label>
-                    </div>
-
-                    {/* Filter by category */}
-                    {categories.map((category) => {
-
-                        const isCategoryExpanded = expandedCategories.includes(category.id)
-
-                        return (
-                            <div key={category.id}>
-                                <hr class="my-2 border-t border-gray-300 w-3/4"/>
-                                <div class="flex flex-row justify-between w-3/4">
-                                    <label for="categoryFilter" class="text-lg font-bold">{category.label}</label>
-                                    <button class="text-lg" onClick={() => toggleCategory(category.id)}>
-                                        {isCategoryExpanded ? '-' : '+'}
-                                    </button>
-                                </div>
-                                {/* Category subcategories */}
-                                {isCategoryExpanded &&
-                                    <div class="flex flex-col items-left">
-                                        {category.subcategories.map((subcategory) => {
-                                            const isSelected = selectedSubcategories.includes(subcategory)
-                                            return (
-                                                <div class="flex flex-row justify-left gap-2">
-                                                    
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => {
-                                                            if (isSelected) {
-                                                                setSelectedSubcategories(selectedSubcategories.filter((selectedSubcategory) => {
-                                                                    return selectedSubcategory !== subcategory
-                                                                }))
-                                                            } else {
-                                                                setSelectedSubcategories([...selectedSubcategories, subcategory])
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label for="subcategoryFilter" class="text-lg">{subcategory}</label>
-                                                </div>
-                                            )
-                                        }
-                                        )}
-                                    </div>
-                                }
-                            </div>
-                        )
-                    })}
-                    {/* Final Horizontal Line */}
-                    <hr class="my-2 border-t border-gray-300 w-3/4"/>
-
-
-
-
-                </div>
+                <FilterBar categories={categories} expandedCategories={expandedCategories} setExpandedCategories={setExpandedCategories} selectedSubcategories={selectedSubcategories} setSelectedSubcategories={setSelectedSubcategories}/>
+                
             </div>
+
             {/* Search Results */}
             <div className="search-results__list w-3/4">
+
+
+
+
                 <div className="flex flex-col">
                     {/* Results Navigation */}
                     <div className="flex flex-row justify-between items-center p-4 rounded-md">
@@ -246,10 +213,10 @@ export const Wildlife = () => {
 
                     {/* Results */}
                     {renderResults()}
+                </div>
 
                 </div>
             </div>
-        </div>
         </>
     )
-}
+                }
