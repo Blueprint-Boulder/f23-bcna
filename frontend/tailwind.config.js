@@ -9,7 +9,7 @@ module.exports = {
         "highlight-green": "#7DDA23",
         "light-black" : "#2B2B2B",
         "black" : "#171717",
-        "light-blue" : "#3EAAF5"
+        "light-blue" : "#3EAAF5",
       },
       height: {
         "15": "3.75rem",

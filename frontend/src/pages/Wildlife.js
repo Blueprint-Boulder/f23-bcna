@@ -339,7 +339,8 @@ export const Wildlife = () => {
 
 
                     {/* Results Nav - Display Type, Sorting, and Pagination */}
-                    <div className="flex flex-row justify-between items-center p-4 rounded-md">
+                    <div className="flex flex-row justify-between items-center p-3 rounded-md bg-light-blue bg-opacity-40 mb-4"
+>
 
                         {/* Number of Results */}
                         <div className="">
