@@ -267,21 +267,16 @@ def get_categories_and_fields():
     {
         "categories": [
             {
-                "field_ids": [
-                    1,
-                    2
-                ],
+                "field_ids": [1, 2],
                 "name": "Animals",
                 "subcategories": [
                     {
-                        "field_ids": [
-                            3
-                        ],
+                        "field_ids": [3, 1, 2],
                         "name": "Birds",
                         "subcategories": []
                     },
                     {
-                        "field_ids": [],
+                        "field_ids": [1, 2],
                         "name": "Cats",
                         "subcategories": []
                     }
@@ -311,30 +306,38 @@ def get_categories_and_fields():
     The "Birds" category is a subcategory of "Animals" and has the "Wingspan" integer field.
     The "Cats" category is a subcategory of "Animals" and has no extra fields.
     In this example, there's only one top-level category (Animals) but it's possible for there to be multiple.
+    Note that subcategories always inherit the field IDs of their parent; i.e. the field_ids of a subcategory is a superset of its parent's field_ids.
+    Also note that a category's field_ids might not be sorted. Don't rely on it being in any particular order.
     """
-    
-    def get_fields_for_category(category_id):
-        return db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?", [category_id])
 
-    def construct_category_structure(category_id=None):
-        category_query = "SELECT id, name FROM Categories WHERE parent_id = ?" if category_id else "SELECT id, name FROM Categories WHERE parent_id IS NULL"
-        categories = db_helpers.select_multiple(category_query, [category_id] if category_id else [])
+    def construct_category_structure(category_id=None, inherited_field_ids=None):
+        if inherited_field_ids is None:
+            inherited_field_ids = []
+            
+        if category_id:
+            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id = ?", [category_id])
+        else:
+            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id IS NULL")
 
         category_list = []
         for category in categories:
-            field_ids_row = get_fields_for_category(category['id'])
+            field_ids_row = db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?", [category["id"]])
             field_ids = [row['field_id'] for row in field_ids_row]
+
+            # Combine the current category's field_ids with those inherited from its parent
+            combined_field_ids = field_ids + inherited_field_ids
 
             category_obj = {
                 "name": category['name'],
-                "field_ids": field_ids,
-                "subcategories": construct_category_structure(category['id'])
+                "field_ids": combined_field_ids,  # Now includes inherited fields
+                "subcategories": construct_category_structure(category['id'], combined_field_ids)
+                # Pass combined fields to subcategories
             }
             category_list.append(category_obj)
 
         return category_list
 
-    # Retrieve all fields in one go
+    # Retrieve the fields
     all_fields = db_helpers.select_multiple("SELECT id, type, name FROM Fields")
     fields_dict = {field['id']: field for field in all_fields}
 
