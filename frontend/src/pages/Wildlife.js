@@ -7,7 +7,8 @@ import { GridResult, ListResult, CardResult } from "../components/ResultTypes"
 export const Wildlife = () => {
 
     // List of categories to filter by with their respective keys and subcategories
-    const categories = [
+    const categoriesAndFields = {
+        "categories": [
             {
                 "id" : 1,
                 "field_ids": [
@@ -21,27 +22,61 @@ export const Wildlife = () => {
                         "field_ids": [
                             3
                         ],
-                        "name": "Birds",
+                        "name": "Forest Animals",
                         "subcategories": [
                             {
                                 "id" : 3,
                                 "field_ids": [
                                     3
                                 ],
-                                "name": "Swallows",
-                                "subcategories": []
+                                "name" : "Fox",
+                                "subcategories" : []
+                            },
+                            {
+                                "id" : 4,
+                                "field_ids": [
+                                    5
+                                ],
+                                "name" : "Butterflies",
+                                "subcategories" : []
                             }
                         ]
                     },
                     {
-                        "id" : 4,
                         "field_ids": [],
                         "name": "Cats",
                         "subcategories": []
                     }
                 ]
             },
-    ]
+            {
+                "id" : 15,
+                "field_ids": [
+                    1,
+                    2
+                ],
+                "name": "Plants",
+                "subcategories": []
+            }
+        ],
+        "fields": {
+            "1": {
+                "id": 1,
+                "name": "Description",
+                "type": "TEXT"
+            },
+            "2": {
+                "id": 2,
+                "name": "Note",
+                "type": "TEXT"
+            },
+            "3": {
+                "id": 3,
+                "name": "Wingspan",
+                "type": "INTEGER"
+            }
+        }
+    };
 
 
     
@@ -52,38 +87,58 @@ export const Wildlife = () => {
             id: 0,
             name: "Two-Tailed Swallowtail",
             subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/09/Swallowtail_Two-tailed_CFriedman.jpg"
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/09/Swallowtail_Two-tailed_CFriedman.jpg",
+            category_id: 4
         },
         {
             id: 1,
             name: "Western Tiger Swallowtail",
             subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL1.jpe"
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL1.jpe",
+            category_id: 4
         },
         {
             id: 2,
             name: "Black Swallowtail",
             subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/10/Swallowtail_Black-female_SJones.jpg"
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/10/Swallowtail_Black-female_SJones.jpg",
+            category_id: 4
         },
         {
             id: 3,
             name: "Pine White",
             subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/PINE_WHITE1.jpe"
-        }
+            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/PINE_WHITE1.jpe",
+            category_id: 4
+        },
+        {
+            id: 3,
+            name: "Arctic Fox",
+            subcategory: "Invertebrate",
+            image: "https://cdn.britannica.com/23/178223-050-2EA8AA51/Arctic-fox.jpg",
+            category_id: 3
+        },
+        {
+            id: 3,
+            name: "Red Fox",
+            subcategory: "Invertebrate",
+            image: "https://cdn.britannica.com/95/206395-050-02B81B30/Red-fox-Vulpes-vulpes.jpg",
+            category_id: 3
+        },
     ]
 
+    const categories = Object.values(categoriesAndFields.categories);
+    const fields = Object.values(categoriesAndFields.fields);
+
+    // Defines the filters for search
+    const [filters, setFilters] = useState({
+        category: [],
+    })
 
 
     // Display type
     const [displayType, setDisplayType] = useState("cards")
 
-    // State for determining which categories are expanded in filters section
-    const [expandedCategories, setExpandedCategories] = useState([])
-
-    // State for determining which subcategories are selected in filters section
-    const [selectedSubcategories, setSelectedSubcategories] = useState([])
 
     // State for determining which results to display
     const [results, setResults] = useState(data)
@@ -91,7 +146,7 @@ export const Wildlife = () => {
 
 
 
-
+    // Renders results based on selected display type (Grid, List, Card)
     const renderResults = () => {
         switch (displayType) {
             case 'grid':
@@ -130,17 +185,17 @@ export const Wildlife = () => {
     // Filter results by selected subcategories
     useEffect(() => {
         // If no subcategories are selected, show all results
-        if (selectedSubcategories.length === 0) {
+        if (filters.category.length === 0) {
           setResults(data);
         } else {
           // Filter results by selected subcategories
           const filteredResults = data.filter((result) => {
-            return selectedSubcategories.includes(result.subcategory);
+            return filters.category.includes(result.subcategory);
           });
       
           setResults(filteredResults);
         }
-    }, [selectedSubcategories]);
+    }, [filters]);
 
 
 
@@ -166,7 +221,7 @@ export const Wildlife = () => {
 
             {/* Filter Bar */}
             <div className="search-results__filters w-1/4">
-                <FilterBar categories={categories} expandedCategories={expandedCategories} setExpandedCategories={setExpandedCategories} selectedSubcategories={selectedSubcategories} setSelectedSubcategories={setSelectedSubcategories}/>
+                <FilterBar categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
                 
             </div>
 
