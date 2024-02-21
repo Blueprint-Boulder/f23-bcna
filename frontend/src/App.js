@@ -5,6 +5,8 @@ import { Layout } from './components/Layout';
 import { Wildlife } from './pages/Wildlife';
 import { WildlifePage } from './pages/WildlifePage';
 
+import './App.css'
+
 function App() {
   const [message, setMessage] = useState('')
 

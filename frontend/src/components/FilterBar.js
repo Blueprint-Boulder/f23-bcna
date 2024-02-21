@@ -106,7 +106,7 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     },[filters])
 
     return (
-        <div class="flex flex-col items-left">
+        <div class="flex flex-col items-left text-left">
             <div class="my-2">
                 <h3 class="text-lg font-bold">Filter by</h3>
             </div>

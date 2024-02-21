@@ -242,19 +242,22 @@ export const Wildlife = () => {
         switch (displayType) {
           case 'grid':
             return (
-              <table className="table-auto">
-                <thead>
-                  <tr>
-                    <th className="text-left">Name</th>
-                    <th className="text-left">Subcategory</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentResults.map((result, index) => (
-                    <GridResult key={index} data={result} />
-                  ))}
-                </tbody>
-              </table>
+                <table className="table-auto w-full">
+                    <thead className="bg-gray-300 text-black">
+                    <tr>
+                        <th className="px-4 py-2 text-left">Name</th>
+                        <th className="px-4 py-2 text-left">Subcategory</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {currentResults.map((result, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}>
+                        <td className="px-4 py-2">{result.name}</td>
+                        <td className="px-4 py-2">{result.subcategory}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
             );
           case 'list':
             return currentResults.map((result, index) => (
@@ -299,6 +302,10 @@ export const Wildlife = () => {
 
     return (
         <>
+        
+
+
+
         {/* Image and Search Bar */}
         <div className="wildlife relative text-center">
             {/* Image */}
@@ -342,10 +349,11 @@ export const Wildlife = () => {
                         {/* Display Type Selection */}
                         <div className="flex items-center space-x-2">
                             <p className="text-gray-700">Display:</p>
-                            <button onClick={() => setDisplayType('grid')}>Grid</button>
-                            <button onClick={() => setDisplayType('list')}>List</button>
-                            <button onClick={() => setDisplayType('cards')}>Cards</button>
+                            <button className="display-button" onClick={() => setDisplayType('grid')}>Grid</button>
+                            <button className="display-button" onClick={() => setDisplayType('list')}>List</button>
+                            <button className="display-button" onClick={() => setDisplayType('cards')}>Cards</button>
                         </div>
+
 
                         {/* Sort By Selection */}
                         <div className="flex items-center space-x-2">
@@ -392,10 +400,11 @@ export const Wildlife = () => {
                     </div>
 
 
-
-
                     {/* Results */}
+                    <div className="text-left">
                     {renderResults()}
+                    </div>
+
                 </div>
 
                 </div>
