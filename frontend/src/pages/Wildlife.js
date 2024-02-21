@@ -127,58 +127,155 @@ export const Wildlife = () => {
         },
     ]
 
+    // Convert categories and fields JSON object into something able to be handled by JS
     const categories = Object.values(categoriesAndFields.categories);
     const fields = Object.values(categoriesAndFields.fields);
-
-    // Defines the filters for search
-    const [filters, setFilters] = useState({
-        category: [],
-    })
-
-
-    // Display type
-    const [displayType, setDisplayType] = useState("cards")
-
 
     // State for determining which results to display
     const [results, setResults] = useState(data)
 
 
 
+    /**
+     * 
+     * FILTERING
+     * 
+     */
 
-    // Renders results based on selected display type (Grid, List, Card)
-    const renderResults = () => {
-        switch (displayType) {
-            case 'grid':
-                return (
-                    <table className="table-auto">
-                        <thead>
-                        <tr>
-                            <th className="text-left">Name</th>
-                            <th className="text-left">Subcategory</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {results.map((result,index) => {return <GridResult key={index} data={result}/>})}
-                        </tbody>
-                    </table>
-                )
-            case 'list':
-                return results.map((result,index) => {return <ListResult key={index} data={result}/>})
-            case 'cards':
-                return (
-                    <div className="grid grid-cols-3 gap-2">
-                      {results.map((result, index) => (
-                        <div key={index} className="w-full">
-                          <CardResult data={result} />
-                        </div>
-                      ))}
-                    </div>
-                  )
+    // Defines the filters for search... handled in FilterBar
+    const [filters, setFilters] = useState({
+        category: [],
+    })
+
+
+    /**
+     * 
+     * SORTING
+     * 
+     */
+
+
+    // Sort by state
+    const [sortBy,setSortBy] = useState('none')
+
+    // Function to handle the change in sortBy category (name,none)
+    const handleSortByChange = (event) => {
+        setSortBy(event.target.value); // Update the sortBy state
+    };
+
+    // Function that sorts results by name
+    const sortResultsByName = (results) => {
+        return [...results].sort((a, b) => a.name.localeCompare(b.name));
+    };
+
+    // Function to sort results by name or none
+    const sortResults = () => {
+        switch (sortBy) {
+            case 'name':
+                return sortResultsByName(results);
             default:
-                return null;
+                return results; // Default case, return unsorted results
         }
+    };
+
+
+
+    /**
+     * 
+     * PAGINATION
+     * 
+     */
+    
+
+    // Current page and results per page states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [resultsPerPage, setResultsPerPage] = useState(5); // Number of results per page
+
+    // Function to handle the change in number of results per page
+    const handleResultsPerPageChange = (event) => {
+    setResultsPerPage(parseInt(event.target.value));
+    setCurrentPage(1); // Reset to first page when changing results per page
+    };
+
+    // Function to get total number of pages
+    const totalPages = Math.ceil(sortResults().length / resultsPerPage);
+
+    // Function to get current results based on pagination
+    const getCurrentResults = () => {
+    const start = (currentPage - 1) * resultsPerPage;
+    const end = start + resultsPerPage;
+    return sortResults().slice(start, end);
+    };
+
+    // Function to go to the previous page
+    const goToPreviousPage = () => {
+    if (currentPage > 1) {
+        setCurrentPage(currentPage - 1);
     }
+    };
+
+    // Function to go to the next page
+    const goToNextPage = () => {
+    if (currentPage < totalPages) {
+        setCurrentPage(currentPage + 1);
+    }
+    };
+      
+
+
+    /**
+     * 
+     * DISPLAY
+     * 
+     */
+
+    // Display type
+    const [displayType, setDisplayType] = useState("cards")
+
+
+    // Function that handles rendering of results (handles pagination,displayType,sorting)
+    const renderResults = () => {
+        const start = (currentPage - 1) * resultsPerPage;
+        const end = start + resultsPerPage;
+        const currentResults = sortResults().slice(start, end);
+      
+        switch (displayType) {
+          case 'grid':
+            return (
+              <table className="table-auto">
+                <thead>
+                  <tr>
+                    <th className="text-left">Name</th>
+                    <th className="text-left">Subcategory</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentResults.map((result, index) => (
+                    <GridResult key={index} data={result} />
+                  ))}
+                </tbody>
+              </table>
+            );
+          case 'list':
+            return currentResults.map((result, index) => (
+              <ListResult key={index} data={result} />
+            ));
+          case 'cards':
+            return (
+              <div className="grid grid-cols-3 gap-2">
+                {currentResults.map((result, index) => (
+                  <div key={index} className="w-full">
+                    <CardResult data={result} />
+                  </div>
+                ))}
+              </div>
+            );
+          default:
+            return null;
+        }
+      };
+      
+    
 
 
 
@@ -204,14 +301,16 @@ export const Wildlife = () => {
         <>
         {/* Image and Search Bar */}
         <div className="wildlife relative text-center">
-        <img
-            src="http://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/inner5.jpg"
-            alt="Wildlife"
-            className="w-full"
-        />
-        <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <SearchBar className=""/>
-        </div>
+            {/* Image */}
+            <img
+                src="http://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/inner5.jpg"
+                alt="Wildlife"
+                className="w-full"
+            />
+            {/* Search Bar */}
+            <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <SearchBar className=""/>
+            </div>
         </div>
 
         
@@ -228,42 +327,71 @@ export const Wildlife = () => {
             {/* Search Results */}
             <div className="search-results__list w-3/4">
 
-
-
-
                 <div className="flex flex-col">
-                    {/* Results Navigation */}
+
+
+
+                    {/* Results Nav - Display Type, Sorting, and Pagination */}
                     <div className="flex flex-row justify-between items-center p-4 rounded-md">
-                    {/* Number of Results */}
-                    <div className="">
-                        <p className="text-gray-700">{results.length} results</p>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                        <p className="text-gray-700">Display:</p>
-                        <button onClick={() => setDisplayType('grid')}>Grid</button>
-                        <button onClick={() => setDisplayType('list')}>List</button>
-                        <button onClick={() => setDisplayType('cards')}>Cards</button>
-                    </div>
+                        {/* Number of Results */}
+                        <div className="">
+                            <p className="text-gray-700">{results.length} results</p>
+                        </div>
 
-                    <div className="flex items-center space-x-2">
-                        <p className="text-gray-700">Sort by:</p>
-                        <select className="border border-solid border-gray-300 rounded px-2 py-1">
-                        <option value={null}>Name</option>
-                        <option value="subcategory">Subcategory</option>
+                        {/* Display Type Selection */}
+                        <div className="flex items-center space-x-2">
+                            <p className="text-gray-700">Display:</p>
+                            <button onClick={() => setDisplayType('grid')}>Grid</button>
+                            <button onClick={() => setDisplayType('list')}>List</button>
+                            <button onClick={() => setDisplayType('cards')}>Cards</button>
+                        </div>
+
+                        {/* Sort By Selection */}
+                        <div className="flex items-center space-x-2">
+                            <p className="text-gray-700">Sort by:</p>
+                            <select className="border border-solid border-gray-300 rounded px-2 py-1" onChange={handleSortByChange}>
+                                <option value="none">None</option>
+                                <option value="name">Name</option>
+                            </select>
+                        </div>
+
+                        {/* Pagination Element */}
+                        <div className="flex items-center space-x-2">
+                        <p className="text-gray-700">Results per page:</p>
+                        <select
+                            className="border border-solid border-gray-300 rounded px-2 py-1"
+                            value={resultsPerPage}
+                            onChange={handleResultsPerPageChange}
+                        >
+                            <option value={5}>5</option>
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
                         </select>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                        <button
+                            className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full"
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                        >
+                            {"<"}
+                        </button>
+                        <p className="text-gray-700">
+                            {currentPage}/{totalPages}
+                        </p>
+                        <button
+                            className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full"
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                        >
+                            {">"}
+                        </button>
+                        </div>
+
                     </div>
 
-                    <div className="flex items-center space-x-4">
-                        <button className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full">
-                        {"<"}
-                        </button>
-                        <p className="text-gray-700">1/12</p>
-                        <button className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full">
-                        {">"}
-                        </button>
-                    </div>
-                    </div>
+
 
 
                     {/* Results */}
