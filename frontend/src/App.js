@@ -5,6 +5,8 @@ import { Layout } from './components/Layout';
 import { Wildlife } from './pages/Wildlife';
 import WildlifeDetails from './pages/WildlifeDetails';
 import Admin from './pages/Admin';
+import AddCategory from './pages/AddCategory';
+import AddWildlife from './pages/AddWildlife';
 
 function App() {
   const [message, setMessage] = useState('')
@@ -46,6 +48,8 @@ function App() {
             <Route path="/wildlife" element={<Wildlife/>} />
             <Route path="/wildlife-details" element={<WildlifeDetails wildlife={test}/>} /> {/* TEMP SOLUTION TO VISUALIZE DESIGN*/}
             <Route path="/admin" element={<Admin />} />
+            <Route path="/add-category" element={<AddCategory />} />
+            <Route path="/add-wildlife" element={<AddWildlife />} />
             <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
             <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
             <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
