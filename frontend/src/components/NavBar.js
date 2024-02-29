@@ -59,6 +59,14 @@ export const NavBar = () => {
                 API
               </NavLink>
             </li>
+            <li>
+              <NavLink
+                to="/api"
+                className={`hover:text-light-blue transition-all duration-300`}
+              >
+                Test
+              </NavLink>
+            </li>
           </ul>
         </div>
       </nav>

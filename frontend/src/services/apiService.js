@@ -24,6 +24,21 @@ const apiService = {
     }
   },
 
+  getCategoriesAndFields: async () => {
+    try {
+      const response = await api.get('/api/get-categories-and-fields');
+      console.log("Response:")
+      console.log(response)
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+
+
+
+
 };
 
 export default apiService;
