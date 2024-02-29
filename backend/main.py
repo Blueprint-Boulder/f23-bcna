@@ -387,3 +387,92 @@ def create_field():
 if __name__ == "__main__":
     db_helpers.init_db()
     app.run(debug=True)
+
+from flask import Flask, jsonify, request
+import db_helpers  # Assuming db_helpers is correctly set up for database interaction
+
+app = Flask(__name__)
+
+@app.route("/api/search-wildlife-by-integer-field/", methods=["GET"])
+def search_wildlife_by_integer_field():
+    """
+Searches wildlife records by any specified integer field. This can be used to search for records with an exact value, within a range (greater than a minimum value, less than a maximum value, or between a minimum and maximum value).
+
+Requires:
+- 'field_id': The ID of the integer field to search on.
+- 'exact_value': (Optional) The exact value to search for. Cannot be used with min_value or max_value.
+- 'min_value': (Optional) The minimum value to search for. Use alone for greater than queries or with max_value for range queries.
+- 'max_value': (Optional) The maximum value to search for. Use alone for less than queries or with min_value for range queries.
+Note: 'field_id' is required. Either 'exact_value' or one/both of 'min_value' and 'max_value' must be provided. It's not valid to provide 'exact_value' together with 'min_value' or 'max_value'.
+
+Returns a JSON structure with a 'results' key containing search results.
+
+Example request for an exact value search (searching for wildlife with a wingspan (where wingspan has a field_id of 7) of exactly 17 inches):
+GET /api/search-wildlife-by-integer-field/?field_id=7&exact_value=17
+
+Example request for a range value search (searching for wildlife with a wingspan greater than 15 inches but less than 30 inches):
+GET /api/search-wildlife-by-integer-field/?field_id=7&min_value=15&max_value=30
+
+Example output (for the exact value search, formatted as a JSON response):
+{
+  "results": [
+    {
+      "id": 12,
+      "category_id": 4,
+      "name": "Common Sparrow",
+      "scientific_name": "Passer domesticus"
+    }
+  ]
+}
+
+Example output (for the range value search, formatted as a JSON response):
+{
+  "results": [
+    {
+      "id": 8,
+      "category_id": 4,
+      "name": "American Goldfinch",
+      "scientific_name": "Spinus tristis"
+    },
+    {
+      "id": 9,
+      "category_id": 4,
+      "name": "Eastern Bluebird",
+      "scientific_name": "Sialia sialis"
+    }
+  ]
+}
+"""
+    field_id = request.args.get("field_id", type=int)
+    exact_value = request.args.get("exact_value", type=int, default=None)
+    min_value = request.args.get("min_value", type=int, default=None)
+    max_value = request.args.get("max_value", type=int, default=None)
+
+    if field_id is None:
+        return jsonify({"error": "field_id is required"}), 400
+    field_info = db_helpers.select_one("SELECT * FROM Fields WHERE id = ? AND type = 'INTEGER'", (field_id,))
+    if not field_info:
+        return jsonify({"error": "Invalid field ID or field is not of type INTEGER"}), 400
+
+    if exact_value is not None and (min_value is not None or max_value is not None):
+        return jsonify({"error": "Cannot specify exact_value together with min_value or max_value"}), 400
+
+    sql_query = "SELECT w.* FROM Wildlife w JOIN FieldValues fv ON w.id = fv.wildlife_id WHERE fv.field_id = ?"
+    params = [field_id]
+
+    if exact_value is not None:
+        sql_query += " AND fv.value = ?"
+        params.append(str(exact_value))
+    else:
+        if min_value is not None:
+            sql_query += " AND fv.value > ?"
+            params.append(str(min_value))
+        if max_value is not None:
+            sql_query += " AND fv.value < ?"
+            params.append(str(max_value))
+
+    results = db_helpers.select_multiple(sql_query, params)
+    return jsonify(results), 200
+
+if __name__ == "__main__":
+    app.run(debug=True)
