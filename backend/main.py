@@ -21,41 +21,10 @@ def hello_world():
     return 'Hello, from Flask!'
 
 
-@app.route("/api/create-wildlife/", methods=["POST"])
-def create_wildlife():
-    """
-    Creates a new wildlife entry.
-    Requires 'name', 'scientific_name', and 'category_id' in the form data.
-    Doesn't accept custom field values yet, but it will soon.
-    For now, if you want to add field values to wildlife, you'll have to do it yourself in SQL. The database is backend/database.db.
-
-    Example request:
-    POST /api/create-wildlife/
-    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1
-
-    Example output:
-    {
-        "message": "Wildlife created successfully",
-        "wildlife_id": 3
-    }
-    """
-    # Check if the category exists
-    name = request.form["name"]
-    scientific_name = request.form["scientific_name"]
-    category_id = request.form["category_id"]
-
-    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
-    if not category_exists:
-        return jsonify({"error": "Category not found"}), 400
-
-    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)", (name, scientific_name, category_id))
-    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
-
-
-def get_all_category_ids(top_level_category_ids):
+def get_subcategory_ids(top_level_category_ids):
     """
     Helper function.
-    Extracts all category IDs, including subcategories, from a list of top-level category IDs.
+    Returns the input (top_level_category_ids) with its subcategory IDs added as well.
     """
     if not top_level_category_ids:
         return []
@@ -74,6 +43,97 @@ def get_all_category_ids(top_level_category_ids):
     """
     all_category_ids = db_helpers.select_multiple(sql_query, top_level_category_ids)
     return [row['id'] for row in all_category_ids]
+
+
+def get_parent_ids(category_id):
+    """
+    Retrieves a list of parent category IDs for a given category, including the category itself.
+    """
+    sql_query = """
+    WITH RECURSIVE parent_categories(id, parent_id) AS (
+        SELECT id, parent_id FROM Categories WHERE id = ?
+        UNION ALL
+        SELECT c.id, c.parent_id FROM Categories c INNER JOIN parent_categories pc ON c.id = pc.parent_id
+    )
+    SELECT id FROM parent_categories
+    """
+
+    parent_ids = db_helpers.select_multiple(sql_query, [category_id])
+    if not parent_ids:
+        return jsonify({"error": "Category not found"}), 404
+
+    # Extracting the IDs from the result rows
+    parent_ids_list = [row['id'] for row in parent_ids]
+    return parent_ids_list
+
+
+@app.route("/api/create-wildlife/", methods=["POST"])
+def create_wildlife():
+    """
+    Create a wildlife instance. Requires name, scientific_name, and category_id.
+    Additional custom fields can be provided at the end, with the format name=value (see example).
+
+    Example request:
+    POST /api/create-wildlife/
+    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Forest
+
+    Example output (successful creation):
+    {
+        "message": "Wildlife created successfully",
+        "wildlife_id": 3
+    }
+    """
+    name = request.form["name"]
+    scientific_name = request.form["scientific_name"]
+
+    wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
+    if wildlife_with_name_exists:
+        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
+
+    wildlife_with_scientific_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
+    if wildlife_with_scientific_name_exists:
+        return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
+
+    category_id = request.form["category_id"]
+    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+
+    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
+    if not category_exists:
+        return jsonify({"error": "Category not found"}), 400
+
+    # Get all parent category IDs, including the category itself
+    parent_category_ids = get_parent_ids(category_id)
+
+    # Fetch all fields valid for the category, including those inherited from parent categories
+    valid_fields = db_helpers.select_multiple(f"""
+            SELECT Fields.name FROM Fields
+            JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
+            WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
+        """, parent_category_ids)
+
+    valid_field_names = {field['name'] for field in valid_fields}
+
+    # Check if all provided fields are valid
+    provided_field_names = set(other_fields.keys())
+    if not provided_field_names.issubset(valid_field_names):
+        invalid_fields = provided_field_names - valid_field_names
+        return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
+
+    # Check if all required fields are provided
+    if not valid_field_names.issubset(provided_field_names):
+        missing_fields = valid_field_names - provided_field_names
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
+                                    (name, scientific_name, category_id))
+
+    # Insert additional field values (validation already performed)
+    for field_name, value in other_fields.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, value))
+
+    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
 
 @app.route("/api/search-wildlife-names/", methods=["GET"])
@@ -106,7 +166,7 @@ def search_wildlife_names():
     user_query = request.args.get("query")
 
     if category_ids:
-        all_category_ids = get_all_category_ids(category_ids)
+        all_category_ids = get_subcategory_ids(category_ids)
         # This special case is necessary because "IN ()" is invalid syntax (it needs at least one value inside the parenthesis)
         if not all_category_ids:
             return jsonify([]), 200  # Return an empty list if no categories found
@@ -166,7 +226,7 @@ def search_wildlife_text_field():
         return jsonify({"error": "Field not found or not of type TEXT"}), 400
 
     if category_ids:
-        all_category_ids = get_all_category_ids(category_ids)
+        all_category_ids = get_subcategory_ids(category_ids)
         if not all_category_ids:
             # If there are no categories found, return an empty list
             return jsonify([]), 200
@@ -222,6 +282,11 @@ def create_category():
         parent_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (parent_id,))
         if not parent_exists:
             return jsonify({"error": "Parent category not found"}), 400
+
+    # Check if category with that name exists
+    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE name = ?", [name])
+    if category_exists:
+        return jsonify({"error": f"Category with name {name} already exists"}), 400
 
     category_id = db_helpers.insert("INSERT INTO Categories (name, parent_id) VALUES (?, ?)", (name, parent_id))
     return jsonify({"message": "Category created successfully", "category_id": category_id}), 201
@@ -313,15 +378,17 @@ def get_categories_and_fields():
     def construct_category_structure(category_id=None, inherited_field_ids=None):
         if inherited_field_ids is None:
             inherited_field_ids = []
-            
+
         if category_id:
-            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id = ?", [category_id])
+            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id = ?",
+                                                    [category_id])
         else:
             categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id IS NULL")
 
         category_list = []
         for category in categories:
-            field_ids_row = db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?", [category["id"]])
+            field_ids_row = db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?",
+                                                       [category["id"]])
             field_ids = [row['field_id'] for row in field_ids_row]
 
             # Combine the current category's field_ids with those inherited from its parent
@@ -345,7 +412,6 @@ def get_categories_and_fields():
     return jsonify({"categories": categories_structure, "fields": fields_dict}), 200
 
 
-
 @app.route("/api/create-field/", methods=["POST"])
 def create_field():
     """
@@ -366,6 +432,10 @@ def create_field():
     typ = request.form["type"]
     category_ids = request.form.getlist("category_id", type=int)
 
+    field_exists = db_helpers.select_multiple("SELECT 1 FROM Fields WHERE name = ?", [name])
+    if field_exists:
+        return jsonify({"error": f"Field with name {name} already exists"}), 400
+
     for category_id in category_ids:
         # Check if category exists
         category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
@@ -379,7 +449,8 @@ def create_field():
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", (name, typ))
 
     for category_id in category_ids:
-        db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)", (field_id, category_id))
+        db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
+                          (field_id, category_id))
 
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
 
