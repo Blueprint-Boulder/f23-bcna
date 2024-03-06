@@ -39,6 +39,6 @@ CREATE TABLE IF NOT EXISTS FieldValues (
     field_id INTEGER NOT NULL,
     value TEXT NOT NULL,
     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
-    FOREIGN KEY (field_id) REFERENCES Fields(id)
+    FOREIGN KEY (field_id) REFERENCES Fields(id),
     PRIMARY KEY (wildlife_id, field_id)
 );
