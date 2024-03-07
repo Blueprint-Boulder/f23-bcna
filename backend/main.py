@@ -412,6 +412,59 @@ def get_categories_and_fields():
     return jsonify({"categories": categories_structure, "fields": fields_dict}), 200
 
 
+@app.route("/api/get-wildlife/", methods=["GET"])
+def get_wildlife():
+    """
+    Retrieves all wildlife entries, including their associated custom field values.
+
+    Each entry includes id, name, scientific_name, category_id, and all the custom field values.
+    Custom fields have their name as the key and their value as the value.
+    Text field values are returned as strings; integer field values are returned as integers.
+
+    Example request:
+    GET /api/get-wildlife/
+
+    Example output:
+    [
+        {
+            "id": 1,
+            "category_id": 2,
+            "name": "European Hedgehog",
+            "scientific_name": "Erinaceus europaeus",
+            "Habitat": "Forests and grasslands",
+            "Population": 500000
+        },
+        {
+            "id": 2,
+            "category_id": 3,
+            "name": "Red Fox",
+            "scientific_name": "Vulpes vulpes",
+            "Habitat": "Urban and wild areas",
+            "Diet": "Omnivore"
+        }
+    ]
+    """
+    all_wildlife = db_helpers.select_multiple("SELECT * FROM Wildlife")
+    out = []
+    for wildlife in all_wildlife:
+        field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?", [wildlife["id"]])
+        cleaned_field_values = {}
+        for fv in field_values:
+            field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
+            if field["type"] == "TEXT":
+                print(f"{field["name"]} is text")
+                field_value = fv["value"]
+            elif field["type"] == "INTEGER":
+                print(f"{field["name"]} is int")
+                field_value = int(fv["value"])
+            else:
+                raise NotImplementedError("Unsupported field type")
+            cleaned_field_values[str(field["name"])] = field_value
+        out.append({**wildlife, **cleaned_field_values})
+    print(out)
+    return jsonify(out), 200
+
+
 @app.route("/api/create-field/", methods=["POST"])
 def create_field():
     """
