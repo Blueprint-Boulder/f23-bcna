@@ -384,15 +384,6 @@ def create_field():
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
 
 
-if __name__ == "__main__":
-    db_helpers.init_db()
-    app.run(debug=True)
-
-from flask import Flask, jsonify, request
-import db_helpers  # Assuming db_helpers is correctly set up for database interaction
-
-app = Flask(__name__)
-
 @app.route("/api/search-wildlife-by-integer-field/", methods=["GET"])
 def search_wildlife_by_integer_field():
     """
