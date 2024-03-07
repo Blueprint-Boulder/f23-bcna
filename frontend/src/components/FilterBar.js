@@ -147,6 +147,10 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         console.log(filters)
     };
     
+
+    const handleResetFilters = () => {
+        // TODO
+    }
     
     
     
@@ -214,6 +218,14 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             </div>
 
             <div>{renderFieldFilters()}</div>
+
+            <br/>
+
+            <button 
+            className="text-left underline text-gray-600"
+            onClick={handleResetFilters}>
+                Reset all filters
+            </button>
         </div>
     );
 };
