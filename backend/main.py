@@ -508,6 +508,46 @@ def create_field():
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
 
 
+@app.route("/api/delete-category/", methods=["DELETE"])
+def delete_category():
+    """
+    Deletes a category. Reassigns the members to the parent category by default; deletes them if 'delete-members' is provided.
+    To be clear, providing `delete-members` AT ALL will delete them - if you don't want to delete, don't put it in the request, even as e.g. delete-members=false.
+    If the category has no parent, and `delete-members` isn't provided, the request will fail.
+
+    Example request:
+    POST /api/delete-category/?id=2&delete-members
+
+    Example output:
+    {
+        "message": "Category members and category successfully deleted"
+    }
+    """
+    category_id = request.args["id"]
+    delete_members = request.args.get("delete-members")
+
+    category = db_helpers.select_one("SELECT * FROM Categories WHERE id = ?", [category_id])
+    if delete_members is None:
+        parent_id = category['parent_id']
+        if parent_id is None:
+            return jsonify({"error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
+        else:
+            # Reassign wildlife to the parent category
+            db_helpers.mutate("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
+            # Reassign the subcategories to the parent category
+            db_helpers.mutate("UPDATE Categories SET parent_id = ? WHERE parent_id = ?", [parent_id, category_id])
+            # Delete the category
+            db_helpers.mutate("DELETE FROM Categories WHERE id = ?", [category_id])
+            return jsonify({"message": "Category members successfully reassigned and category deleted"}), 200
+    else:
+        category_ids = get_subcategory_ids([category_id])
+        # Delete the members
+        db_helpers.mutate(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        # Delete the category and its subcategories
+        db_helpers.mutate(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        return jsonify({"message": "Category members and category successfully deleted"}), 200
+
+
 if __name__ == "__main__":
     db_helpers.init_db()
     app.run(debug=True)
