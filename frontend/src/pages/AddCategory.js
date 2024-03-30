@@ -3,12 +3,8 @@ import { useState, useEffect } from "react";
 
 export default function AddCategory() {
 
-    const [fieldsText, setFieldsText] = useState("Fields: ");
     const [categoryName, setCategoryName] = useState("");
-    const[parentName, setParentName] = useState("");
-    const [parentId, setParentId] = useState(null);
     const[categories, setCategories] = useState([]);
-    const[submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
