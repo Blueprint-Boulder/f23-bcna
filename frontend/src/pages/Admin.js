@@ -8,13 +8,13 @@ export default function Admin() {
                 <h1 className="text-3xl font-bold mb-8 pt-4 text-center">Admin Page</h1>
                 <h2 className="text-2xl font-bold text-center mb-3">Add Data</h2>
                 <div className="flex justify-center mb-8 gap-5">
-                    <ActionButton size="xl" noFocus><a href="/">Add Category</a></ActionButton>
-                    <ActionButton size="xl" noFocus><a href="/">Add Wildlife</a></ActionButton>
+                    <ActionButton size="lg" noFocus><a href="/add-category">Add Category</a></ActionButton>
+                    <ActionButton size="lg" noFocus><a href="/add-wildlife">Add Wildlife</a></ActionButton>
                 </div>
                 <h2 className="text-2xl font-bold text-center mb-3">Edit Data</h2>
                 <div className="flex justify-center pb-6 gap-5">
-                    <ActionButton size="xl" noFocus><a href="/">Edit Category</a></ActionButton>
-                    <ActionButton size="xl" noFocus><a href="/">Edit Wildlife</a></ActionButton>
+                    <ActionButton size="lg" noFocus><a href="/">Edit Category</a></ActionButton>
+                    <ActionButton size="lg" noFocus><a href="/">Edit Wildlife</a></ActionButton>
                 </div>
             </div>
         </div>
