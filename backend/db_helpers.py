@@ -9,7 +9,7 @@ def get_connection():
 
 
 def insert(query: str, params: Sequence[Any] = ()) -> int:
-    """Executes an INSERT query and returns the last inserted row id"""
+    """Executes an INSERT query and returns the last inserted row ID"""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, params)
@@ -17,6 +17,16 @@ def insert(query: str, params: Sequence[Any] = ()) -> int:
     conn.commit()
     conn.close()
     return last_id
+
+
+def mutate(query: str, params: Sequence[Any] = ()) -> None:
+    """Executes a mutating query (e.g. UPDATE, DELETE) and returns None.
+    This also works with INSERT, but if you want to get the last inserted row ID, you should use the insert function instead."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    conn.commit()
+    conn.close()
 
 
 def select_multiple(query: str, params: Sequence[Any] = ()) -> list[dict[str, Any]]:
