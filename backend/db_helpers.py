@@ -19,14 +19,20 @@ def insert(query: str, params: Sequence[Any] = ()) -> int:
     return last_id
 
 
-def mutate(query: str, params: Sequence[Any] = ()) -> None:
-    """Executes a mutating query (e.g. UPDATE, DELETE) and returns None.
+def mutate(query: str, params: Sequence[Any] = ()) -> int:
+    """Executes a mutating query (UPDATE or DELETE) and returns the number of affected rows.
     This also works with INSERT, but if you want to get the last inserted row ID, you should use the insert function instead."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, params)
+    n_rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
+    return n_rows_affected
+
+
+update = mutate
+delete = mutate
 
 
 def select_multiple(query: str, params: Sequence[Any] = ()) -> list[dict[str, Any]]:

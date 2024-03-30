@@ -332,7 +332,8 @@ def get_categories_and_fields():
     {
         "categories": [
             {
-                "field_ids": [1, 2],
+                "id": 3,
+                "field_ids": [5, 4],
                 "name": "Animals",
                 "subcategories": [
                     {
@@ -349,8 +350,8 @@ def get_categories_and_fields():
             }
         ],
         "fields": {
-            "1": {
-                "id": 1,
+            "5": {
+                "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
@@ -359,8 +360,8 @@ def get_categories_and_fields():
                 "name": "Note",
                 "type": "TEXT"
             },
-            "3": {
-                "id": 3,
+            "4": {
+                "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
@@ -395,6 +396,7 @@ def get_categories_and_fields():
             combined_field_ids = field_ids + inherited_field_ids
 
             category_obj = {
+                "id": category['id'],
                 "name": category['name'],
                 "field_ids": combined_field_ids,  # Now includes inherited fields
                 "subcategories": construct_category_structure(category['id'], combined_field_ids)
@@ -531,19 +533,39 @@ def delete_category():
             return jsonify({"error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
         else:
             # Reassign wildlife to the parent category
-            db_helpers.mutate("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
+            db_helpers.update("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
             # Reassign the subcategories to the parent category
-            db_helpers.mutate("UPDATE Categories SET parent_id = ? WHERE parent_id = ?", [parent_id, category_id])
+            db_helpers.update("UPDATE Categories SET parent_id = ? WHERE parent_id = ?", [parent_id, category_id])
             # Delete the category
-            db_helpers.mutate("DELETE FROM Categories WHERE id = ?", [category_id])
+            db_helpers.delete("DELETE FROM Categories WHERE id = ?", [category_id])
             return jsonify({"message": "Category members successfully reassigned and category deleted"}), 200
     else:
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
-        db_helpers.mutate(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
         # Delete the category and its subcategories
-        db_helpers.mutate(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
         return jsonify({"message": "Category members and category successfully deleted"}), 200
+
+
+@app.route("/api/delete-wildlife/", methods=["DELETE"])
+def delete_wildlife():
+    """
+    Deletes a wildlife instance by ID.
+
+    Example request:
+    DELETE /api/delete-wildlife/?id=3
+
+    Example output:
+    {
+        "message": "Wildlife successfully deleted"
+    }
+    """
+    wildlife_id = request.args["id"]
+    n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    if n_rows == 0:
+        return jsonify({"error": "Wildlife not found"}), 404
+    return jsonify({"message": "Wildlife successfully deleted"}), 200
 
 
 @app.route("/api/search-wildlife-by-integer-field/", methods=["GET"])
