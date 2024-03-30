@@ -6,7 +6,9 @@ export default function AddWildlife() {
 
     // populate input types based on datatype
 
-    const handleCategoryChange()
+    const handleCategoryChange = () => {
+
+    }
 
     return(
         <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] w-screen h-[120vh]">
@@ -18,7 +20,7 @@ export default function AddWildlife() {
                         <label htmlFor="categoryName">Category</label>
                         <select className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="categoryName"
-                             onChange={handleCategoryChange()} value={category}
+                             onChange={handleCategoryChange}
                         >
                             <option disabled selected value> -- Select A Category -- </option>
                             <option value="">Example 1</option>
