@@ -332,7 +332,8 @@ def get_categories_and_fields():
     {
         "categories": [
             {
-                "field_ids": [1, 2],
+                "id": 3,
+                "field_ids": [5, 4],
                 "name": "Animals",
                 "subcategories": [
                     {
@@ -349,8 +350,8 @@ def get_categories_and_fields():
             }
         ],
         "fields": {
-            "1": {
-                "id": 1,
+            "5": {
+                "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
@@ -359,8 +360,8 @@ def get_categories_and_fields():
                 "name": "Note",
                 "type": "TEXT"
             },
-            "3": {
-                "id": 3,
+            "4": {
+                "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
@@ -395,6 +396,7 @@ def get_categories_and_fields():
             combined_field_ids = field_ids + inherited_field_ids
 
             category_obj = {
+                "id": category['id'],
                 "name": category['name'],
                 "field_ids": combined_field_ids,  # Now includes inherited fields
                 "subcategories": construct_category_structure(category['id'], combined_field_ids)
