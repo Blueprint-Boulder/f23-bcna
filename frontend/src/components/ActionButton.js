@@ -1,6 +1,8 @@
-export const ActionButton = ({ onClick, size, color, children, noFocus, disabled }) => {
+export const ActionButton = ({ onClick, size, color, children, noFocus, disabled, type }) => {
     
   size = size || 'md';
+
+  type = type || 'text';
 
   let styles = ``;
 
@@ -27,6 +29,7 @@ export const ActionButton = ({ onClick, size, color, children, noFocus, disabled
         className={styles}
         tabindex={noFocus ? '-1' : undefined}
         disabled={disabled}
+        type={type}
       >
         {children}
       </button>
