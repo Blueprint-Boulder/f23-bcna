@@ -7,6 +7,7 @@ import WildlifeDetails from './pages/WildlifeDetails';
 import Admin from './pages/Admin';
 import AddCategory from './pages/AddCategory';
 import AddWildlife from './pages/AddWildlife';
+import EditCategory from './pages/EditCategory';
 
 function App() {
   const [message, setMessage] = useState('')
@@ -50,6 +51,7 @@ function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="/add-category" element={<AddCategory />} />
             <Route path="/add-wildlife" element={<AddWildlife />} />
+            <Route path="/edit-category" element={<EditCategory />} />
             <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
             <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
             <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
