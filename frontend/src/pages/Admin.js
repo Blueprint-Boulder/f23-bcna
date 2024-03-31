@@ -13,7 +13,7 @@ export default function Admin() {
                 </div>
                 <h2 className="text-2xl font-bold text-center mb-3">Edit Data</h2>
                 <div className="flex justify-center pb-6 gap-5">
-                    <ActionButton size="lg" noFocus><a href="/">Edit Category</a></ActionButton>
+                    <ActionButton size="lg" noFocus><a href="/edit-category">Edit Category</a></ActionButton>
                     <ActionButton size="lg" noFocus><a href="/">Edit Wildlife</a></ActionButton>
                 </div>
             </div>

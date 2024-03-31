@@ -26,10 +26,6 @@ export default function AddCategory() {
         try {
 
           const formData = new FormData(event.target);
-          for (const entry of formData.entries()){
-            console.log(entry);
-          }
-
           const response = await fetch('/api/create-category/', {
             method: 'POST',
             body: formData,
