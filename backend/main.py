@@ -332,7 +332,8 @@ def get_categories_and_fields():
     {
         "categories": [
             {
-                "field_ids": [1, 2],
+                "id": 3,
+                "field_ids": [5, 4],
                 "name": "Animals",
                 "subcategories": [
                     {
@@ -349,8 +350,8 @@ def get_categories_and_fields():
             }
         ],
         "fields": {
-            "1": {
-                "id": 1,
+            "5": {
+                "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
@@ -359,8 +360,8 @@ def get_categories_and_fields():
                 "name": "Note",
                 "type": "TEXT"
             },
-            "3": {
-                "id": 3,
+            "4": {
+                "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
@@ -395,6 +396,7 @@ def get_categories_and_fields():
             combined_field_ids = field_ids + inherited_field_ids
 
             category_obj = {
+                "id": category['id'],
                 "name": category['name'],
                 "field_ids": combined_field_ids,  # Now includes inherited fields
                 "subcategories": construct_category_structure(category['id'], combined_field_ids)
@@ -452,10 +454,8 @@ def get_wildlife():
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
             if field["type"] == "TEXT":
-                print(f"{field["name"]} is text")
                 field_value = fv["value"]
             elif field["type"] == "INTEGER":
-                print(f"{field["name"]} is int")
                 field_value = int(fv["value"])
             else:
                 raise NotImplementedError("Unsupported field type")
@@ -506,6 +506,148 @@ def create_field():
                           (field_id, category_id))
 
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
+
+
+@app.route("/api/delete-category/", methods=["DELETE"])
+def delete_category():
+    """
+    Deletes a category. Reassigns the members to the parent category by default; deletes them if 'delete-members' is provided.
+    To be clear, providing `delete-members` AT ALL will delete them - if you don't want to delete, don't put it in the request, even as e.g. delete-members=false.
+    If the category has no parent, and `delete-members` isn't provided, the request will fail.
+
+    Example request:
+    POST /api/delete-category/?id=2&delete-members
+
+    Example output:
+    {
+        "message": "Category members and category successfully deleted"
+    }
+    """
+    category_id = request.args["id"]
+    delete_members = request.args.get("delete-members")
+
+    category = db_helpers.select_one("SELECT * FROM Categories WHERE id = ?", [category_id])
+    if delete_members is None:
+        parent_id = category['parent_id']
+        if parent_id is None:
+            return jsonify({"error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
+        else:
+            # Reassign wildlife to the parent category
+            db_helpers.update("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
+            # Reassign the subcategories to the parent category
+            db_helpers.update("UPDATE Categories SET parent_id = ? WHERE parent_id = ?", [parent_id, category_id])
+            # Delete the category
+            db_helpers.delete("DELETE FROM Categories WHERE id = ?", [category_id])
+            return jsonify({"message": "Category members successfully reassigned and category deleted"}), 200
+    else:
+        category_ids = get_subcategory_ids([category_id])
+        # Delete the members
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        # Delete the category and its subcategories
+        db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        return jsonify({"message": "Category members and category successfully deleted"}), 200
+
+
+@app.route("/api/delete-wildlife/", methods=["DELETE"])
+def delete_wildlife():
+    """
+    Deletes a wildlife instance by ID.
+
+    Example request:
+    DELETE /api/delete-wildlife/?id=3
+
+    Example output:
+    {
+        "message": "Wildlife successfully deleted"
+    }
+    """
+    wildlife_id = request.args["id"]
+    n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    if n_rows == 0:
+        return jsonify({"error": "Wildlife not found"}), 404
+    return jsonify({"message": "Wildlife successfully deleted"}), 200
+
+
+@app.route("/api/search-wildlife-by-integer-field/", methods=["GET"])
+def search_wildlife_by_integer_field():
+    """
+Searches wildlife records by any specified integer field. This can be used to search for records with an exact value, within a range (greater than a minimum value, less than a maximum value, or between a minimum and maximum value).
+
+Requires:
+- 'field_id': The ID of the integer field to search on.
+- 'exact_value': (Optional) The exact value to search for. Cannot be used with min_value or max_value.
+- 'min_value': (Optional) The minimum value to search for. Use alone for greater than queries or with max_value for range queries.
+- 'max_value': (Optional) The maximum value to search for. Use alone for less than queries or with min_value for range queries.
+Note: 'field_id' is required. Either 'exact_value' or one/both of 'min_value' and 'max_value' must be provided. It's not valid to provide 'exact_value' together with 'min_value' or 'max_value'.
+
+Returns a JSON structure with a 'results' key containing search results.
+
+Example request for an exact value search (searching for wildlife with a wingspan (where wingspan has a field_id of 7) of exactly 17 inches):
+GET /api/search-wildlife-by-integer-field/?field_id=7&exact_value=17
+
+Example request for a range value search (searching for wildlife with a wingspan greater than 15 inches but less than 30 inches):
+GET /api/search-wildlife-by-integer-field/?field_id=7&min_value=15&max_value=30
+
+Example output (for the exact value search, formatted as a JSON response):
+{
+  "results": [
+    {
+      "id": 12,
+      "category_id": 4,
+      "name": "Common Sparrow",
+      "scientific_name": "Passer domesticus"
+    }
+  ]
+}
+
+Example output (for the range value search, formatted as a JSON response):
+{
+  "results": [
+    {
+      "id": 8,
+      "category_id": 4,
+      "name": "American Goldfinch",
+      "scientific_name": "Spinus tristis"
+    },
+    {
+      "id": 9,
+      "category_id": 4,
+      "name": "Eastern Bluebird",
+      "scientific_name": "Sialia sialis"
+    }
+  ]
+}
+"""
+    field_id = request.args.get("field_id", type=int)
+    exact_value = request.args.get("exact_value", type=int, default=None)
+    min_value = request.args.get("min_value", type=int, default=None)
+    max_value = request.args.get("max_value", type=int, default=None)
+
+    if field_id is None:
+        return jsonify({"error": "field_id is required"}), 400
+    field_info = db_helpers.select_one("SELECT * FROM Fields WHERE id = ? AND type = 'INTEGER'", (field_id,))
+    if not field_info:
+        return jsonify({"error": "Invalid field ID or field is not of type INTEGER"}), 400
+
+    if exact_value is not None and (min_value is not None or max_value is not None):
+        return jsonify({"error": "Cannot specify exact_value together with min_value or max_value"}), 400
+
+    sql_query = "SELECT w.* FROM Wildlife w JOIN FieldValues fv ON w.id = fv.wildlife_id WHERE fv.field_id = ?"
+    params = [field_id]
+
+    if exact_value is not None:
+        sql_query += " AND fv.value = ?"
+        params.append(str(exact_value))
+    else:
+        if min_value is not None:
+            sql_query += " AND fv.value > ?"
+            params.append(str(min_value))
+        if max_value is not None:
+            sql_query += " AND fv.value < ?"
+            params.append(str(max_value))
+
+    results = db_helpers.select_multiple(sql_query, params)
+    return jsonify(results), 200
 
 
 if __name__ == "__main__":
