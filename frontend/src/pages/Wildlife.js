@@ -18,6 +18,8 @@ export const Wildlife = () => {
             "Habitat": "Forests and grasslands",
             "Population": 500000,
             "image" : "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTBAKIkM3DWkkaLxTeim4Vq_Id0yJm_6iCFD55DV8ghGtKjI33t",
+            "color" : "brown",
+            "location" : "boulder",
         },
         {
             "id": 2,
@@ -27,6 +29,16 @@ export const Wildlife = () => {
             "Habitat": "Urban and wild areas",
             "Diet": "Omnivore",
             "image" : "https://cdn.britannica.com/95/206395-050-02B81B30/Red-fox-Vulpes-vulpes.jpg",
+            "color" : "red",
+            "location" : "boulder",
+        },
+        {
+            "id": 3,
+            "category_id": 5,
+            "name": "Adobe Hills Thistle",
+            "scientific_name": "Cirsium perplexans",
+            "image" : "https://conps.org/wp-content/gallery/foothills-rare-plant-gallery/cache/Cirsium-perplexans-Lyon.jpg-nggid041280-ngg0dyn-480x320x100-00f0w010c011r110f110r010t010.jpg",
+            "color" : "purple",
         }
     ]
 
@@ -75,7 +87,7 @@ export const Wildlife = () => {
                     "id": 1,
                     "name": "Color",
                     "type": "TEXT",
-                    "options": ["red","white","black","yellow"]
+                    "options": ["red","white","brown","purple"]
                 },
                 {
                     "id": 2,
@@ -83,16 +95,10 @@ export const Wildlife = () => {
                     "type": "TEXT",
                     "options" : ["boulder","longmont"]
                 },
-                {
-                    "id": 3,
-                    "name": "Wingspan",
-                    "type": "INTEGER",
-                    "options" : []
-                }
             ]
         }
-), []
-    )
+    ), [])
+
     const [categories,setCategories] = useState([])
     const [fields,setFields] = useState([])
     const [results, setResults] = useState(wildlifeData)

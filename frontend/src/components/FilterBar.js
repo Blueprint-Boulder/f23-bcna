@@ -127,30 +127,36 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     const toggleFieldFilter = (field, option) => {
         // Make a copy of the current filters object
         const updatedFilters = { ...filters };
-    
+        
         // Convert the field to lowercase
         const lowercaseField = field.toLowerCase();
-    
-        // Check if the lowercase field exists in the filters object
-        if (lowercaseField in updatedFilters) {
-            // Check if the option is already selected
-            const index = updatedFilters[lowercaseField].indexOf(option);
-            if (index !== -1) {
-                // If the option is selected, remove it
-                updatedFilters[lowercaseField].splice(index, 1);
-            } else {
-                // If the option is not selected, add it
-                updatedFilters[lowercaseField].push(option);
+        
+        // Initialize the field array if it doesn't exist
+        if (!updatedFilters[lowercaseField]) {
+            updatedFilters[lowercaseField] = [];
+        }
+        
+        // Find the index of the option in the array
+        const index = updatedFilters[lowercaseField].indexOf(option);
+        
+        if (index !== -1) {
+            // If the option is selected, remove it
+            updatedFilters[lowercaseField].splice(index, 1);
+            
+            // If the array is empty after removal, delete the key from filters
+            if (updatedFilters[lowercaseField].length === 0) {
+                delete updatedFilters[lowercaseField];
             }
         } else {
-            // If the lowercase field does not exist, initialize it as an array with the selected option
-            updatedFilters[lowercaseField] = [option];
+            // If the option is not selected, add it
+            updatedFilters[lowercaseField].push(option);
         }
-    
+        
         // Update the state with the updated filters object
         setFilters(updatedFilters);
-        console.log(filters)
+        console.log(updatedFilters)
     };
+    
     
 
     const handleResetFilters = () => {
