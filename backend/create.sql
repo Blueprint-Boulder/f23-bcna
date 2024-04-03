@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS FieldValues (
     PRIMARY KEY (wildlife_id, field_id)
 );
 
-CREATE TABLE IF NOT EXISTS CategoricalOptions (
+CREATE TABLE IF NOT EXISTS EnumeratedOptions (
     id INTEGER PRIMARY KEY,
     field_id INTEGER NOT NULL,
     option_value TEXT NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS CategoricalOptions (
     UNIQUE (field_id, option_value)
 );
 
-CREATE TABLE IF NOT EXISTS CategoricalFieldValues (
+CREATE TABLE IF NOT EXISTS EnumeratedFieldValues (
     wildlife_id INTEGER NOT NULL,
     option_id INTEGER NOT NULL,
     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
