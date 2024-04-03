@@ -9,62 +9,27 @@ import apiService from "../services/apiService"
 export const Wildlife = () => {
 
     // Dummy data for testing
-    const data = [
+    const wildlifeData = [
         {
-            id: 0,
-            name: "Two-Tailed Swallowtail",
-            subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/09/Swallowtail_Two-tailed_CFriedman.jpg",
-            category_id: 4,
-            color: "yellow",
-            location: "boulder"
+            "id": 1,
+            "category_id": 2,
+            "name": "European Hedgehog",
+            "scientific_name": "Erinaceus europaeus",
+            "Habitat": "Forests and grasslands",
+            "Population": 500000,
+            "image" : "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTBAKIkM3DWkkaLxTeim4Vq_Id0yJm_6iCFD55DV8ghGtKjI33t",
         },
         {
-            id: 1,
-            name: "Western Tiger Swallowtail",
-            subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL1.jpe",
-            category_id: 4,
-            color : "yellow",
-            location: "longmont"
-        },
-        {
-            id: 2,
-            name: "Black Swallowtail",
-            subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/10/Swallowtail_Black-female_SJones.jpg",
-            category_id: 4,
-            color: "black",
-            location : "longmont"
-        },
-        {
-            id: 3,
-            name: "Pine White",
-            subcategory: "Invertebrate",
-            image: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/PINE_WHITE1.jpe",
-            category_id: 4,
-            color: "white",
-            location : "boulder"
-        },
-        {
-            id: 3,
-            name: "Arctic Fox",
-            subcategory: "Invertebrate",
-            image: "https://cdn.britannica.com/23/178223-050-2EA8AA51/Arctic-fox.jpg",
-            category_id: 3,
-            color: "white",
-            location : "boulder"
-        },
-        {
-            id: 3,
-            name: "Red Fox",
-            subcategory: "Invertebrate",
-            image: "https://cdn.britannica.com/95/206395-050-02B81B30/Red-fox-Vulpes-vulpes.jpg",
-            category_id: 3,
-            color: "red",
-            location : "boulder"
-        },
+            "id": 2,
+            "category_id": 4,
+            "name": "Red Fox",
+            "scientific_name": "Vulpes vulpes",
+            "Habitat": "Urban and wild areas",
+            "Diet": "Omnivore",
+            "image" : "https://cdn.britannica.com/95/206395-050-02B81B30/Red-fox-Vulpes-vulpes.jpg",
+        }
     ]
+
 
 
 
@@ -80,30 +45,30 @@ export const Wildlife = () => {
                         {
                             "id" : 2,
                             "field_ids": [3, 1, 2],
-                            "name": "Birds",
-                            "subcategories": [
-                                {
-                                    "id" : 5,
-                                    "field_ids" : [],
-                                    "name" : "Sparrows",
-                                    "subcategories" : []
-                                },
-                                {
-                                    "id" : 6,
-                                    "field_ids" : [],
-                                    "name" : "Ostriches",
-                                    "subcategories" : []
-                                },
-                            ]
+                            "name": "Hedgehogs",
+                            "subcategories": []
                         },
                         {
                             "id" : 3,
                             "field_ids": [1, 2],
-                            "name": "Cats",
-                            "subcategories": []
+                            "name": "Woodland",
+                            "subcategories": [
+                                {
+                                    "id" : 4,
+                                    "field_ids" : [],
+                                    "name" : "Foxes",
+                                    "subcategories" : []
+                                }
+                            ]
                         }
                     ]
-                }
+                },
+                {
+                    "id" : 5,
+                    "field_ids": [],
+                    "name": "Plants",
+                    "subcategories": [],
+                },
             ],
             "fields": [
                 {
@@ -130,7 +95,7 @@ export const Wildlife = () => {
     )
     const [categories,setCategories] = useState([])
     const [fields,setFields] = useState([])
-    const [results, setResults] = useState(data)
+    const [results, setResults] = useState(wildlifeData)
     const [displayType, setDisplayType] = useState("cards")
     const [filters, setFilters] = useState({
         category: [],
@@ -139,6 +104,7 @@ export const Wildlife = () => {
     // Current page and results per page states
     const [currentPage, setCurrentPage] = useState(1);
     const [resultsPerPage, setResultsPerPage] = useState(5); // Number of results per page
+
 
 
     // Fetch categories and fields only once when the component mounts
@@ -236,7 +202,7 @@ export const Wildlife = () => {
 
 
         // Filter results based on selected category
-        let filteredResults = [...data];
+        let filteredResults = [...wildlifeData];
         if (filters.category.length > 0) {
             filteredResults = filteredResults.filter(result => filters.category.includes(result.category_id));
         }
@@ -325,9 +291,11 @@ export const Wildlife = () => {
             />
             {/* Search Bar */}
             <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <SearchBar className=""/>
+                <SearchBar className="" />
             </div>
         </div>
+
+        
 
         
     
