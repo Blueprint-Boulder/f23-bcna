@@ -36,6 +36,22 @@ const apiService = {
   },
 
 
+  searchWildlifeNames: async (query, categoryIds = []) => {
+    try {
+        // Construct the parameters object
+        let params = new URLSearchParams();
+        params.append('query', query);
+        
+        // If categoryIds are provided, append each one to the params
+        categoryIds.forEach(id => params.append('category_id', id));
+
+        // Make the GET request with axios, including the parameters
+        const response = await axios.get(`/api/search-wildlife-names/`, { params: params });
+        return response.data; // Return the data from the response
+    } catch (error) {
+        handleError(error);
+    }
+},
 
 
 

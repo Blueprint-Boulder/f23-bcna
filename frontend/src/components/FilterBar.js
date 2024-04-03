@@ -49,20 +49,25 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     const selectCategory = (categoryId) => {
         const updatedFilters = { ...filters };
         const category = findCategoryById(categories, categoryId);
-        console.log(category)
         if (category) {
-            console.log('hey(:')
             // Check if the category is already selected
             if (!updatedFilters.category.includes(categoryId)) {
-                console.log("category not selected yet")
-                updatedFilters.category = [...updatedFilters.category, categoryId];
-                console.log(updatedFilters)
+                // Add the selected category ID
+                updatedFilters.category.push(categoryId);
+                // Recursively add all subcategory IDs
+                const addSubcategoryIds = (subcategories) => {
+                    subcategories.forEach(subcategory => {
+                        updatedFilters.category.push(subcategory.id);
+                        if (subcategory.subcategories.length > 0) {
+                            addSubcategoryIds(subcategory.subcategories);
+                        }
+                    });
+                };
+                addSubcategoryIds(category.subcategories);
             }
         }
-        console.log("Updating filters:")
-        console.log(updatedFilters)
+        // Update the filters with the new list of category IDs
         setFilters(updatedFilters);
-        console.log(filters)
     };
     
     // Handles deselection of category filter - deselects category AS WELL AS its subcategories
@@ -149,9 +154,19 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     
 
     const handleResetFilters = () => {
-        // TODO
+        // Set the filters back to the initial state
+        // Assuming the initial state of filters is an object with an empty array for `category`
+        setFilters({
+            category: [],
+            // If there are other filter types, you can reset them as well
+            // color: [],
+            // location: [],
+            // ...
+        });
+        
+        // Also, if you have expanded filters you want to collapse, reset them as well
+        setExpandedFilters([]);
     }
-    
     
     
       
