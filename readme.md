@@ -18,6 +18,7 @@ More information can be found in the [More Details Section](#more-details)
 #### Frontend
 - Start from the root directory of the project
 - Run `cd frontend` in your terminal
+- Run `npm i` to install frontend packages like TailwindCSS
 - Run `npm start` and the app should now be running on `localhost:3000`
 - NOTE: you will NOT see any data from the database unless you also follow steps to run the backend
 
