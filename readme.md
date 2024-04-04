@@ -1,13 +1,12 @@
 # Boulder County Nature Association Project
 ---
 
-# Table of Contents
+## Table of Contents
 - [Summary](#summary)
 - [Running The App Locally](#running-the-app-locally)
 - [Contributing Code](#contributing-code)
 
-# Summary
-
+## Summary
 This project composes of two main components: a wildlife search engine that can sort and filter results based on various attributes such as name, color, and habitat, and an administrative platform to add, edit, and delete data.
 
 The goal is for people to be able to learn more about the local wildlife in Boulder County, but the technology can be adapted to wildlife anywhere. Our database is structured into categories, and each wildlife entry belongs to a category. Categories contain fields which organize relevant information for each category of animals, whether that be wingspan for birds or favorite food for bears. 
@@ -15,15 +14,14 @@ The goal is for people to be able to learn more about the local wildlife in Boul
 More information can be found in the [More Details Section](#more-details)
 
 
-# Running The App Locally
-
-### Frontend
+## Running The App Locally
+#### Frontend
 - Start from the root directory of the project
 - Run `cd frontend` in your terminal
 - Run `npm start` and the app should now be running on `localhost:3000`
 - NOTE: you will NOT see any data from the database unless you also follow steps to run the backend
 
-### Backend
+#### Backend
 - Start from the root directory of the project
 - Run `cd backend` in your terminal (you may need to create a new terminal if you're also running the frontend)
 - Run `source venv/bin/activate` to activate the venv and have access to all our dependencies
@@ -32,8 +30,7 @@ More information can be found in the [More Details Section](#more-details)
 
 
 
-# Contributing Code
-
+## Contributing Code
 - To start, clone the repository onto your local machine. 
 - If you already have the repo but haven't updated in a while, make sure to run `git pull origin main` to get the latest changes to main before creating a new branch
 - Create your branch with `git checkout -b branch-name` , replacing branch name with your name and what you're working on
@@ -54,8 +51,7 @@ Once your code is pushed to your remote branch, you can open a pull request.
 
 
 
-# More Details
-
+## More Details
 Categories are hierarchal such that you can have a category like "Animals" which contains subcategories like "Mammals, Birds," etc depending on how you want to organize the data. Fields will be inherited from parent categories so that all categories of butterflies can share the same fields.
 
 Our technology stack includes...
