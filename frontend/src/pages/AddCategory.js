@@ -9,7 +9,7 @@ export default function AddCategory() {
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await fetch('/api/get-categories/');
+            const response = await fetch('http://127.0.0.1:5000/api/get-categories/');
             const data = await response.json();
             setCategories(data);
           } catch (error) {
@@ -26,7 +26,7 @@ export default function AddCategory() {
         try {
 
           const formData = new FormData(event.target);
-          const response = await fetch('/api/create-category/', {
+          const response = await fetch('http://127.0.0.1:5000/api/create-category/', {
             method: 'POST',
             body: formData,
           });
@@ -59,9 +59,9 @@ export default function AddCategory() {
                         />
                         <label htmlFor="parent">Parent Category</label>
                         <select className="mt-1 mb-8 w-full rounded-md border-gray-300 shadow-sm
-                             focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="parent" name="parent_id"
+                             focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="parent" name="parent_id" defaultValue="default"
                         >
-                            <option value="" disabled selected>--Select if applicable--</option>
+                            <option value="default" disabled>--Select if applicable--</option>
                             {categories.map(category => (
                             <option key={category.id} value={category.id}>
                                 {category.name}

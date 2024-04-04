@@ -1,4 +1,7 @@
-// src/services/api.js
+// currently not using this but preserving it in case we want to restructure later
+
+
+/*// src/services/api.js
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:5000'
@@ -26,4 +29,4 @@ const apiService = {
 
 };
 
-export default apiService;
+export default apiService; */
