@@ -9,7 +9,7 @@ const CardResult = ({ data }) => {
         {/* Details underneath */}
         <div className="flex flex-col">
           {/* Name */}
-          <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.name}`}>{data.name}</Link>
+          <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.id}`}>{data.name}</Link>
           
           {/* Subcategory */}
           <p className="text-sm">{data.subcategory}</p>

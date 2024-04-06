@@ -4,6 +4,14 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     
     // Expanded filters are the expandable rows in the filter bar, including Category and shared fields between results
     const [expandedFilters, setExpandedFilters] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState([]);
+
+
+    /* ------------------------------------------------------------------------------------------
+                                HELPER FUNCTIONS
+    ------------------------------------------------------------------------------------------ */
+
+  
 
     // Helper function that capitalizes the first letter of a word
     function capitalizeFirstLetter(word) {
@@ -44,40 +52,94 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         return null;
     };
 
+    const findParentCategory = (categories, categoryId) => {
+        for (let category of categories) {
+            // Check if the current category's subcategories include the categoryId
+            if (category.subcategories.some(subcategory => subcategory.id === categoryId)) {
+                // If found, return the current category
+                return category;
+            }
+            // If the category has subcategories, recursively search them
+            if (category.subcategories.length > 0) {
+                const parentCategory = findParentCategory(category.subcategories, categoryId);
+                if (parentCategory) {
+                    return parentCategory;
+                }
+            }
+        }
+        // If no parent category found, return null
+        return null;
+    };
+    
 
-    // Handles selection of category filter (e.g. Animals) - will only add selected category to filters
+
+    /* ------------------------------------------------------------------------------------------
+                                    Categories  
+    ------------------------------------------------------------------------------------------ */
+
+  
+    
     const selectCategory = (categoryId) => {
+        console.log('SELECT CATEGORY!')
         const updatedFilters = { ...filters };
+        const updatedSelectedCategories = [...selectedCategories]; // Copy the selectedCategories array
         const category = findCategoryById(categories, categoryId);
         if (category) {
-            // Check if the category is already selected
-            if (!updatedFilters.category.includes(categoryId)) {
-                // Add the selected category ID
+            // Add the selected category ID to filters
+            if (!updatedFilters.category.includes(categoryId)){
                 updatedFilters.category.push(categoryId);
-                // Recursively add all subcategory IDs
-                const addSubcategoryIds = (subcategories) => {
-                    subcategories.forEach(subcategory => {
-                        updatedFilters.category.push(subcategory.id);
-                        if (subcategory.subcategories.length > 0) {
-                            addSubcategoryIds(subcategory.subcategories);
-                        }
-                    });
-                };
-                addSubcategoryIds(category.subcategories);
+            } 
+            if(!updatedSelectedCategories.includes(categoryId)) {
+                updatedSelectedCategories.push(categoryId);
+            }
+    
+            // Add all subcategories (children) to updatedFilters.category recursively
+            const addSubcategories = (subcategories) => {
+                subcategories.forEach((subcategory) => {
+                    updatedFilters.category.push(subcategory.id); // Add the subcategory ID to filters
+                    if (subcategory.subcategories.length > 0) {
+                        addSubcategories(subcategory.subcategories); // Recursively add subcategories
+                    }
+                });
+            };
+            addSubcategories(category.subcategories);
+    
+            // Get parent category of category and go through the category's siblings
+            const parentCategory = findParentCategory(categories, categoryId);
+            if (parentCategory) {
+                parentCategory.subcategories.forEach((sibling) => {
+                    // If sibling is in both selectedCategories and filters.categories, keep sibling in filters.categories
+                    if (updatedSelectedCategories.includes(sibling.id) && !updatedFilters.category.includes(sibling.id)) {
+                        updatedFilters.category.push(sibling.id);
+                    }
+                    // If sibling is in filters.categories but not in selectedCategories, remove sibling from filters.categories
+                    if (!updatedSelectedCategories.includes(sibling.id) && updatedFilters.category.includes(sibling.id)) {
+                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling.id);
+                    }
+                });
             }
         }
         // Update the filters with the new list of category IDs
         setFilters(updatedFilters);
+        // Update the selectedCategories state
+        setSelectedCategories(updatedSelectedCategories);
+        console.log('Filter categories:')
+        console.log(updatedFilters);
+        console.log('Selected categories:')
+        console.log(updatedSelectedCategories)
     };
     
+    
+
+
     // Handles deselection of category filter - deselects category AS WELL AS its subcategories
     const deselectCategory = (categoryId) => {
         const updatedFilters = { ...filters };
         const category = findCategoryById(categories, categoryId);
+    
         if (category) {
-            // Deselect the category and its parent
+            // Remove the category and its subcategories from filters.category
             updatedFilters.category = updatedFilters.category.filter((catId) => catId !== categoryId);
-            // Deselect all subcategories
             const deselectSubcategories = (subcategories) => {
                 subcategories.forEach((subcategory) => {
                     updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory.id);
@@ -87,15 +149,36 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 });
             };
             deselectSubcategories(category.subcategories);
+    
+            // Remove the category and its subcategories from selectedCategories
+            let updatedSelectedCategories = [...selectedCategories].filter((catId) => catId !== categoryId);
+            const deselectSubcategoriesFromSelected = (subcategories) => {
+                subcategories.forEach((subcategory) => {
+                    updatedSelectedCategories = updatedSelectedCategories.filter((catId) => catId !== subcategory.id);
+                    if (subcategory.subcategories.length > 0) {
+                        deselectSubcategoriesFromSelected(subcategory.subcategories);
+                    }
+                });
+            };
+            deselectSubcategoriesFromSelected(category.subcategories);
+    
+            // Update the state with the updated filters and selectedCategories
+            setFilters(updatedFilters);
+            setSelectedCategories(updatedSelectedCategories);
+            console.log('Filter categories:')
+            console.log(updatedFilters);
+            console.log('Selected categories:')
+            console.log(updatedSelectedCategories)
         }
-        setFilters(updatedFilters);
     };
+    
+
     
 
     // Renders categoryies and their subcategories recursively and adds styling to indicate hierarchy
     const renderCategoryFilters = (categories, level) => {
         const marginLeft = 10 * level;
-
+    
         return (
             <div className="flex flex-col">
                 {categories.map((category) => (
@@ -111,7 +194,7 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                                         deselectCategory(category.id);
                                     }
                                 }}
-                                checked={filters.category.includes(category.id)}
+                                checked={selectedCategories.includes(category.id)}
                                 className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out checked:bg-light-blue"
                             />
                             <label className="ml-2 text-gray-700">{category.name}</label>
@@ -122,6 +205,14 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             </div>
         );
     };
+
+
+
+    /* ------------------------------------------------------------------------------------------
+                                        FIELDS
+    ------------------------------------------------------------------------------------------ */
+
+  
 
     // When option under shared field is selected, updates filters
     const toggleFieldFilter = (field, option) => {
@@ -210,6 +301,12 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         ));
     };
 
+
+    /* ------------------------------------------------------------------------------------------
+                                    Render Display 
+    ------------------------------------------------------------------------------------------ */
+
+  
 
       
 
