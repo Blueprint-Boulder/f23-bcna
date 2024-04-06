@@ -10,19 +10,6 @@ import EditCategory from './pages/EditCategory';
 
 function App() {
 
-  const test = {
-    name: "Western Tiger Swallowtail",
-    scientificName: "Papilio rutulus",
-    family: "Swallowtails",
-    description: "boldly colored black and yellow with four broad black stripes crossing the forewing and the innermost stripe continuing across the hindwing. The trailing edges of both wings have broad black margins with yellow crescents.",
-    images: [
-      {file: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL1.jpe", alt: "aerial view of wings"},
-      {file: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL3.jpe", alt: "test"},
-      {file: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/WESTERN_TIGER_SWALLOWTAIL4.jpe", alt: "test"},
-      {file: "https://coloradofrontrangebutterflies.com/wp-content/uploads/2022/09/Swallowtail_Western_CCook.jpg", alt: "test"}
-    ]
-  }
-
   return (
     <div className="App">
       <Router>
@@ -31,7 +18,7 @@ function App() {
             <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
             <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
             <Route path="/wildlife" element={<Wildlife/>} />
-            <Route path="/wildlife-details" element={<WildlifeDetails wildlife={test}/>} /> {/* TEMP SOLUTION TO VISUALIZE DESIGN*/}
+            <Route path="/wildlife/:id" element={<WildlifeDetails/>} /> 
             <Route path="/admin" element={<Admin />} />
             <Route path="/add-category" element={<AddCategory />} />
             <Route path="/add-wildlife" element={<AddWildlife />} />
