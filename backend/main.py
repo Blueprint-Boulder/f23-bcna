@@ -398,9 +398,8 @@ def get_categories_and_fields():
             category_obj = {
                 "id": category['id'],
                 "name": category['name'],
-                "field_ids": combined_field_ids,  # Now includes inherited fields
+                "field_ids": combined_field_ids,
                 "subcategories": construct_category_structure(category['id'], combined_field_ids)
-                # Pass combined fields to subcategories
             }
             category_list.append(category_obj)
 
@@ -434,22 +433,32 @@ def get_wildlife():
             "category_id": 2,
             "name": "European Hedgehog",
             "scientific_name": "Erinaceus europaeus",
-            "Habitat": "Forests and grasslands",
-            "Population": 500000
+            "field_values": [
+                {
+                    "field_id": 1,
+                    "value": "Forests and grasslands"
+                },
+                {
+                    "field_id": 2,
+                    "value": 500000
+                }
+            ]
         },
         {
             "id": 2,
             "category_id": 3,
             "name": "Red Fox",
             "scientific_name": "Vulpes vulpes",
-            "field-values" :
-            {
-                "field_id" : 2,
-                "value": "Urban and wild areas",
-            },
-            {
-                "field_id" : 7,
-                "value": "Omnivore",
+
+            "field_values": {
+                {
+                    "field_id": 1,
+                    "value": "Urban and wild areas"
+                },
+                {
+                    "field_id": 3,
+                    "value": "Omnivore"
+                }
             }
         }
     ]
@@ -458,7 +467,7 @@ def get_wildlife():
     out = []
     for wildlife in all_wildlife:
         field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?", [wildlife["id"]])
-        cleaned_field_values = {}
+        cleaned_field_values = []
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
             if field["type"] == "TEXT":
@@ -467,9 +476,8 @@ def get_wildlife():
                 field_value = int(fv["value"])
             else:
                 raise NotImplementedError("Unsupported field type")
-            cleaned_field_values[str(field["name"])] = field_value
-        out.append({**wildlife, **cleaned_field_values})
-    print(out)
+            cleaned_field_values.append({"field_id": field["id"], "value": field_value})
+        out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
 
 
