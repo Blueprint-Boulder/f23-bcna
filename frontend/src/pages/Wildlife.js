@@ -8,135 +8,57 @@ import apiService from "../services/apiService"
 
 export const Wildlife = () => {
 
-    // Dummy data for testing
-    const wildlifeData = [
-        {
-            "id": 1,
-            "category_id": 2,
-            "name": "European Hedgehog",
-            "scientific_name": "Erinaceus europaeus",
-            "Habitat": "Forests and grasslands",
-            "Population": 500000,
-            "image" : "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTBAKIkM3DWkkaLxTeim4Vq_Id0yJm_6iCFD55DV8ghGtKjI33t",
-            "color" : "brown",
-            "location" : "boulder",
-        },
-        {
-            "id": 2,
-            "category_id": 4,
-            "name": "Red Fox",
-            "scientific_name": "Vulpes vulpes",
-            "Habitat": "Urban and wild areas",
-            "Diet": "Omnivore",
-            "image" : "https://cdn.britannica.com/95/206395-050-02B81B30/Red-fox-Vulpes-vulpes.jpg",
-            "color" : "red",
-            "location" : "boulder",
-        },
-        {
-            "id": 3,
-            "category_id": 5,
-            "name": "Adobe Hills Thistle",
-            "scientific_name": "Cirsium perplexans",
-            "image" : "https://conps.org/wp-content/gallery/foothills-rare-plant-gallery/cache/Cirsium-perplexans-Lyon.jpg-nggid041280-ngg0dyn-480x320x100-00f0w010c011r110f110r010t010.jpg",
-            "color" : "purple",
-        }
-    ]
+    /* ------------------------------------------------------------------------------------------
+                                        VARIABLES 
+    ------------------------------------------------------------------------------------------ */
 
-
-
-
-    // List of categories to filter by with their respective keys and subcategories
-    const categoriesAndFields = useMemo(() => (
-        {
-            "categories": [
-                {
-                    "id" : 1,
-                    "field_ids": [1, 2],
-                    "name": "Animals",
-                    "subcategories": [
-                        {
-                            "id" : 2,
-                            "field_ids": [3, 1, 2],
-                            "name": "Hedgehogs",
-                            "subcategories": []
-                        },
-                        {
-                            "id" : 3,
-                            "field_ids": [1, 2],
-                            "name": "Woodland",
-                            "subcategories": [
-                                {
-                                    "id" : 4,
-                                    "field_ids" : [],
-                                    "name" : "Foxes",
-                                    "subcategories" : []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id" : 5,
-                    "field_ids": [],
-                    "name": "Plants",
-                    "subcategories": [],
-                },
-            ],
-            "fields": [
-                {
-                    "id": 1,
-                    "name": "Color",
-                    "type": "TEXT",
-                    "options": ["red","white","brown","purple"]
-                },
-                {
-                    "id": 2,
-                    "name": "Location",
-                    "type": "TEXT",
-                    "options" : ["boulder","longmont"]
-                },
-            ]
-        }
-    ), [])
-
+    const [wildlifeData,setWildlifeData] = useState([]);
     const [categories,setCategories] = useState([])
     const [fields,setFields] = useState([])
     const [results, setResults] = useState(wildlifeData)
     const [displayType, setDisplayType] = useState("cards")
-    const [filters, setFilters] = useState({
-        category: [],
-    })
+    const [filters, setFilters] = useState({category: []})
     const [sortBy,setSortBy] = useState('name')
-    // Current page and results per page states
     const [currentPage, setCurrentPage] = useState(1);
-    const [resultsPerPage, setResultsPerPage] = useState(5); // Number of results per page
+    const [resultsPerPage, setResultsPerPage] = useState(5);
 
 
 
     // Fetch categories and fields only once when the component mounts
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchWildlifeData = async () => {
             try {
-                //const { categories, fields } = await apiService.getCategoriesAndFields();
-                setCategories(categoriesAndFields.categories);
-                setFields(categoriesAndFields.fields);
+                const data = await apiService.getAllWildlife();
+                setWildlifeData(data);
+                console.log(data)
             } catch (error) {
-                console.error("Error fetching categories and fields:", error);
+                console.error("Error fetching wildlife data:", error);
             }
         };
 
-        fetchData();
+        const fetchCategoriesAndFields = async () => {
+            try {
+                const data = await apiService.getCategoriesAndFields();
+                setCategories(data.categories);
+                setFields(data.fields);
+                console.log(data);
+            } catch (error) {
+                console.error("Error fetching categories and fields:" , error)
+            }
+        };
+
+        fetchWildlifeData();
+        fetchCategoriesAndFields();
+
+
 
         // Cleanup function not needed as it's not relevant here
     }, []);
 
 
-    /**
-     * 
-     * SORTING
-     * 
-     */
-
+    /* ------------------------------------------------------------------------------------------
+                                        SORTING 
+    ------------------------------------------------------------------------------------------ */
 
 
 
@@ -162,11 +84,9 @@ export const Wildlife = () => {
 
 
 
-    /**
-     * 
-     * PAGINATION
-     * 
-     */
+    /* ------------------------------------------------------------------------------------------
+                                        PAGINATION 
+    ------------------------------------------------------------------------------------------ */
     
 
     
@@ -196,11 +116,9 @@ export const Wildlife = () => {
       
 
 
-    /**
-     * 
-     * DISPLAY
-     * 
-     */
+    /* ------------------------------------------------------------------------------------------
+                                RESULT RENDERING / DISPLAY 
+    ------------------------------------------------------------------------------------------ */
 
     
     // Function that handles rendering of results (handles pagination,displayType,sorting)
@@ -244,10 +162,7 @@ export const Wildlife = () => {
                         </thead>
                         <tbody>
                             {currentResults.map((result, index) => (
-                                <tr key={index} className={index % 2 === 0 ? 'bg-gray-100' : 'bg-white'}>
-                                    <td className="px-4 py-2">{result.name}</td>
-                                    <td className="px-4 py-2">{result.subcategory}</td>
-                                </tr>
+                                <GridResult key={index} data={result}/>
                             ))}
                         </tbody>
                     </table>
@@ -276,6 +191,9 @@ export const Wildlife = () => {
 
 
 
+    /* ------------------------------------------------------------------------------------------
+                                        HTML 
+    ------------------------------------------------------------------------------------------ */
 
   
 
@@ -309,7 +227,7 @@ export const Wildlife = () => {
         <div className="search-results flex mx-20 my-10 gap-5">
 
             {/* Filter Bar */}
-            { categoriesAndFields !== undefined ?
+            { categories !== undefined ?
                 <div className="search-results__filters w-1/4">
                     <FilterBar categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
                 </div>
@@ -324,13 +242,15 @@ export const Wildlife = () => {
 
 
                     {/* Results Nav - Display Type, Sorting, and Pagination */}
-                    <div className="flex flex-row justify-between items-center p-3 rounded-md bg-light-blue bg-opacity-40 mb-4"
->
+                    <div className="flex flex-row justify-between items-center p-3 rounded-md bg-light-blue bg-opacity-40 mb-4">
+
 
                         {/* Number of Results */}
                         <div className="">
                             <p className="text-gray-700">{results.length} results</p>
                         </div>
+
+
 
                         {/* Display Type Selection */}
                         <div className="flex items-center space-x-2">
@@ -341,6 +261,8 @@ export const Wildlife = () => {
                         </div>
 
 
+
+
                         {/* Sort By Selection */}
                         <div className="flex items-center space-x-1">
                             <p className="text-gray-700">Sort by:</p>
@@ -348,13 +270,10 @@ export const Wildlife = () => {
                                 <select className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500">
                                     <option value="name">Name</option>
                                 </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10.707 14.293a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L10 12.586l3.293-3.293a1 1 0 1 1 1.414 1.414l-4 4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
                             </div>
                         </div>
+
+
 
                         {/* Pagination Element */}
                         <div className="flex items-center space-x-1">
@@ -365,15 +284,11 @@ export const Wildlife = () => {
                                     value={resultsPerPage}
                                     onChange={handleResultsPerPageChange}
                                 >
+                                    <option value={1}>1</option>
                                     <option value={5}>5</option>
                                     <option value={10}>10</option>
                                     <option value={20}>20</option>
                                 </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10.707 14.293a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L10 12.586l3.293-3.293a1 1 0 1 1 1.414 1.414l-4 4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
                         </div>
 
 
@@ -401,7 +316,7 @@ export const Wildlife = () => {
                         </div>
 
                     </div>
-                    </div>
+                </div>
 
 
                     {/* Results */}

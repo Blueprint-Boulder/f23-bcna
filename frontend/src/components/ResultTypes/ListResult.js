@@ -9,7 +9,7 @@ const ListResult = ({ data }) => {
         {/* Details on the right */}
         <div className="flex flex-col">
           {/* Name at the top in larger font */}
-          <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.name}`}>{data.name}</Link>
+          <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.id}`}>{data.name}</Link>
           
           {/* Subcategory under the name */}
           <p className="text-sm">{data.subcategory}</p>

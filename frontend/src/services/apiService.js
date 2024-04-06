@@ -1,3 +1,6 @@
+// currently not using this but preserving it in case we want to restructure later
+
+
 // src/services/api.js
 import axios from 'axios';
 
@@ -51,10 +54,29 @@ const apiService = {
     } catch (error) {
         handleError(error);
     }
-},
+  },
+
+  getAllWildlife: async () => {
+    try {
+      const response = await api.get(`/api/get-wildlife`);
+      return response.data
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+
+  getWildlifeById: async (wildlifeId) => {
+    try {
+      const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  }
 
 
 
 };
 
-export default apiService;
+export default apiService; 
