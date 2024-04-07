@@ -449,6 +449,7 @@ def get_wildlife():
             "category_id": 3,
             "name": "Red Fox",
             "scientific_name": "Vulpes vulpes",
+
             "field_values": {
                 {
                     "field_id": 1,
