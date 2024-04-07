@@ -132,7 +132,6 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     
 
 
-    // Handles deselection of category filter - deselects category AS WELL AS its subcategories
     const deselectCategory = (categoryId) => {
         const updatedFilters = { ...filters };
         const category = findCategoryById(categories, categoryId);
@@ -162,6 +161,24 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             };
             deselectSubcategoriesFromSelected(category.subcategories);
     
+            // Check if all siblings of the category have been deselected
+            const parentCategory = findParentCategory(categories, categoryId);
+            if (parentCategory) {
+                const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling.id));
+                if (allSiblingsDeselected) {
+                    // Add all subcategory children of the parent to filters
+                    const addSubcategoryIds = (subcategories) => {
+                        subcategories.forEach((subcategory) => {
+                            updatedFilters.category.push(subcategory.id);
+                            if (subcategory.subcategories.length > 0) {
+                                addSubcategoryIds(subcategory.subcategories);
+                            }
+                        });
+                    };
+                    addSubcategoryIds(parentCategory.subcategories);
+                }
+            }
+    
             // Update the state with the updated filters and selectedCategories
             setFilters(updatedFilters);
             setSelectedCategories(updatedSelectedCategories);
@@ -171,6 +188,7 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             console.log(updatedSelectedCategories)
         }
     };
+    
     
 
     
@@ -282,24 +300,30 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 </div>
                 {expandedFilters.includes(field.name) && (
                     <div className="flex flex-col w-3/4">
-                        {field.options.map((option) => (
-                            <label className="flex items-center" key={option}>
-                                {/* Ensure onChange passes event parameter */}
-                                <input 
-                                    type="checkbox" 
-                                    className="form-checkbox" 
-                                    onChange={(e) => toggleFieldFilter(field.name, option, e.target.checked)} 
-                                    // Check if option is included in filters[field.name]
-                                    checked={filters[field.name] && filters[field.name].includes(option)}
-                                />
-                                <span className="ml-2">{capitalizeFirstLetter(option)}</span>
-                            </label>
-                        ))}
+                        {/* Check if the field type is INTEGER or other */}
+                        {field.type === "INTEGER" ? (
+                            // Render a range input for INTEGER type
+                            <input type="range" min="0" max="100" step="1" />
+                        ) : (
+                            // Render checkboxes for other types
+                            field.options.map((option) => (
+                                <label className="flex items-center" key={option}>
+                                    <input 
+                                        type="checkbox" 
+                                        className="form-checkbox" 
+                                        onChange={(e) => toggleFieldFilter(field.name, option, e.target.checked)} 
+                                        checked={filters[field.name] && filters[field.name].includes(option)}
+                                    />
+                                    <span className="ml-2">{capitalizeFirstLetter(option)}</span>
+                                </label>
+                            ))
+                        )}
                     </div>
                 )}
             </div>
         ));
     };
+    
 
 
     /* ------------------------------------------------------------------------------------------
