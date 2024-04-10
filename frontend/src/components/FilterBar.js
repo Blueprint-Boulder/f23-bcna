@@ -1,39 +1,40 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export const FilterBar = ({ categories, fields, filters, setFilters }) => {
-    
-    // Expanded filters are the expandable rows in the filter bar, including Category and shared fields between results
-    const [expandedFilters, setExpandedFilters] = useState([]);
+    // State for selected categories
     const [selectedCategories, setSelectedCategories] = useState([]);
 
+    // State for shared fields
+    const [sharedFields, setSharedFields] = useState([]);
 
-    /* ------------------------------------------------------------------------------------------
-                                HELPER FUNCTIONS
-    ------------------------------------------------------------------------------------------ */
+    // State for expanded filters
+    const [expandedFilters, setExpandedFilters] = useState([]);
 
-  
+    // useEffect to call updateSharedFields whenever selectedCategories changes
+    useEffect(() => {
+        updateSharedFields();
+    }, [selectedCategories]);
 
-    // Helper function that capitalizes the first letter of a word
+    useEffect(() => {
+        console.log("filters:")
+        console.log(filters)
+    },[filters])
+
+    // Helper function to capitalize the first letter of a word
     function capitalizeFirstLetter(word) {
-        // Check if the input is a string and not empty
         if (typeof word !== 'string' || word.length === 0) {
-            return word; // Return the input unchanged if it's not a string or empty
+            return word;
         }
-        
-        // Capitalize the first letter and concatenate it with the rest of the word
         return word.charAt(0).toUpperCase() + word.slice(1);
     }
 
-    // When selecting expand button on filter row, will update expandedFilters
+    // Handler for expanding/collapsing filter rows
     const handleExpandFilter = (filterName) => {
         if (expandedFilters.includes(filterName)) {
             setExpandedFilters(expandedFilters.filter((filter) => filter !== filterName));
         } else {
             setExpandedFilters([...expandedFilters, filterName]);
         }
-        // CULPRIT
-        console.log(`handle expand filter ${filterName}`)
-        console.log(filters)
     };
 
     // Recurses through wildlife categories to find category with given id
@@ -54,12 +55,9 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
 
     const findParentCategory = (categories, categoryId) => {
         for (let category of categories) {
-            // Check if the current category's subcategories include the categoryId
             if (category.subcategories.some(subcategory => subcategory.id === categoryId)) {
-                // If found, return the current category
                 return category;
             }
-            // If the category has subcategories, recursively search them
             if (category.subcategories.length > 0) {
                 const parentCategory = findParentCategory(category.subcategories, categoryId);
                 if (parentCategory) {
@@ -67,77 +65,52 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 }
             }
         }
-        // If no parent category found, return null
         return null;
     };
-    
 
-
-    /* ------------------------------------------------------------------------------------------
-                                    Categories  
-    ------------------------------------------------------------------------------------------ */
-
-  
-    
     const selectCategory = (categoryId) => {
-        console.log('SELECT CATEGORY!')
         const updatedFilters = { ...filters };
-        const updatedSelectedCategories = [...selectedCategories]; // Copy the selectedCategories array
+        const updatedSelectedCategories = [...selectedCategories];
         const category = findCategoryById(categories, categoryId);
         if (category) {
-            // Add the selected category ID to filters
             if (!updatedFilters.category.includes(categoryId)){
                 updatedFilters.category.push(categoryId);
             } 
             if(!updatedSelectedCategories.includes(categoryId)) {
                 updatedSelectedCategories.push(categoryId);
             }
-    
-            // Add all subcategories (children) to updatedFilters.category recursively
+
             const addSubcategories = (subcategories) => {
                 subcategories.forEach((subcategory) => {
-                    updatedFilters.category.push(subcategory.id); // Add the subcategory ID to filters
+                    updatedFilters.category.push(subcategory.id);
                     if (subcategory.subcategories.length > 0) {
-                        addSubcategories(subcategory.subcategories); // Recursively add subcategories
+                        addSubcategories(subcategory.subcategories);
                     }
                 });
             };
             addSubcategories(category.subcategories);
-    
-            // Get parent category of category and go through the category's siblings
+
             const parentCategory = findParentCategory(categories, categoryId);
             if (parentCategory) {
                 parentCategory.subcategories.forEach((sibling) => {
-                    // If sibling is in both selectedCategories and filters.categories, keep sibling in filters.categories
                     if (updatedSelectedCategories.includes(sibling.id) && !updatedFilters.category.includes(sibling.id)) {
                         updatedFilters.category.push(sibling.id);
                     }
-                    // If sibling is in filters.categories but not in selectedCategories, remove sibling from filters.categories
                     if (!updatedSelectedCategories.includes(sibling.id) && updatedFilters.category.includes(sibling.id)) {
                         updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling.id);
                     }
                 });
             }
         }
-        // Update the filters with the new list of category IDs
         setFilters(updatedFilters);
-        // Update the selectedCategories state
         setSelectedCategories(updatedSelectedCategories);
-        console.log('Filter categories:')
-        console.log(updatedFilters);
-        console.log('Selected categories:')
-        console.log(updatedSelectedCategories)
     };
-    
-    
-
 
     const deselectCategory = (categoryId) => {
         const updatedFilters = { ...filters };
         const category = findCategoryById(categories, categoryId);
-    
+
         if (category) {
-            // Remove the category and its subcategories from filters.category
             updatedFilters.category = updatedFilters.category.filter((catId) => catId !== categoryId);
             const deselectSubcategories = (subcategories) => {
                 subcategories.forEach((subcategory) => {
@@ -148,8 +121,7 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 });
             };
             deselectSubcategories(category.subcategories);
-    
-            // Remove the category and its subcategories from selectedCategories
+
             let updatedSelectedCategories = [...selectedCategories].filter((catId) => catId !== categoryId);
             const deselectSubcategoriesFromSelected = (subcategories) => {
                 subcategories.forEach((subcategory) => {
@@ -160,13 +132,11 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 });
             };
             deselectSubcategoriesFromSelected(category.subcategories);
-    
-            // Check if all siblings of the category have been deselected
+
             const parentCategory = findParentCategory(categories, categoryId);
             if (parentCategory) {
                 const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling.id));
                 if (allSiblingsDeselected) {
-                    // Add all subcategory children of the parent to filters
                     const addSubcategoryIds = (subcategories) => {
                         subcategories.forEach((subcategory) => {
                             updatedFilters.category.push(subcategory.id);
@@ -178,25 +148,45 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                     addSubcategoryIds(parentCategory.subcategories);
                 }
             }
-    
-            // Update the state with the updated filters and selectedCategories
+
             setFilters(updatedFilters);
             setSelectedCategories(updatedSelectedCategories);
-            console.log('Filter categories:')
-            console.log(updatedFilters);
-            console.log('Selected categories:')
-            console.log(updatedSelectedCategories)
         }
     };
-    
-    
 
-    
 
-    // Renders categoryies and their subcategories recursively and adds styling to indicate hierarchy
+    // Helper function to update shared fields based on selected categories
+    const updateSharedFields = () => {
+        const fieldCount = {};
+        selectedCategories.forEach(categoryId => {
+            const category = findCategoryById(categories, categoryId);
+            if (category) {
+                category.field_ids.forEach(fieldId => {
+                    fieldCount[fieldId] = (fieldCount[fieldId] || 0) + 1;
+                });
+            }
+        });
+        const newSharedFields = fields.filter(field => fieldCount[field.id] === selectedCategories.length);
+        setSharedFields(newSharedFields);
+    };
+
+    // Helper function to handle toggling of field filters
+    // const toggleFieldFilter = (field, option, value) => {
+        
+    // };
+
+
+    // Helper function to reset all filters
+    const handleResetFilters = () => {
+        setSelectedCategories([]);
+        setSharedFields([]);
+        setFilters({ category: [] });
+        setExpandedFilters([]);
+    };
+
+    // Helper function to render category filters recursively
     const renderCategoryFilters = (categories, level) => {
         const marginLeft = 10 * level;
-    
         return (
             <div className="flex flex-col">
                 {categories.map((category) => (
@@ -224,74 +214,10 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         );
     };
 
-
-
-    /* ------------------------------------------------------------------------------------------
-                                        FIELDS
-    ------------------------------------------------------------------------------------------ */
-
-  
-
-    // When option under shared field is selected, updates filters
-    const toggleFieldFilter = (field, option) => {
-        // Make a copy of the current filters object
-        const updatedFilters = { ...filters };
-        
-        // Convert the field to lowercase
-        const lowercaseField = field.toLowerCase();
-        
-        // Initialize the field array if it doesn't exist
-        if (!updatedFilters[lowercaseField]) {
-            updatedFilters[lowercaseField] = [];
-        }
-        
-        // Find the index of the option in the array
-        const index = updatedFilters[lowercaseField].indexOf(option);
-        
-        if (index !== -1) {
-            // If the option is selected, remove it
-            updatedFilters[lowercaseField].splice(index, 1);
-            
-            // If the array is empty after removal, delete the key from filters
-            if (updatedFilters[lowercaseField].length === 0) {
-                delete updatedFilters[lowercaseField];
-            }
-        } else {
-            // If the option is not selected, add it
-            updatedFilters[lowercaseField].push(option);
-        }
-        
-        // Update the state with the updated filters object
-        setFilters(updatedFilters);
-        console.log(updatedFilters)
-    };
-    
-    
-
-    const handleResetFilters = () => {
-        // Set the filters back to the initial state
-        // Assuming the initial state of filters is an object with an empty array for `category`
-        setFilters({
-            category: [],
-            // If there are other filter types, you can reset them as well
-            // color: [],
-            // location: [],
-            // ...
-        });
-        
-        // Also, if you have expanded filters you want to collapse, reset them as well
-        setExpandedFilters([]);
-    }
-    
-    
-      
-
-
-    // Renders shared fields as well as their respective options
+    // Helper function to render field filters
     const renderFieldFilters = () => {
-        return fields.map((field) => (
+        return sharedFields.map((field) => (
             <div key={field.id}>
-                <hr className="my-2 border-t border-gray-300 w-3/4" />
                 <div className="flex flex-row justify-between w-3/4">
                     <h5 className="text-lg font-bold">{capitalizeFirstLetter(field.name)}</h5>
                     <button className="text-lg" onClick={() => handleExpandFilter(field.name)}>
@@ -302,8 +228,55 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                     <div className="flex flex-col w-3/4">
                         {/* Check if the field type is INTEGER or other */}
                         {field.type === "INTEGER" ? (
-                            // Render a range input for INTEGER type
-                            <input type="range" min="0" max="100" step="1" />
+                            <div className="flex items-center p-3">
+                                <input 
+                                    type="number" 
+                                    placeholder="Min" 
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        const updatedFilters = { ...filters };
+                                        const fieldId = field.id;
+                                        const lowercaseField = field.name ? field.name.toLowerCase() : "";
+                            
+                                        if (!updatedFilters[lowercaseField]) {
+                                            updatedFilters[lowercaseField] = {};
+                                        }
+                            
+                                        updatedFilters[lowercaseField]["range"] = [
+                                            value,
+                                            filters[lowercaseField]?.["range"]?.[1] || "min"
+                                        ];
+                            
+                                        setFilters(updatedFilters);
+                                    }} 
+                                    value={filters[field.name]?.["range"]?.[0] || ""} 
+                                    className="form-input w-1/2 mr-2" 
+                                />
+                                <input 
+                                    type="number" 
+                                    placeholder="Max" 
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        const updatedFilters = { ...filters };
+                                        const fieldId = field.id;
+                                        const lowercaseField = field.name ? field.name.toLowerCase() : "";
+                            
+                                        if (!updatedFilters[lowercaseField]) {
+                                            updatedFilters[lowercaseField] = {};
+                                        }
+                            
+                                        updatedFilters[lowercaseField]["range"] = [
+                                            filters[lowercaseField]?.["range"]?.[0] || "max",
+                                            value
+                                        ];
+                            
+                                        setFilters(updatedFilters);
+                                    }} 
+                                    value={filters[field.name]?.["range"]?.[1] || ""} 
+                                    className="form-input w-1/2" 
+                                />
+                            </div>
+                        
                         ) : (
                             // Render checkboxes for other types
                             field.options.map((option) => (
@@ -311,8 +284,21 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                                     <input 
                                         type="checkbox" 
                                         className="form-checkbox" 
-                                        onChange={(e) => toggleFieldFilter(field.name, option, e.target.checked)} 
-                                        checked={filters[field.name] && filters[field.name].includes(option)}
+                                        onChange={(e) => {
+                                            const isChecked = e.target.checked;
+                                            const updatedFilters = { ...filters };
+                                            const fieldId = field.id;
+                                            const lowercaseField = field.name ? field.name.toLowerCase() : "";
+
+                                            if (!updatedFilters[lowercaseField]) {
+                                                updatedFilters[lowercaseField] = {};
+                                            }
+
+                                            updatedFilters[lowercaseField][option] = isChecked;
+
+                                            setFilters(updatedFilters);
+                                        }} 
+                                        checked={filters[field.name] && filters[field.name][option]} // Assuming the field name is lowercase
                                     />
                                     <span className="ml-2">{capitalizeFirstLetter(option)}</span>
                                 </label>
@@ -320,52 +306,38 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                         )}
                     </div>
                 )}
+                <hr className="my-2 border-t border-gray-300 w-3/4" />
             </div>
         ));
     };
-    
 
-
-    /* ------------------------------------------------------------------------------------------
-                                    Render Display 
-    ------------------------------------------------------------------------------------------ */
-
-  
-
-      
-
-    // If no categories or fields defined, no FilterBar returned
-    if(categories === undefined && fields === undefined){
-        return (null)
-    }
-
-    // FilterBar
+    // Render the component
     return (
-        <div class="flex flex-col items-left text-left">
-            <div class="my-2">
-                <h3 class="text-lg font-bold">Filter by</h3>
+        <div className="flex flex-col items-left text-left">
+            <div className="my-2">
+                <h3 className="text-lg font-bold">Filter by</h3>
             </div>
 
             <div className="flex flex-col">
-                <hr class="my-2 border-t border-gray-300 w-3/4" />
-                <div class="flex flex-row justify-between w-3/4">
-                    <h5 for="categoryFilter" class="text-lg font-bold">
+                <hr className="my-2 border-t border-gray-300 w-3/4" />
+                <div className="flex flex-row justify-between w-3/4">
+                    <h5 htmlFor="categoryFilter" className="text-lg font-bold">
                         Category
                     </h5>
-                    <button class="text-lg" onClick={() => handleExpandFilter("Category")}>
+                    <button className="text-lg" onClick={() => handleExpandFilter("Category")}>
                         {expandedFilters.includes("Category") ? "-" : "+"}
                     </button>
                 </div>
                 {expandedFilters.includes("Category") ? renderCategoryFilters(categories, 1) : null}
+                <hr className="my-2 border-t border-gray-300 w-3/4" />
             </div>
 
             <div>{renderFieldFilters()}</div>
 
             <br/>
-
             <button 
-            className="text-left underline text-gray-600"
-            onClick={handleResetFilters}>
+                className="text-left underline text-gray-600"
+                onClick={handleResetFilters}>
                 Reset all filters
             </button>
         </div>
