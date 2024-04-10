@@ -19,6 +19,7 @@ export const Wildlife = () => {
         const fetchData = async () => {
             try {
                 const data = await apiService.getAllWildlife();
+                console.log(data)
                 setWildlifeData(data);
             } catch (error) {
                 console.error("Error fetching wildlife data:", error);
@@ -82,8 +83,8 @@ export const Wildlife = () => {
                     <table className="table-auto w-full">
                         <thead className="bg-gray-300 text-black">
                             <tr>
-                                <th className="px-4 py-2 text-left">Name</th>
-                                <th className="px-4 py-2 text-left">Subcategory</th>
+                                <th className="text-left">Name</th>
+                                <th className="text-left">Subcategory</th>
                             </tr>
                         </thead>
                         <tbody>
