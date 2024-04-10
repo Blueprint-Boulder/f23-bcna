@@ -1,0 +1,99 @@
+/* FooterStyles.css */
+
+  .footer-container {
+	background: #dbe7c5;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between; /* Align content to the start */
+	align-items: center; /* Align items to the start of the container, if you want text to be left-aligned */
+	text-align: center; /* Align text to the left */
+	padding-top: 3%;
+  }
+  
+  .footer-heading {
+	font-size: 34px;
+	color: #73903c;
+	margin-bottom: 40px;
+	font-weight: bold;
+  }
+  
+  .footer-row {
+	display: flex;
+	justify-content: space-around;
+	flex-wrap: wrap;
+  }
+  
+  .footer-column {
+	display: flex;
+	flex-direction: column;
+	align-items: left;
+	margin: 0 40px;
+	margin-bottom: 30px;
+  }
+  
+  .footer-column h3 {
+	margin-bottom: 20px;
+	font-size: 24px;
+	color: #73903c;
+  }
+  
+  .footer-column ul {
+	list-style: none;
+	padding: 0;
+  }
+  
+  .footer-link {
+	color: #73903c;
+	margin-bottom: 10px;
+	font-size: 18px;
+	text-decoration: none;
+  }
+  
+  .footer-link:hover {
+	color: #2e3a18;
+	transition: 200ms ease-in;
+  }
+
+  .footer-bottom-container {
+	background-color: #73903c;
+	color: white;
+	text-align: center;
+	padding: 10px 0;
+	width: 100%
+  }
+
+  .footer-image-container {
+	background-color: #dbe7c5;
+	color: white;
+	text-align: center;
+	padding: 10px 0;
+	width: 100%;
+	display: flex; /* Use flex display to align children side by side */
+	justify-content: center; /* Center the items horizontally */
+	flex-wrap: wrap; /* Allow items to wrap to the next line if the container is too small */
+	gap: 10px; /* Optional: Adds some space between the images */
+}
+
+.footer-image-container img {
+	width: 80px; /* Set a specific width for all images */
+	height: auto; /* Maintain aspect ratio */
+}
+  
+  .footer-bottom-text {
+	margin: 0;
+	padding: 0;
+	font-size: 16px;
+  }  
+  
+  @media (max-width: 1000px) {
+	.footer-row {
+	  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	}
+	.footer-box {
+	  padding: 70px 0;
+	}
+	.footer-column {
+	  margin-bottom: 20px;
+	}
+  }
+  
