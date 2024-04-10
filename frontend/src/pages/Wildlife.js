@@ -1,133 +1,217 @@
-import { SearchBar } from "../components/SearchBar"
+import { useEffect, useState } from "react";
+import { SearchBar } from "../components/SearchBar";
+import { FilterBar } from "../components/FilterBar";
+import { GridResult, ListResult, CardResult } from "../components/ResultTypes";
+import apiService from "../services/apiService";
 
 export const Wildlife = () => {
+    const [wildlifeData, setWildlifeData] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [fields, setFields] = useState([]);
+    const [results, setResults] = useState([]);
+    const [displayType, setDisplayType] = useState("cards");
+    const [filters, setFilters] = useState({ category: [] });
+    const [sortBy, setSortBy] = useState('name');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [resultsPerPage, setResultsPerPage] = useState(5);
 
-    // List of categories to filter by with their respective keys and subcategories
-    const categories = [
-        {
-            id: 0,
-            label: "Family",
-            subcategories: [
-                "Mammal",
-                "Bird",
-                "Reptile",
-                "Amphibian",
-                "Fish",
-                "Invertebrate"
-            ]
-        },
-        {
-            id: 1,
-            label: "Color",
-            subcategories: [
-                "Red",
-                "Orange",
-                "Yellow",
-                "Green"
-            ]
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await apiService.getAllWildlife();
+                setWildlifeData(data);
+            } catch (error) {
+                console.error("Error fetching wildlife data:", error);
+            }
+        };
+
+        const fetchCategoriesAndFields = async () => {
+            try {
+                const data = await apiService.getCategoriesAndFields();
+                setCategories(data.categories);
+                setFields(data.fields);
+            } catch (error) {
+                console.error("Error fetching categories and fields:", error);
+            }
+        };
+
+        fetchData();
+        fetchCategoriesAndFields();
+    }, []);
+
+    useEffect(() => {
+        const applyFilters = () => {
+            let filteredResults = [...wildlifeData];
+
+            // Filter by category
+            if (filters.category.length > 0) {
+                filteredResults = filteredResults.filter(result => filters.category.includes(result.category_id));
+            }
+
+            // Add additional filtering logic here for other filters
+
+            // Sort results
+            switch (sortBy) {
+                case 'name':
+                    filteredResults.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                default:
+                    // No sorting
+            }
+
+            setResults(filteredResults);
+        };
+
+        applyFilters();
+    }, [wildlifeData, filters, sortBy]);
+
+    const totalPages = Math.ceil(results.length / resultsPerPage);
+
+    const renderResults = () => {
+        const start = (currentPage - 1) * resultsPerPage;
+        const end = start + resultsPerPage;
+        const currentResults = results.slice(start, end);
+
+        if (currentResults.length === 0) {
+            return <p>No results found.</p>;
         }
-    ]
 
-    // List of results to display
-    const results = [
-        {}
-    ]
+        switch (displayType) {
+            case 'grid':
+                return (
+                    <table className="table-auto w-full">
+                        <thead className="bg-gray-300 text-black">
+                            <tr>
+                                <th className="px-4 py-2 text-left">Name</th>
+                                <th className="px-4 py-2 text-left">Subcategory</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentResults.map((result, index) => (
+                                <GridResult key={index} data={result}/>
+                            ))}
+                        </tbody>
+                    </table>
+                );
+            case 'list':
+                return currentResults.map((result, index) => (
+                    <ListResult key={index} data={result} />
+                ));
+            case 'cards':
+                return (
+                    <div className="grid grid-cols-3 gap-2">
+                        {currentResults.map((result, index) => (
+                            <div key={index} className="w-full">
+                                <CardResult data={result} />
+                            </div>
+                        ))}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
+    const handleResultsPerPageChange = (event) => {
+        setResultsPerPage(parseInt(event.target.value));
+        setCurrentPage(1);
+    };
 
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
 
     return (
         <>
-        {/* Image and Search Bar */}
-        <div className="wildlife relative text-center">
-        <img
-            src="http://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/inner5.jpg"
-            alt="Wildlife"
-            className="w-full"
-        />
-        <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <SearchBar className=""/>
-        </div>
-        </div>
-        {/* Search Results */}
-        <div className="search-results flex mx-20 my-10 gap-5">
-            <div className="search-results__filters w-1/4">
-
-                {/* Filter Search Results Options */}
-                <div class="flex flex-col items-left">
-                    {/* Title */}
-                    <div class="my-2">
-                        <label for="titleFilter" class="text-lg font-bold">Filter by</label>
+            <div className="wildlife relative text-center">
+                <img
+                    src="http://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/inner5.jpg"
+                    alt="Wildlife"
+                    className="w-full"
+                />
+                <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <SearchBar className="" />
+                </div>
+            </div>
+            <div className="search-results flex mx-20 my-10 gap-5">
+                {categories && (
+                    <div className="search-results__filters w-1/4">
+                        <FilterBar categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
                     </div>
-
-                    {/* Filter by category */}
-                    {categories.map((category) => {
-                        return (
-                            <div key={category.id}>
-                                <hr class="my-2 border-t border-gray-300 w-3/4"/>
-                                <div class="flex flex-row justify-between w-3/4">
-                                    <label for="categoryFilter" class="text-lg font-bold">{category.label}</label>
-                                    <button class="text-lg">+</button>
-                                </div>
-                                {/* Category subcategories */}
-                                <div class="flex flex-col items-left">
-                                    {category.subcategories.map((subcategory) => {
-                                        return (
-                                            <div key={subcategory}>
-                                                <label for={subcategory}>{subcategory}</label>
-                                            </div>
-                                        )
-                                    })}
+                )}
+                <div className="search-results__list w-3/4">
+                    <div className="flex flex-col">
+                        <div className="flex flex-row justify-between items-center p-3 rounded-md bg-light-blue bg-opacity-40 mb-4">
+                            <div className="">
+                                <p className="text-gray-700">{results.length} results</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <p className="text-gray-700">Display:</p>
+                                <button className="display-button" onClick={() => setDisplayType('grid')}>Grid</button>
+                                <button className="display-button" onClick={() => setDisplayType('list')}>List</button>
+                                <button className="display-button" onClick={() => setDisplayType('cards')}>Cards</button>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                <p className="text-gray-700">Sort by:</p>
+                                <div className="relative">
+                                    <select
+                                        className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                                        value={sortBy}
+                                        onChange={event => setSortBy(event.target.value)}
+                                    >
+                                        <option value="name">Name</option>
+                                    </select>
                                 </div>
                             </div>
-                        )
-                    })}
-                    {/* Final Horizontal Line */}
-                    <hr class="my-2 border-t border-gray-300 w-3/4"/>
-
-
-
-
-                </div>
-            </div>
-            {/* Search Results */}
-            <div className="search-results__list w-3/4">
-                <div className="flex flex-col">
-                    {/* Results Navigation */}
-                    <div className="flex flex-row justify-around">
-                        {/* Number of Results */}
-                        <div className="flex-1">
-                            <p># results</p>
-                        </div>
-                        
-                        {/* Sort by */}
-                        <div className="flex">
-                            <p>Sort by: </p>
-                            <p>Alphabetical</p>
-                        </div>
-
-                        {/* Page Navigation */}
-                        <div className="flex">
-                            <button>{"<"}</button>
-                            <p>1/12</p>
-                            <button>{">"}</button>
+                            <div className="flex items-center space-x-1">
+                                <p className="text-gray-700">Results per page:</p>
+                                <div className="relative">
+                                    <select
+                                        className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                                        value={resultsPerPage}
+                                        onChange={handleResultsPerPageChange}
+                                    >
+                                        <option value={1}>1</option>
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full"
+                                    onClick={goToPreviousPage}
+                                    disabled={currentPage === 1}
+                                >
+                                    {"<"}
+                                </button>
+                                <p className="text-gray-700">
+                                    {currentPage}/{totalPages}
+                                </p>
+                                <button
+                                    className="hover:bg-light-blue hover:text-white text-light-black font-bold py-2 px-4 rounded-full"
+                                    onClick={goToNextPage}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    {">"}
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    {/* Results */}
-                    <div className="flex flex-col">
-
-
-                        {/* Result */}
-                        <div className="flex flex-row border border-gray-300 p-4 rounded">
-                            {/* Butterfly result */}
-                            <img src="https://www.butterfliesandmoths.org/sites/default/files/styles/featured/public/featured/IMG_20190804_131724.jpg?itok=Z3Z3Z3Z3" alt="Butterfly" className="w-1/4"/>
-                        </div>
-
+                    <div className="text-left">
+                        {renderResults()}
                     </div>
-
                 </div>
             </div>
-        </div>
         </>
-    )
-}
+    );
+};

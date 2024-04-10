@@ -349,23 +349,23 @@ def get_categories_and_fields():
                 ]
             }
         ],
-        "fields": {
-            "5": {
+        "fields": [
+            {
                 "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
-            "2": {
+            {
                 "id": 2,
                 "name": "Note",
                 "type": "TEXT"
             },
-            "4": {
+            {
                 "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
-        }
+        ]
     }
     
     Here, the "Animals" category has the "Description" and "Note" text fields.
@@ -398,9 +398,8 @@ def get_categories_and_fields():
             category_obj = {
                 "id": category['id'],
                 "name": category['name'],
-                "field_ids": combined_field_ids,  # Now includes inherited fields
+                "field_ids": combined_field_ids,
                 "subcategories": construct_category_structure(category['id'], combined_field_ids)
-                # Pass combined fields to subcategories
             }
             category_list.append(category_obj)
 
@@ -408,10 +407,11 @@ def get_categories_and_fields():
 
     # Retrieve the fields
     all_fields = db_helpers.select_multiple("SELECT id, type, name FROM Fields")
-    fields_dict = {field['id']: field for field in all_fields}
+    fields_array = [{"id": field["id"], "name": field["name"], "type": field["type"]} for field in all_fields]
 
     categories_structure = construct_category_structure()
-    return jsonify({"categories": categories_structure, "fields": fields_dict}), 200
+    return jsonify({"categories": categories_structure, "fields": fields_array}), 200
+
 
 
 @app.route("/api/get-wildlife/", methods=["GET"])
@@ -433,16 +433,33 @@ def get_wildlife():
             "category_id": 2,
             "name": "European Hedgehog",
             "scientific_name": "Erinaceus europaeus",
-            "Habitat": "Forests and grasslands",
-            "Population": 500000
+            "field_values": [
+                {
+                    "field_id": 1,
+                    "value": "Forests and grasslands"
+                },
+                {
+                    "field_id": 2,
+                    "value": 500000
+                }
+            ]
         },
         {
             "id": 2,
             "category_id": 3,
             "name": "Red Fox",
             "scientific_name": "Vulpes vulpes",
-            "Habitat": "Urban and wild areas",
-            "Diet": "Omnivore"
+
+            "field_values": {
+                {
+                    "field_id": 1,
+                    "value": "Urban and wild areas"
+                },
+                {
+                    "field_id": 3,
+                    "value": "Omnivore"
+                }
+            }
         }
     ]
     """
@@ -450,7 +467,7 @@ def get_wildlife():
     out = []
     for wildlife in all_wildlife:
         field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?", [wildlife["id"]])
-        cleaned_field_values = {}
+        cleaned_field_values = []
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
             if field["type"] == "TEXT":
@@ -459,10 +476,52 @@ def get_wildlife():
                 field_value = int(fv["value"])
             else:
                 raise NotImplementedError("Unsupported field type")
-            cleaned_field_values[str(field["name"])] = field_value
-        out.append({**wildlife, **cleaned_field_values})
-    print(out)
+            cleaned_field_values.append({"field_id": field["id"], "value": field_value})
+        out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
+
+
+
+@app.route("/api/get-wildlife-by-id/<int:wildlife_id>", methods=["GET"])
+def get_wildlife_by_id(wildlife_id):
+    """
+    Retrieves wildlife by its ID.
+
+    Example request:
+    GET /api/get-wildlife-by-id/1
+
+    Example output:
+    {
+        "id": 1,
+        "category_id": 2,
+        "name": "European Hedgehog",
+        "scientific_name": "Erinaceus europaeus",
+        "Habitat": "Forests and grasslands",
+        "Population": 500000
+    }
+    """
+    wildlife = db_helpers.select_one("SELECT * FROM Wildlife WHERE id = ?", [wildlife_id])
+    if not wildlife:
+        return jsonify({"error": "Wildlife not found"}), 404
+
+    # Retrieve custom field values
+    field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    custom_fields = {fv["field_id"]: fv["value"] for fv in field_values}
+
+    # Retrieve field names
+    field_names = db_helpers.select_multiple("SELECT id, name FROM Fields")
+    field_names_dict = {field["id"]: field["name"] for field in field_names}
+
+    # Add custom field names and values to wildlife data
+    for field_id, value in custom_fields.items():
+        field_name = field_names_dict.get(field_id)
+        if field_name:
+            wildlife[field_name] = value
+
+    return jsonify(wildlife), 200
+
+
+
 
 
 @app.route("/api/create-field/", methods=["POST"])
