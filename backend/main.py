@@ -483,7 +483,7 @@ def get_wildlife():
 def create_field():
     """
     Creates a new field and associates it with zero or more categories.
-    Requires 'name', 'type', and 'category_id' (can be repeated for multiple categories).
+    Requires 'name' and 'type'. 'category_id' can be repeated for multiple categories.
 
     Example request:
     POST /api/create-field/
@@ -505,7 +505,7 @@ def create_field():
 
     for category_id in category_ids:
         # Check if category exists
-        category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
+        category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
         if not category_exists:
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
@@ -513,13 +513,59 @@ def create_field():
     if typ not in ("INTEGER", "TEXT"):
         return jsonify({"error": "Invalid field type. Allowed types are INTEGER and TEXT."}), 400
 
-    field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", (name, typ))
+    field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
     for category_id in category_ids:
         db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
-                          (field_id, category_id))
+                          [field_id, category_id])
 
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
+
+
+@app.route("/api/edit-field/", methods=["POST"])
+def edit_field():
+    """
+    Associates the field with zero or more new categories, provided by `new_category_id`. Keeps existing field-category associations.
+    'new_category_id' can be repeated for multiple categories.
+    `new_name` is optional, and changes the name of the field if provided.
+
+    Example request:
+    POST /api/edit-field/
+    Form Data: field_id=2, new_name=Habitat, new_category_id=1, new_category_id=2
+
+    Example output:
+    {
+        "message": "Field updated successfully",
+    }
+    """
+    field_id = request.form["field_id"]
+    new_name = request.form.get("new_name")
+    new_category_ids = request.form.getlist("new_category_id", type=int)
+
+    # Check if the field exists
+    field_exists = db_helpers.select_one("SELECT 1 FROM Fields WHERE id = ?", (field_id,))
+    if not field_exists:
+        return jsonify({"error": "Field not found"}), 400
+
+    # Verify all new categories exist and get the categories that are already associated with this field
+    existing_categories = set()
+    for category_id in new_category_ids:
+        if not db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,)):
+            return jsonify({"error": f"Category {category_id} not found"}), 400
+        # Check if the category is already associated with the field
+        if db_helpers.select_one("SELECT 1 FROM FieldsToCategories WHERE field_id = ? AND category_id = ?",
+                                 (field_id, category_id)):
+            existing_categories.add(category_id)
+
+    # Add the field to new categories, excluding already associated ones
+    for category_id in set(new_category_ids) - existing_categories:
+        db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
+                          (field_id, category_id))
+
+    if new_name:
+        db_helpers.update("UPDATE Fields SET name = ? WHERE id = ?", [new_name, field_id])
+
+    return jsonify({"message": "Field updated successfully"}), 200
 
 
 @app.route("/api/delete-category/", methods=["DELETE"])
