@@ -90,7 +90,8 @@ def create_wildlife():
     if wildlife_with_name_exists:
         return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
 
-    wildlife_with_scientific_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
+    wildlife_with_scientific_name_exists = db_helpers.select_multiple(
+        "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
     if wildlife_with_scientific_name_exists:
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
@@ -323,30 +324,29 @@ def get_categories_and_fields():
     """
     Retrieves all categories and their associated fields.
     The output format is complicated, so it's best to just look at the example below.
-    
+
     Example request:
     GET /api/get-categories-and-fields/
-    
+
     Example output:
-    
+
     {
         "categories": [
-            {
+            "3": {
                 "id": 3,
                 "field_ids": [5, 4],
                 "name": "Animals",
-                "subcategories": [
-                    {
-                        "field_ids": [3, 1, 2],
-                        "name": "Birds",
-                        "subcategories": []
-                    },
-                    {
-                        "field_ids": [1, 2],
-                        "name": "Cats",
-                        "subcategories": []
-                    }
-                ]
+                "subcategories": [6, 8]
+            },
+            "8": {
+                "field_ids": [5, 4, 2],
+                "name": "Birds",
+                "subcategories": []
+            },
+            "6": {
+                "field_ids": [5, 4],
+                "name": "Cats",
+                "subcategories": []
             }
         ],
         "fields": {
@@ -357,8 +357,8 @@ def get_categories_and_fields():
             },
             "2": {
                 "id": 2,
-                "name": "Note",
-                "type": "TEXT"
+                "name": "Average Lifespan",
+                "type": "INTEGER"
             },
             "4": {
                 "id": 4,
@@ -367,50 +367,63 @@ def get_categories_and_fields():
             }
         }
     }
-    
-    Here, the "Animals" category has the "Description" and "Note" text fields.
-    The "Birds" category is a subcategory of "Animals" and has the "Wingspan" integer field.
+
+    Here, the "Animals" category has the "Description" and "Average Lifespan" text fields.
+    The "Birds" category is a subcategory of "Animals" and has the extra field "Wingspan".
     The "Cats" category is a subcategory of "Animals" and has no extra fields.
-    In this example, there's only one top-level category (Animals) but it's possible for there to be multiple.
     Note that subcategories always inherit the field IDs of their parent; i.e. the field_ids of a subcategory is a superset of its parent's field_ids.
-    Also note that a category's field_ids might not be sorted. Don't rely on it being in any particular order.
+    Don't rely on things being in a particular order, e.g. don't assume field_ids are sorted.
     """
+    # The code here is pretty unreadable; if you're reading this and know what you're doing, feel free to clean it up
 
-    def construct_category_structure(category_id=None, inherited_field_ids=None):
-        if inherited_field_ids is None:
-            inherited_field_ids = []
+    category_data = db_helpers.select_multiple("SELECT * FROM Categories")
+    fields_to_categories = db_helpers.select_multiple("SELECT * FROM FieldsToCategories")
 
-        if category_id:
-            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id = ?",
-                                                    [category_id])
+    # Make a dict from categories to their fields
+    category_fields = {}
+    for entry in fields_to_categories:
+        if entry["category_id"] in category_fields:
+            category_fields[entry["category_id"]].append(entry["field_id"])
         else:
-            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id IS NULL")
+            category_fields[entry["category_id"]] = [entry["field_id"]]
 
-        category_list = []
-        for category in categories:
-            field_ids_row = db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?",
-                                                       [category["id"]])
-            field_ids = [row['field_id'] for row in field_ids_row]
+    category_dict = {}
+    # First pass: id, name, empty subcategories list, and parent ID (parent ID will be removed later)
+    for category in category_data:
+        category_dict[category["id"]] = {
+            "id": category["id"],
+            "name": category["name"],
+            "parent_id": category["parent_id"],
+            "subcategories": []
+        }
 
-            # Combine the current category's field_ids with those inherited from its parent
-            combined_field_ids = field_ids + inherited_field_ids
+    # Helper function for the second pass; gets all the field IDs that belong to a category
+    def get_field_ids(category_id):
+        category = category_dict[category_id]
+        immediate_ids = category_fields[category["id"]]
+        if category["parent_id"]:
+            return list(set(immediate_ids + get_field_ids(category["parent_id"])))  # list(set()) removes duplicates
+        else:
+            return immediate_ids
 
-            category_obj = {
-                "id": category['id'],
-                "name": category['name'],
-                "field_ids": combined_field_ids,
-                "subcategories": construct_category_structure(category['id'], combined_field_ids)
-            }
-            category_list.append(category_obj)
+    # Second pass: get subcategories and field IDs
+    for category in category_data:
+        if category["parent_id"]:
+            category_dict[category["parent_id"]]["subcategories"].append(category["id"])
+        category_dict[category["id"]]["field_ids"] = get_field_ids(category["id"])
 
-        return category_list
+    # Third pass: remove parent_id
+    for category_id in category_dict:
+        del category_dict[category_id]["parent_id"]
 
-    # Retrieve the fields
-    all_fields = db_helpers.select_multiple("SELECT id, type, name FROM Fields")
-    fields_dict = {field['id']: field for field in all_fields}
+    # Make fields
+    fields_dict = {}
+    fields_data = db_helpers.select_multiple("SELECT id, name, type FROM Fields")
+    for field in fields_data:
+        fields_dict[field["id"]] = field
 
-    categories_structure = construct_category_structure()
-    return jsonify({"categories": categories_structure, "fields": fields_dict}), 200
+    output = {"categories": category_dict, "fields": fields_dict}
+    return jsonify(output), 200
 
 
 @app.route("/api/get-wildlife/", methods=["GET"])
@@ -464,7 +477,8 @@ def get_wildlife():
     all_wildlife = db_helpers.select_multiple("SELECT * FROM Wildlife")
     out = []
     for wildlife in all_wildlife:
-        field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?", [wildlife["id"]])
+        field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?",
+                                                  [wildlife["id"]])
         cleaned_field_values = []
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
@@ -590,7 +604,8 @@ def delete_category():
     if delete_members is None:
         parent_id = category['parent_id']
         if parent_id is None:
-            return jsonify({"error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
+            return jsonify({
+                               "error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
         else:
             # Reassign wildlife to the parent category
             db_helpers.update("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
@@ -602,7 +617,8 @@ def delete_category():
     else:
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
-        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})",
+                          category_ids)
         # Delete the category and its subcategories
         db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
         return jsonify({"message": "Category members and category successfully deleted"}), 200
