@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+
+.display-button {
+  color: #666; /* Default text color */
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.display-button:hover,
+.display-button:focus {
+  color: black; /* Text color on hover or focus */
+}
