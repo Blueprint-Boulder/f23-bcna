@@ -6,12 +6,9 @@ app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
 
 
-@app.route("/api")
+@app.route("/api", methods=["GET"])
 def hello_world():
     """
-    Simple endpoint to check if the API is running.
-    Returns a greeting message.
-
     Example request:
     GET /api
     
@@ -19,6 +16,11 @@ def hello_world():
     "Hello, from Flask!"
     """
     return 'Hello, from Flask!'
+
+
+@app.route("/api/ping/", methods=["GET"])
+def ping():
+    return "Pong", 200
 
 
 def get_subcategory_ids(top_level_category_ids):
