@@ -489,6 +489,8 @@ def get_wildlife():
                 field_value = fv["value"]
             elif field["type"] == "INTEGER":
                 field_value = int(fv["value"])
+            elif field["type"] == "ENUM":
+                field_value = fv["value"]
             else:
                 raise NotImplementedError("Unsupported field type")
             cleaned_field_values.append({"field_id": field["id"], "value": field_value})
@@ -570,8 +572,8 @@ def create_field():
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
     # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER and TEXT."}), 400
+    if typ not in ("INTEGER", "TEXT", "ENUM"):
+        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, and ENUM."}), 400
 
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
