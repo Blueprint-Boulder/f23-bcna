@@ -351,23 +351,23 @@ def get_categories_and_fields():
                 "subcategories": []
             }
         ],
-        "fields": {
-            "5": {
+        "fields": [
+            {
                 "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
-            "2": {
+            {
                 "id": 2,
                 "name": "Average Lifespan",
                 "type": "INTEGER"
             },
-            "4": {
+            {
                 "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
-        }
+        ]
     }
 
     Here, the "Animals" category has the "Description" and "Average Lifespan" text fields.
