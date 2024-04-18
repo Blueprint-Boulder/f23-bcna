@@ -352,17 +352,17 @@ def get_categories_and_fields():
             }
         ],
         "fields": [
-            {
+            "5": {
                 "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
-            {
+            "2": {
                 "id": 2,
                 "name": "Average Lifespan",
                 "type": "INTEGER"
             },
-            {
+            "4": {
                 "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
@@ -388,6 +388,9 @@ def get_categories_and_fields():
             category_fields[entry["category_id"]].append(entry["field_id"])
         else:
             category_fields[entry["category_id"]] = [entry["field_id"]]
+    for category in category_data:
+        if category["id"] not in category_fields:
+            category_fields[category["id"]] = []
 
     category_dict = {}
     # First pass: id, name, empty subcategories list, and parent ID (parent ID will be removed later)
@@ -489,6 +492,8 @@ def get_wildlife():
                 field_value = fv["value"]
             elif field["type"] == "INTEGER":
                 field_value = int(fv["value"])
+            elif field["type"] == "ENUM":
+                field_value = fv["value"]
             else:
                 raise NotImplementedError("Unsupported field type")
             cleaned_field_values.append({"field_id": field["id"], "value": field_value})
@@ -570,8 +575,8 @@ def create_field():
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
     # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER and TEXT."}), 400
+    if typ not in ("INTEGER", "TEXT", "ENUM"):
+        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, and ENUM."}), 400
 
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
