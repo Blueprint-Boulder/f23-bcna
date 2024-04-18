@@ -1,9 +1,10 @@
 import { ActionButton } from "../components/ActionButton";
 import { useState, useEffect } from "react";
+import apiService from "../services/apiService";
 
 export default function EditCategory() {
 
-    const[categories, setCategories] = useState([]);
+    const[categories, setCategories] = useState({});
     const[selectedCategory, setSelectedCategory] = useState(null);
     const[fields, setFields] = useState({});
     const[displayedFields, setDisplayedFields] = useState([]);
@@ -20,8 +21,8 @@ export default function EditCategory() {
 
     const fetchData = async () => { // gets all categories and fields from the database with an API route
         try {
-          const response = await fetch('http://127.0.0.1:5000/api/get-categories-and-fields/');
-          const data = await response.json();
+          const data = await apiService.getCategoriesAndFields();
+          console.log(data)
           setCategories(data.categories);
           setFields(data.fields);
           console.log(data);
@@ -36,7 +37,7 @@ export default function EditCategory() {
 
     useEffect(() => {   // update selected category if data is changed (i.e. new field is added)
         if(selectedCategory){
-            setSelectedCategory(categories.find(cat => cat.id === selectedCategory.id));
+            setSelectedCategory(categories[selectedCategory.id]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [categories]);
@@ -72,7 +73,7 @@ export default function EditCategory() {
     }, [selectedCategory])
 
     const handleCategoryChange = (e) => {
-        setSelectedCategory(categories.find(cat => cat.id === parseInt(e.target.value)));
+        setSelectedCategory(categories[e.target.value]);
         console.log(selectedCategory);
     }
 
@@ -140,11 +141,11 @@ export default function EditCategory() {
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="catName" onChange={handleCategoryChange} defaultValue="default"
                         >
                             <option value="default" disabled defaultValue>--Select a Category--</option>
-                            {categories.map(category => (
+                            {Object.entries(categories).map(category => (
                             <option key={category.id} value={category.id}>
                                 {category.name}
                             </option>
-                            ))}
+                            ))} 
                         </select>
                         {selectedCategory && (
                             <>
@@ -213,3 +214,4 @@ export default function EditCategory() {
         </div>
     )
 }
+

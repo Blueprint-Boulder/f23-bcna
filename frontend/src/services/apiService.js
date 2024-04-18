@@ -38,6 +38,17 @@ const apiService = {
     }
   },
 
+  getCategories: async () => {
+    try {
+      const response = await api.get('/api/get-categories');
+      console.log("Response:")
+      console.log(response)
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
 
   searchWildlifeNames: async (query, categoryIds = []) => {
     try {
@@ -73,8 +84,16 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
-  }
+  },
 
+  createCategory: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-category/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  }
 
 
 };

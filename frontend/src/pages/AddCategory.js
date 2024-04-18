@@ -1,5 +1,6 @@
 import { ActionButton } from "../components/ActionButton";
 import { useState, useEffect } from "react";
+import apiService from "../services/apiService";
 
 export default function AddCategory() {
 
@@ -9,8 +10,7 @@ export default function AddCategory() {
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await fetch('http://127.0.0.1:5000/api/get-categories/');
-            const data = await response.json();
+            const data = await apiService.getCategories();
             setCategories(data);
           } catch (error) {
             console.error('Error fetching categories:', error);
@@ -26,18 +26,11 @@ export default function AddCategory() {
         try {
 
           const formData = new FormData(event.target);
-          const response = await fetch('http://127.0.0.1:5000/api/create-category/', {
-            method: 'POST',
-            body: formData,
-          });
+          const response = await apiService.createCategory(formData);
+          console.log(response);
           
-          if (!response.ok) {
-            throw new Error('Failed to create category');
-          }
-          else{
-            alert("Category created successfully!")
-            window.location.href = window.location.pathname
-          }     
+          alert("Category created successfully!")
+          window.location.href = window.location.pathname
 
         } catch (error) {
           console.error('Error creating category:', error);
