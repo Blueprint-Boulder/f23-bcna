@@ -36,7 +36,7 @@ export const NavBar = () => {
           <ul className="flex items-center space-x-4">
             <li>
               <NavLink
-                exact
+                exact="true"
                 to="/"
                 className={`hover:text-light-blue transition-all duration-300`}
               >
