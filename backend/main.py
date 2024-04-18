@@ -352,17 +352,17 @@ def get_categories_and_fields():
             }
         ],
         "fields": [
-            {
+            "5": {
                 "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
-            {
+            "2": {
                 "id": 2,
                 "name": "Average Lifespan",
                 "type": "INTEGER"
             },
-            {
+            "4": {
                 "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
@@ -388,6 +388,9 @@ def get_categories_and_fields():
             category_fields[entry["category_id"]].append(entry["field_id"])
         else:
             category_fields[entry["category_id"]] = [entry["field_id"]]
+    for category in category_data:
+        if category["id"] not in category_fields:
+            category_fields[category["id"]] = []
 
     category_dict = {}
     # First pass: id, name, empty subcategories list, and parent ID (parent ID will be removed later)
