@@ -457,7 +457,7 @@ def get_wildlife():
                 field_value = fv["value"]
             elif field["type"] == "INTEGER":
                 field_value = int(fv["value"])
-            elift field["type"] == "ENUM":
+            elif field["type"] == "ENUM":
                 field_value = fv["value"]
             else:
                 raise NotImplementedError("Unsupported field type")
