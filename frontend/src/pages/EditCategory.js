@@ -7,9 +7,10 @@ export default function EditCategory() {
     const[categories, setCategories] = useState({});
     const[selectedCategory, setSelectedCategory] = useState(null);
     const[fields, setFields] = useState({});
-    const[displayedFields, setDisplayedFields] = useState([]);
+    const[displayedFields, setDisplayedFields] = useState({});
     const[newField, setNewField] = useState("");
     const[addingField, setAddingField] = useState(false);
+    const[addingExistingField, setAddingExistingField] = useState(false);
     const[deleting, setDeleting] = useState(false);
     const[subDeletion, setSubDeletion] = useState({
         allowSubChoice: false,
@@ -22,7 +23,7 @@ export default function EditCategory() {
     const fetchData = async () => { // gets all categories and fields from the database with an API route
         try {
           const data = await apiService.getCategoriesAndFields();
-          console.log(data)
+          console.log(data);
           setCategories(data.categories);
           setFields(data.fields);
           console.log(data);
@@ -44,8 +45,9 @@ export default function EditCategory() {
     
     useEffect(() => {   // find fields and determine deletion options
         const findFields = () => {
-            const tempFields = []
-            selectedCategory.field_ids.forEach((currId) => tempFields.push(fields[currId]));
+            const tempFields = {}
+            selectedCategory.field_ids.forEach((currId) => tempFields[currId] = fields[currId]);
+            console.log("Selected Fields", tempFields);
             setDisplayedFields(tempFields);
         }
         if(selectedCategory){
@@ -77,6 +79,23 @@ export default function EditCategory() {
         console.log(selectedCategory);
     }
 
+    const addExistingField = async (event) => {
+       
+        event.preventDefault();
+    
+        try {
+
+          const formData = new FormData(event.target);
+          const response = await apiService.editField(formData);
+          console.log(response);
+          fetchData();
+          
+        } catch (error) {
+          console.error('Error editing field:', error);
+          alert('Failed to edit field');
+        }
+    }
+
     const addField = async (event) => {
        
         event.preventDefault();
@@ -84,18 +103,10 @@ export default function EditCategory() {
         try {
 
           const formData = new FormData(event.target);
-          const response = await fetch('http://127.0.0.1:5000/api/create-field/', {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to create field');
-          }
-          else{
-            fetchData();
-            setNewField("");
-          }     
+          const response = await apiService.createField(formData);
+          console.log(response);
+          fetchData();
+          setNewField(""); 
 
         } catch (error) {
           console.error('Error creating field:', error);
@@ -134,14 +145,14 @@ export default function EditCategory() {
             <div className="h-8"></div>
             <div className="bg-neutral-50 rounded-lg w-11/12 lg:w-3/5 mx-auto shadow-lg">
                 <h1 className="text-3xl font-bold mb-8 pt-4 text-center">Edit Category</h1>
-                <div className="w-11/12 flex flex-col items-center ilg:tems-start mx-auto">
+                <div className="w-11/12 flex flex-col items-center mx-auto">
                     <div className="w-full lg:w-3/5 mb-6">
                         <label htmlFor="catName">Category Name</label>
                         <select className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="catName" onChange={handleCategoryChange} defaultValue="default"
                         >
                             <option value="default" disabled defaultValue>--Select a Category--</option>
-                            {Object.entries(categories).map(category => (
+                            {Object.values(categories).map(category => (
                             <option key={category.id} value={category.id}>
                                 {category.name}
                             </option>
@@ -151,24 +162,47 @@ export default function EditCategory() {
                             <>
                                 <p>Current fields:</p>
                                 <ul className="mb-8">
-                                    {displayedFields.length > 0 ?
-                                        displayedFields.map(item => (
-                                        <li key={item.id}>{item.name}</li>))
+                                    {Object.keys(displayedFields).length > 0 ?
+                                        Object.values(displayedFields).map(item => (
+                                        <div className="flex flex-wrap gap-3 mt-2 mb-6 lg:mb-3 items-center">
+                                            <li key={item.id}>{item.name} ({item.type})</li>
+                                            <button className="bg-red-500 rounded-full inline px-4 py-1.5 lg:px-3 lg:py-0.5 text-white font-bold text-lg">-</button>
+                                        </div>))
                                      :
                                      <li key="None">None</li>
                                     }
                                 </ul>
                                 <hr className="w-11/12 md:w-48 h-1 mx-auto my-8 bg-gray-200 border-0 rounded md:my-10"></hr>
-                                {addingField ? 
+                                {addingExistingField && (
+                                    <form onSubmit={addExistingField}>
+                                    <label htmlFor="existing">Add an Existing Field</label>
+                                    <select className="mt-1 mb-8 w-full rounded-md border-gray-300 shadow-sm
+                                      focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="existing" name="field_id" defaultValue="default">
+                                        <option value="default" disabled defaultValue>--Select if Applicable--</option>
+                                        {Object.values(fields).map(field => (
+                                            displayedFields[field.id] ? <></> :
+                                                <option key={field.id} value={field.id}>
+                                                    {field.name} ({field.type})
+                                                </option>
+                                        ))} 
+                                    </select>
+                                    <input type="hidden" value={selectedCategory.id} name="new_category_id"/>
+                                    <div className="self-center flex gap-4 my-4 items-center">
+                                        <ActionButton onClick={() => setAddingExistingField(false)} color="red" size="lg" type="button">Cancel</ActionButton>
+                                        <ActionButton type="submit" size="lg">Add Field</ActionButton>
+                                    </div>
+                                    </form>
+                                )}
+                                {addingField && (
                                 <form onSubmit={addField}>
-                                    <label htmlFor="name">New Field Name<span className="text-red-500">*</span></label>
-                                    <input type="text" className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
+                                    <label htmlFor="name">New Field Name</label>
+                                    <input type="text" className="mb-4 w-full rounded-md border-gray-300 shadow-sm
                                       focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="name"
                                         value={newField} onChange={(e) => setNewField(e.target.value)} name="name" required
                                     />
-                                    <label htmlFor="type">New Field Type<span className="text-red-500">*</span></label>
+                                    <label htmlFor="type">New Field Type</label>
                                     <select className="mt-1 mb-8 w-full rounded-md border-gray-300 shadow-sm
-                                      focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="type" name="type" required defaultValue="TEXT">
+                                      focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="type" name="type" defaultValue="TEXT">
                                         <option value="TEXT">TEXT</option>
                                         <option value="INTEGER">INTEGER</option>
                                     </select>
@@ -177,11 +211,12 @@ export default function EditCategory() {
                                         <ActionButton onClick={() => { setAddingField(false); setNewField("");}} color="red" size="lg" type="button">Cancel</ActionButton>
                                         <ActionButton type="submit" size="lg">Add Field</ActionButton>
                                     </div>
-                                </form>
-                                : 
-                                <div className="flex justify-center lg:justify-start">
+                                </form>)}
+                                {(!addingField && !addingExistingField) && (
+                                <div className="flex justify-center lg:justify-start gap-8">
+                                    <ActionButton onClick={() => setAddingExistingField(true)} size="lg">Add Existing Field</ActionButton>
                                     <ActionButton onClick={() => setAddingField(true)} size="lg">Add New Field</ActionButton>
-                                </div>
+                                </div>)
                                 }
                                 <hr className="w-11/12 md:w-48 h-1 mx-auto my-8 bg-gray-200 border-0 rounded md:my-10"></hr>
                                 {deleting ? 
@@ -194,7 +229,7 @@ export default function EditCategory() {
                                         </>
                                     }
                                     {subDeletion.showSubs && 
-                                        <p>Subcategories include: {selectedCategory.subcategories.map(sub => sub.name).join(", ")}</p>
+                                        <p>Subcategories include: {selectedCategory.subcategories.map(sub => categories[sub].name).join(", ")}</p>
                                     }
                                     <div className="self-center flex gap-4 my-4 items-center">
                                         <ActionButton onClick={() => setDeleting(false)} color="gray" size="lg">Go Back</ActionButton>
