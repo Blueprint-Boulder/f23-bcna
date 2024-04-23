@@ -93,6 +93,24 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
+  },
+
+  createField: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-field/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  editField: async(form) => {
+    try { 
+      const response = await api.post(`/api/edit-field/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
   }
 
 
