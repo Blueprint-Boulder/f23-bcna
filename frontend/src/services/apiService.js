@@ -111,7 +111,16 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
-  }
+  },
+
+  createWildlife: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-wildlife/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
 
 
 };
