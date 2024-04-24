@@ -15,7 +15,7 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<h1 className="text-3xl font-bold underline">Home</h1>} />
+            <Route path="/" exact element={<h1 className="text-3xl font-bold underline">Home</h1>} />
             <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
             <Route path="/wildlife" element={<Wildlife/>} />
             <Route path="/wildlife/:wildlifeId" element={<WildlifeDetails/>} /> 
