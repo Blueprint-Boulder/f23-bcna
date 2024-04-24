@@ -114,6 +114,11 @@ export default function EditCategory() {
         }
     };
 
+    const toggleSubDeletion = (e) => {
+        console.log(subDeletion);
+        setSubDeletion({...subDeletion, deleteSubs: e.target.checked})
+    }
+
     const deleteCategory = async() => {
         try {
 
@@ -164,9 +169,9 @@ export default function EditCategory() {
                                 <ul className="mb-8">
                                     {Object.keys(displayedFields).length > 0 ?
                                         Object.values(displayedFields).map(item => (
-                                        <div className="flex flex-wrap gap-3 mt-2 mb-6 lg:mb-3 items-center">
+                                        <div className="flex flex-wrap gap-3 mt-2 mb-6 lg:mb-3 items-center" key={`group-${item.id}`}>
                                             <li key={item.id}>{item.name} ({item.type})</li>
-                                            <button className="bg-red-500 rounded-full inline px-4 py-1.5 lg:px-3 lg:py-0.5 text-white font-bold text-lg">-</button>
+                                            <button key={`button-${item.id}`} className="bg-red-500 rounded-full inline px-4 py-1.5 lg:px-3 lg:py-0.5 text-white font-bold text-lg">-</button>
                                         </div>))
                                      :
                                      <li key="None">None</li>
@@ -225,7 +230,7 @@ export default function EditCategory() {
                                     {subDeletion.allowSubChoice &&
                                         <>
                                             <label htmlFor="subs">Delete Subcategories</label>
-                                            <input type="checkbox" id="subs" className="mx-4"/>
+                                            <input type="checkbox" id="subs" className="mx-4" checked={subDeletion.deleteSubs} onChange={toggleSubDeletion}/>
                                         </>
                                     }
                                     {subDeletion.showSubs && 
