@@ -393,7 +393,7 @@ def get_categories_and_fields():
             category_fields[category["id"]] = []
 
     category_dict = {}
-    # First pass: id, name, empty subcategories list, and parent ID (parent ID will be removed later)
+    # First pass: id, name, empty subcategories list, and parent ID
     for category in category_data:
         category_dict[category["id"]] = {
             "id": category["id"],
@@ -416,10 +416,6 @@ def get_categories_and_fields():
         if category["parent_id"]:
             category_dict[category["parent_id"]]["subcategories"].append(category["id"])
         category_dict[category["id"]]["field_ids"] = get_field_ids(category["id"])
-
-    # Third pass: remove parent_id
-    for category_id in category_dict:
-        del category_dict[category_id]["parent_id"]
 
     # Make fields
     fields_dict = {}
