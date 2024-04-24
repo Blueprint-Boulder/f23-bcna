@@ -1,7 +1,9 @@
 # Boulder County Nature Association Project
+
 ---
 
 ## Table of Contents
+
 - [Summary](#summary)
 - [Running The App Locally](#running-the-app-locally)
 - [Contributing Code](#contributing-code)
@@ -13,9 +15,10 @@ The goal is for people to be able to learn more about the local wildlife in Boul
 
 More information can be found in the [More Details Section](#more-details)
 
-
 ## Running The App Locally
+
 #### Frontend
+
 - Start from the root directory of the project
 - Run `cd frontend` in your terminal
 - Run `npm i` to install frontend packages like TailwindCSS
@@ -23,10 +26,13 @@ More information can be found in the [More Details Section](#more-details)
 - NOTE: you will NOT see any data from the database unless you also follow steps to run the backend
 
 #### Backend
+
 - Start from the root directory of the project
 - Run `cd backend` in your terminal (you may need to create a new terminal if you're also running the frontend)
-- Run `source venv/bin/activate` to activate the venv and have access to all our dependencies
-- Run `python3 ./main.py` which will create the database for you the first time it runs, and then host the backend at `http://127.0.0.1:5000`
+- (Only on the first time) Run `python3.12 -m venv venv` to create the Python virtual environment. If this fails, you need to [install Python 3.12](https://www.python.org/downloads/). 
+- Run `source venv/bin/activate` to activate the virtual environment.
+- (Only on the first time) Run `pip install -r requirements.txt` to install the necessary libraries.
+- Run `python3 main.py` which will create the database for you the first time it runs, and then host the backend at `http://127.0.0.1:5000`
 - *Optional:* Run `sqlite3 database.db` in a new terminal form the `backend` folder if you'd like to check the database has the data you expect as you interact with API routes. You may need to run `source venv/bin/activate` again.
 
 
@@ -50,9 +56,8 @@ Once your code is pushed to your remote branch, you can open a pull request.
 - After review, you can approve and merge the pull request into main
 - Optionally, you can delete your branch if you were just using it for one feature and it is no longer needed
 
-
-
 ## More Details
+
 Categories are hierarchal such that you can have a category like "Animals" which contains subcategories like "Mammals, Birds," etc depending on how you want to organize the data. Fields will be inherited from parent categories so that all categories of butterflies can share the same fields.
 
 Our technology stack includes...
