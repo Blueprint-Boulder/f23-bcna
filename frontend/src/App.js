@@ -7,6 +7,7 @@ import Admin from './pages/Admin';
 import AddCategory from './pages/AddCategory';
 import AddWildlife from './pages/AddWildlife';
 import EditCategory from './pages/EditCategory';
+import EditWildlife from './pages/EditWildlife';
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
             <Route path="/add-category" element={<AddCategory />} />
             <Route path="/add-wildlife" element={<AddWildlife />} />
             <Route path="/edit-category" element={<EditCategory />} />
+            <Route path="/edit-wildlife" element={<EditWildlife />} />
             <Route path="/checklists" element={<h1 className="text-3xl font-bold underline">Checklists</h1>} />
             <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
             <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
