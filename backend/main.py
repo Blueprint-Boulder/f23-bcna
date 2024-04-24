@@ -86,57 +86,39 @@ def create_wildlife():
     }
     """
     name = request.form["name"]
-    scientific_name = request.form["scientific_name"]
+    typ = request.form["type"]
+    category_ids = request.form.getlist("category_id", type=int)
+    options = request.form.getlist("options")  # For ENUM type fields
 
-    wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
-    if wildlife_with_name_exists:
-        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
+    # Check if the field name already exists
+    field_exists = db_helpers.select_one("SELECT 1 FROM Fields WHERE name = ?", [name])
+    if field_exists:
+        return jsonify({"error": f"Field with name {name} already exists"}), 400
 
-    wildlife_with_scientific_name_exists = db_helpers.select_multiple(
-        "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
-    if wildlife_with_scientific_name_exists:
-        return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
+    # Validate field type
+    valid_types = ["INTEGER", "TEXT", "ENUM", "MONTH_RANGE"]
+    if typ not in valid_types:
+        return jsonify({"error": f"Invalid field type. Allowed types are {', '.join(valid_types)}."}), 400
 
-    category_id = request.form["category_id"]
-    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+    # Insert the new field into the database
+    field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
-    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
-    if not category_exists:
-        return jsonify({"error": "Category not found"}), 400
+    # If ENUM, also insert options into EnumeratedOptions
+    if typ == "ENUM":
+        if not options:
+            return jsonify({"error": "ENUM type requires options"}), 400
+        for option in options:
+            db_helpers.insert("INSERT INTO EnumeratedOptions (field_id, option_value) VALUES (?, ?)", (field_id, option))
 
-    # Get all parent category IDs, including the category itself
-    parent_category_ids = get_parent_ids(category_id)
+    # Associate field with categories
+    for category_id in category_ids:
+        category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
+        if not category_exists:
+            return jsonify({"error": f"Category {category_id} not found"}), 400
+        db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)", [field_id, category_id])
 
-    # Fetch all fields valid for the category, including those inherited from parent categories
-    valid_fields = db_helpers.select_multiple(f"""
-            SELECT Fields.name FROM Fields
-            JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
-            WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
-        """, parent_category_ids)
+    return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
 
-    valid_field_names = {field['name'] for field in valid_fields}
-
-    # Check if all provided fields are valid
-    provided_field_names = set(other_fields.keys())
-    if not provided_field_names.issubset(valid_field_names):
-        invalid_fields = provided_field_names - valid_field_names
-        return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
-
-    # Check if all required fields are provided
-    if not valid_field_names.issubset(provided_field_names):
-        missing_fields = valid_field_names - provided_field_names
-        return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
-
-    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
-                                    (name, scientific_name, category_id))
-
-    # Insert additional field values (validation already performed)
-    for field_name, value in other_fields.items():
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
-        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-                          (wildlife_id, field_id, value))
-
-    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
 
 @app.route("/api/search-wildlife-names/", methods=["GET"])
@@ -320,20 +302,18 @@ def get_categories():
     categories = db_helpers.select_multiple("SELECT * FROM Categories")
     return jsonify(categories), 200
 
-
 @app.route("/api/get-categories-and-fields/", methods=["GET"])
 def get_categories_and_fields():
     """
-    Retrieves all categories and their associated fields.
-    The output format is complicated, so it's best to just look at the example below.
+    Retrieves all categories and their associated fields, including detailed ENUM options for fields that require predefined values.
+    This function supports dynamic frontend implementations by providing complete schema details, especially useful for generating forms and inputs based on database constraints.
 
     Example request:
     GET /api/get-categories-and-fields/
 
     Example output:
-
     {
-        "categories": [
+        "categories": {
             "3": {
                 "id": 3,
                 "parent_id": null,
@@ -355,8 +335,8 @@ def get_categories_and_fields():
                 "name": "Cats",
                 "subcategories": []
             }
-        ],
-        "fields": [
+        },
+        "fields": {
             "5": {
                 "id": 5,
                 "name": "Description",
@@ -369,68 +349,83 @@ def get_categories_and_fields():
             },
             "4": {
                 "id": 4,
-                "name": "Wingspan",
-                "type": "INTEGER"
+                "name": "Active Months",
+                "type": "ENUM",
+                "options": [
+                    "1 - January", "2 - February", "3 - March", "4 - April",
+                    "5 - May", "6 - June", "7 - July", "8 - August",
+                    "9 - September", "10 - October", "11 - November", "12 - December"
+                ]
             }
-        ]
+        }
     }
 
-    Here, the "Animals" category has the "Description" and "Average Lifespan" text fields.
-    The "Birds" category is a subcategory of "Animals" and has the extra field "Wingspan".
-    The "Cats" category is a subcategory of "Animals" and has no extra fields.
-    Note that subcategories always inherit the field IDs of their parent; i.e. the field_ids of a subcategory is a superset of its parent's field_ids.
-    Don't rely on things being in a particular order, e.g. don't assume field_ids are sorted.
+    In this example, the 'Active Months' field for categories related to animal activities shows ENUM values formatted as 'number - month' to clearly specify each option. This format assists in ensuring that the data entries for active months are consistent and accurate across the system.
     """
     # The code here is pretty unreadable; if you're reading this and know what you're doing, feel free to clean it up
 
+      # Fetch all category and field-category relationship data
     category_data = db_helpers.select_multiple("SELECT * FROM Categories")
     fields_to_categories = db_helpers.select_multiple("SELECT * FROM FieldsToCategories")
+    fields_data = db_helpers.select_multiple("SELECT * FROM Fields")
 
-    # Make a dict from categories to their fields
+    # Include ENUM options if the field type is ENUM
+    for field in fields_data:
+        if field["type"] == "ENUM":
+            enum_options = db_helpers.select_multiple(
+                "SELECT option_value FROM EnumeratedOptions WHERE field_id = ?",
+                [field["id"]]
+            )
+            field["options"] = [option["option_value"] for option in enum_options]
+
+    # Dictionary mapping categories to their field IDs
     category_fields = {}
     for entry in fields_to_categories:
         if entry["category_id"] in category_fields:
             category_fields[entry["category_id"]].append(entry["field_id"])
         else:
-            category_fields[entry["category_id"]] = [entry["field_id"]]
-    for category in category_data:
-        if category["id"] not in category_fields:
-            category_fields[category["id"]] = []
+            category_fields[entry["category_id"]] = []
 
+    # Prepare the categories dictionary
     category_dict = {}
-    # First pass: id, name, empty subcategories list, and parent ID
     for category in category_data:
         category_dict[category["id"]] = {
             "id": category["id"],
             "name": category["name"],
             "parent_id": category["parent_id"],
-            "subcategories": []
+            "subcategories": [],
+            "field_ids": category_fields.get(category["id"], [])
         }
 
-    # Helper function for the second pass; gets all the field IDs that belong to a category
+    # Recursive function to get all field IDs for a category, including inherited ones
     def get_field_ids(category_id):
         category = category_dict[category_id]
-        immediate_ids = category_fields[category["id"]]
+        immediate_ids = category_fields.get(category["id"], [])
         if category["parent_id"]:
-            return list(set(immediate_ids + get_field_ids(category["parent_id"])))  # list(set()) removes duplicates
+            return list(set(immediate_ids + get_field_ids(category["parent_id"])))
         else:
             return immediate_ids
 
-    # Second pass: get subcategories and field IDs
+    # Add subcategories and populate field IDs for each category
     for category in category_data:
         if category["parent_id"]:
             category_dict[category["parent_id"]]["subcategories"].append(category["id"])
         category_dict[category["id"]]["field_ids"] = get_field_ids(category["id"])
 
-    # Make fields
-    fields_dict = {}
-    fields_data = db_helpers.select_multiple("SELECT id, name, type FROM Fields")
-    for field in fields_data:
-        fields_dict[field["id"]] = field
+    # Map field details to field IDs for easier JSON structuring
+    fields_dict = {field['id']: {
+        "id": field['id'],
+        "name": field['name'],
+        "type": field['type'],
+        "options": field.get("options", [])  # Include options if available
+    } for field in fields_data}
 
-    output = {"categories": category_dict, "fields": fields_dict}
+    # Compile the final output
+    output = {
+        "categories": category_dict,
+        "fields": fields_dict
+    }
     return jsonify(output), 200
-
 
 @app.route("/api/get-wildlife/", methods=["GET"])
 def get_wildlife():
@@ -501,7 +496,13 @@ def get_wildlife():
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
 
-
+def format_month_range(wildlife_id):
+    month_ranges = db_helpers.select_multiple(
+        "SELECT field_id, beginning_month, ending_month FROM FieldMonths WHERE wildlife_id = ?",
+        [wildlife_id]
+    )
+    return {f"Month Range for Field {mr['field_id']}": f"{mr['beginning_month']} - {mr['ending_month']}"
+            for mr in month_ranges}
 
 @app.route("/api/get-wildlife-by-id/<int:wildlife_id>", methods=["GET"])
 def get_wildlife_by_id(wildlife_id):
@@ -518,7 +519,7 @@ def get_wildlife_by_id(wildlife_id):
         "name": "European Hedgehog",
         "scientific_name": "Erinaceus europaeus",
         "Habitat": "Forests and grasslands",
-        "Population": 500000
+        "Active Season": "March - May"
     }
     """
     wildlife = db_helpers.select_one("SELECT * FROM Wildlife WHERE id = ?", [wildlife_id])
@@ -526,22 +527,54 @@ def get_wildlife_by_id(wildlife_id):
         return jsonify({"error": "Wildlife not found"}), 404
 
     # Retrieve custom field values
-    field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
-    custom_fields = {fv["field_id"]: fv["value"] for fv in field_values}
+    custom_fields = db_helpers.select_multiple("""
+        SELECT Fields.id, Fields.name, FieldValues.value
+        FROM Fields
+        JOIN FieldValues ON Fields.id = FieldValues.field_id
+        WHERE FieldValues.wildlife_id = ?
+    """, [wildlife_id])
 
-    # Retrieve field names
-    field_names = db_helpers.select_multiple("SELECT id, name FROM Fields")
-    field_names_dict = {field["id"]: field["name"] for field in field_names}
+    # Add custom field values to wildlife data
+    for field in custom_fields:
+        wildlife[field['name']] = field['value']
 
-    # Add custom field names and values to wildlife data
-    for field_id, value in custom_fields.items():
-        field_name = field_names_dict.get(field_id)
-        if field_name:
-            wildlife[field_name] = value
+    # Retrieve month range data and convert month numbers to names
+    month_ranges = db_helpers.select_multiple("""
+        SELECT Fields.name, MM1.month_name AS beginning_month, MM2.month_name AS ending_month
+        FROM Fields
+        JOIN FieldMonths ON Fields.id = FieldMonths.field_id
+        JOIN MonthMappings MM1 ON FieldMonths.beginning_month = MM1.month_number
+        JOIN MonthMappings MM2 ON FieldMonths.ending_month = MM2.month_number
+        WHERE FieldMonths.wildlife_id = ?
+    """, [wildlife_id])
+
+    # Add month range data to wildlife data
+    for mr in month_ranges:
+        wildlife[mr['name']] = f"{mr['beginning_month']} - {mr['ending_month']}"
 
     return jsonify(wildlife), 200
 
 
+@app.route("/api/search-wildlife-by-month-range/", methods=["GET"])
+def search_wildlife_by_month_range():
+    field_id = request.args.get("field_id", type=int)
+    target_month = request.args.get("month", type=int)
+
+    if not field_id or not target_month:
+        return jsonify({"error": "Both field_id and month are required"}), 400
+
+    # Validate field type is MONTH_RANGE
+    field_info = db_helpers.select_one("SELECT id FROM Fields WHERE id = ? AND type = 'MONTH_RANGE'", [field_id])
+    if not field_info:
+        return jsonify({"error": "Invalid field ID or field is not of type MONTH_RANGE"}), 400
+
+    results = db_helpers.select_multiple(
+        "SELECT Wildlife.* FROM Wildlife "
+        "JOIN FieldMonths ON Wildlife.id = FieldMonths.wildlife_id "
+        "WHERE FieldMonths.field_id = ? AND FieldMonths.beginning_month <= ? AND FieldMonths.ending_month >= ?",
+        [field_id, target_month, target_month]
+    )
+    return jsonify(results), 200
 
 
 
@@ -570,14 +603,13 @@ def create_field():
         return jsonify({"error": f"Field with name {name} already exists"}), 400
 
     for category_id in category_ids:
-        # Check if category exists
         category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
         if not category_exists:
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
-    # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT", "ENUM"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, and ENUM."}), 400
+    # Add MONTH_RANGE to valid types
+    if typ not in ("INTEGER", "TEXT", "ENUM", "MONTH_RANGE"):
+        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, ENUM, and MONTH_RANGE."}), 400
 
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
@@ -586,7 +618,6 @@ def create_field():
                           [field_id, category_id])
 
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
-
 
 @app.route("/api/edit-field/", methods=["POST"])
 def edit_field():
@@ -632,6 +663,7 @@ def edit_field():
         db_helpers.update("UPDATE Fields SET name = ? WHERE id = ?", [new_name, field_id])
 
     return jsonify({"message": "Field updated successfully"}), 200
+
 
 
 @app.route("/api/delete-category/", methods=["DELETE"])
@@ -776,6 +808,7 @@ Example output (for the range value search, formatted as a JSON response):
 
     results = db_helpers.select_multiple(sql_query, params)
     return jsonify(results), 200
+
 
 
 if __name__ == "__main__":

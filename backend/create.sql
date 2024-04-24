@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS Images (
 
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER', 'ENUM')),
+    type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER', 'ENUM', 'MONTH_RANGE')),
     name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name'))
 );
 
@@ -57,4 +57,26 @@ CREATE TABLE IF NOT EXISTS EnumeratedFieldValues (
     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
     FOREIGN KEY (option_id) REFERENCES CategoricalOptions(id),
     PRIMARY KEY (wildlife_id, option_id)
+);
+
+
+CREATE TABLE IF NOT EXISTS MonthMappings (
+    month_number INTEGER PRIMARY KEY,
+    month_name TEXT NOT NULL UNIQUE
+);
+
+INSERT INTO MonthMappings (month_number, month_name) VALUES
+(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'),
+(7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December');
+
+CREATE TABLE IF NOT EXISTS FieldMonths (
+    wildlife_id INTEGER NOT NULL,
+    field_id INTEGER NOT NULL,
+    beginning_month INTEGER, -- references MonthMappings.month_number
+    ending_month INTEGER, -- references MonthMappings.month_number
+    FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
+    FOREIGN KEY (field_id) REFERENCES Fields(id),
+    FOREIGN KEY (beginning_month) REFERENCES MonthMappings(month_number),
+    FOREIGN KEY (ending_month) REFERENCES MonthMappings(month_number),
+    PRIMARY KEY (wildlife_id, field_id)
 );
