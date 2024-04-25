@@ -78,11 +78,11 @@ def get_parent_ids(category_id):
 
 
 def save_file(file):
-    """Generates a unique filename and saves the file to the UPLOAD_FOLDER."""
+    """Generates a unique filename and saves the file to the IMAGE_UPLOAD_FOLDER."""
     original_name = secure_filename(file.filename)
     extension = original_name.rsplit('.', 1)[1] if '.' in original_name else ''
     unique_filename = f"{uuid.uuid4().hex}.{extension}"
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    file_path = os.path.join(app.config['IMAGE_UPLOAD_FOLDER'], unique_filename)
     file.save(file_path)
     return unique_filename
 
@@ -162,7 +162,9 @@ def create_wildlife():
 
     # Ensure all image files are a reasonable size and format
     for image_file in request.files.values():
-        if image_file.content_length > 10 * 1024 * 1024:
+        file_length = image_file.seek(0, os.SEEK_END)
+        image_file.seek(0, os.SEEK_SET)
+        if file_length > 10 * 1024 * 1024:
             return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
         if not image_file.mimetype.startswith("image/"):
             return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
@@ -185,9 +187,9 @@ def create_wildlife():
     # Insert the image field values
     for field_name, image_file in request.files.items():
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
-        save_file(image_file)
+        saved_filename = save_file(image_file)
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-                          (wildlife_id, field_id, image_file.filename))
+                          (wildlife_id, field_id, saved_filename))
 
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
