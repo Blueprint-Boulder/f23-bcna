@@ -773,6 +773,76 @@ Example output (for the range value search, formatted as a JSON response):
     results = db_helpers.select_multiple(sql_query, params)
     return jsonify(results), 200
 
+@app.route("/api/edit-wildlife/", methods=["POST"])
+def edit_wildlife():
+    """
+    Edit an existing wildlife instance including name, scientific name, categories, and field values.
+    Requires name, scientific_name, category_id, and field_id.
+    Takes wildlife_id argument to know what wildlife to edit
+    Additional custom fields can be provided, with the format name=value.
+
+    Example request:
+    POST /api/edit-wildlife/
+    Form Data: name=Red Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Woodland Forest
+
+    Example output (successful edit):
+    {
+        "message": "Wildlife updated successfully",
+        "wildlife_id": 3
+    }
+
+    """
+    #---------------------------------VALIDATIONS----------------------------------------#
+    #getting wildlife id
+    wildlife_id = int(request.form["wildlife_id"])
+   
+    #checking if instance exists
+    wildlife_exists = db_helpers.select_one("SELECT 1 FROM Wildlife WHERE id = ?", [wildlife_id])
+    if not wildlife_exists:
+        return jsonify({"error": "Wildlife not found"}), 404
+    
+    # Fetch all fields valid for the category, including those inherited from parent categories
+    name = request.form["name"]
+    scientific_name  = request.form["scientific_name"]
+    category_id = request.form["category_id"]
+    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id", "wildlife_id")}
+
+    #checking if category exists
+    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
+    if not category_exists:
+        return jsonify({"error": "Category not found"}), 400
+    
+    #checking for valid fields
+    parent_category_ids = get_parent_ids(category_id)
+    valid_fields = db_helpers.select_multiple(f"""
+        SELECT Fields.name FROM Fields
+        JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
+        WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
+        """, parent_category_ids)
+    valid_field_names = {field['name'] for field in valid_fields}
+    provided_field_names = set(other_fields.keys())
+    if not provided_field_names.issubset(valid_field_names):
+        invalid_fields = provided_field_names - valid_field_names
+        return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
+    #------------------------------------------------------------------------------------#
+
+    #---------------------------UPDATING INFORMATION-------------------------------------#
+    #wildlife basic info
+    db_helpers.update("UPDATE Wildlife SET name = ?, scientific_name = ?, category_id = ? WHERE id = ?",
+                       (name, scientific_name, category_id, wildlife_id))
+    
+    #modify remaining fields
+    for field_name, value in other_fields.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        db_helpers.update("REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, value))
+    
+    #success message
+    return jsonify({"message": "wildlife updated successfully", "wildlife_id": wildlife_id}), 201
+    #------------------------------------------------------------------------------------#
+
+
+
 
 if __name__ == "__main__":
     db_helpers.init_db()

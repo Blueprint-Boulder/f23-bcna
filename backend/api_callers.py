@@ -49,3 +49,15 @@ def create_category(name: str, parent_id: int | None = None) -> int:
     else:
         raise Exception(
             f"Failed to create category (server returned {response.status_code}). Full response: {response.text}")
+    
+def edit_wildlife(wildlife_id: int, name: str, scientific_name: str, category_id: int,
+                    custom_field_values: dict[str, str | int]) -> int:
+    complain_if_server_not_running()
+    response = requests.post(f"{BASE_URL}/edit-wildlife/",
+                             data={"wildlife_id": wildlife_id, "name": name, "scientific_name": scientific_name, "category_id": category_id,
+                                   **custom_field_values})
+    if response.status_code == 201:
+        return response.json()["wildlife_id"]
+    else:
+        raise Exception(
+            f"Failed to update wildlife (server returned {response.status_code}). Full response: {response.text}")
