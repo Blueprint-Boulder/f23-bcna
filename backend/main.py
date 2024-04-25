@@ -691,6 +691,8 @@ def delete_wildlife():
     """
     wildlife_id = request.args["id"]
     n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    # TODO delete enum stuff too
     if n_rows == 0:
         return jsonify({"error": "Wildlife not found"}), 404
     return jsonify({"message": "Wildlife successfully deleted"}), 200
