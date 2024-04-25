@@ -132,7 +132,7 @@ def create_wildlife():
 
     # Fetch all fields valid for the category, including those inherited from parent categories
     valid_fields = db_helpers.select_multiple(f"""
-            SELECT Fields.name FROM Fields
+            SELECT Fields.name, Fields.type FROM Fields
             JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
             WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
         """, parent_category_ids)
