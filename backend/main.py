@@ -669,8 +669,13 @@ def delete_category():
     else:
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
-        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})",
-                          category_ids)
+        wildlife_ids_to_delete = [x["id"] for x in
+                                  db_helpers.select_multiple(f"SELECT id FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)]
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+                          wildlife_ids_to_delete)
+        db_helpers.delete(
+            f"DELETE FROM FieldValues WHERE wildlife_id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+            wildlife_ids_to_delete)
         # Delete the category and its subcategories
         db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
         return jsonify({"message": "Category members and category successfully deleted"}), 200
