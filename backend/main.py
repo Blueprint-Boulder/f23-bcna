@@ -336,16 +336,21 @@ def get_categories_and_fields():
         "categories": [
             "3": {
                 "id": 3,
+                "parent_id": null,
                 "field_ids": [5, 4],
                 "name": "Animals",
                 "subcategories": [6, 8]
             },
             "8": {
+                "id": 8,
+                "parent_id": 3,
                 "field_ids": [5, 4, 2],
                 "name": "Birds",
                 "subcategories": []
             },
             "6": {
+                "id": 6,
+                "parent_id": 3,
                 "field_ids": [5, 4],
                 "name": "Cats",
                 "subcategories": []
@@ -686,6 +691,8 @@ def delete_wildlife():
     """
     wildlife_id = request.args["id"]
     n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    # TODO delete enum stuff too
     if n_rows == 0:
         return jsonify({"error": "Wildlife not found"}), 404
     return jsonify({"message": "Wildlife successfully deleted"}), 200
