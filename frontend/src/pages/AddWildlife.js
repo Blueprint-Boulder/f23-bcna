@@ -64,7 +64,7 @@ export default function AddWildlife() {
             <div className="h-8"></div>
             <div className="bg-neutral-50 rounded-lg w-11/12 lg:w-3/5 mx-auto shadow-lg">
                 <h1 className="text-3xl font-bold mb-8 pt-4 text-center">Add Wildlife</h1>
-                <form onSubmit={handleSubmit} className="w-11/12 flex flex-col items-center lg:items-start mx-auto">
+                <form onSubmit={handleSubmit} encType="multipart/form-data" className="w-11/12 flex flex-col items-center lg:items-start mx-auto">
                     <div className="w-full lg:w-3/5">
                         <label htmlFor="categoryName">Category<span className="text-red-500">*</span></label>
                         <select className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
@@ -91,7 +91,7 @@ export default function AddWildlife() {
                                 displayedFields.map(item => (
                                 <>
                                 <label htmlFor={item.id}>{item.name} ({item.type})</label>
-                                <input type={item.type === "TEXT" ? "text" : "number"} name={item.name} min="0" id={item.id} className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
+                                <input type={item.type === "IMAGE" ? "file" : "text"} name={item.name} min="0" id={item.id} className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"/>
                                 </>))
                             )

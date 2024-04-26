@@ -1,9 +1,18 @@
-from flask import Flask, jsonify, request
+import os
+import uuid
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
+
 import db_helpers
 
 app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
+
+# Set the folder for image uploads as uploaded_images, which is in the same folder as this file (main.py)
+THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+app.config["IMAGE_UPLOAD_FOLDER"] = os.path.join(THIS_FOLDER, "uploaded_images/")
 
 
 @app.route("/api", methods=["GET"])
@@ -69,11 +78,26 @@ def get_parent_ids(category_id):
     return parent_ids_list
 
 
+def save_file(file):
+    """Generates a unique filename and saves the file to the IMAGE_UPLOAD_FOLDER."""
+    original_name = secure_filename(file.filename)
+    extension = original_name.rsplit('.', 1)[1] if '.' in original_name else ''
+    unique_filename = f"{uuid.uuid4().hex}.{extension}"
+    file_path = os.path.join(app.config['IMAGE_UPLOAD_FOLDER'], unique_filename)
+    file.save(file_path)
+    return unique_filename
+
+
 @app.route("/api/create-wildlife/", methods=["POST"])
 def create_wildlife():
     """
     Create a wildlife instance. Requires name, scientific_name, and category_id.
     Additional custom fields can be provided at the end, with the format name=value (see example).
+    For image fields, you should upload them as files. Like with other fields, the key should be the field name.
+    Make sure to use enctype="multipart/form-data" on the HTML form; otherwise, you won't be able to upload images.
+
+    Image files must be <10 MB. All common image formats should work by default.
+    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute `accept="image/*"` to restrict the files to images.
 
     Example request:
     POST /api/create-wildlife/
@@ -98,43 +122,75 @@ def create_wildlife():
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
     category_id = request.form["category_id"]
-    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
     if not category_exists:
         return jsonify({"error": "Category not found"}), 400
 
-    # Get all parent category IDs, including the category itself
+    # Get all parent category IDs, and the ID of the category itself
     parent_category_ids = get_parent_ids(category_id)
 
     # Fetch all fields valid for the category, including those inherited from parent categories
     valid_fields = db_helpers.select_multiple(f"""
-            SELECT Fields.name FROM Fields
+            SELECT Fields.name, Fields.type FROM Fields
             JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
             WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
         """, parent_category_ids)
 
+    valid_nonimage_fields = filter(lambda field: field["type"] != "IMAGE", valid_fields)
+    valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
+
     valid_field_names = {field['name'] for field in valid_fields}
+    valid_nonimage_field_names = {field['name'] for field in valid_nonimage_fields}
+    valid_image_field_names = {field['name'] for field in valid_image_fields}
 
-    # Check if all provided fields are valid
-    provided_field_names = set(other_fields.keys())
+    # Ensure all provided fields exist
+    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
     if not provided_field_names.issubset(valid_field_names):
-        invalid_fields = provided_field_names - valid_field_names
-        return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
+        invalid_field_names = provided_field_names - valid_field_names
+        return jsonify({"error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
 
-    # Check if all required fields are provided
+    # Ensure all required fields are provided
     if not valid_field_names.issubset(provided_field_names):
-        missing_fields = valid_field_names - provided_field_names
-        return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        missing_field_names = valid_field_names - provided_field_names
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_field_names)}"}), 400
 
+    # Ensure all image fields are provided as files
+    if not valid_image_field_names.issubset(request.files.keys()):
+        field_names_missing_file = valid_image_field_names - request.files.keys()
+        return jsonify({"error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
+
+    # Ensure all image files are a reasonable size and format
+    for image_file in request.files.values():
+        file_length = image_file.seek(0, os.SEEK_END)
+        image_file.seek(0, os.SEEK_SET)
+        if file_length > 10 * 1024 * 1024:
+            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+        if not image_file.mimetype.startswith("image/"):
+            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+
+    # Ensure all non-image fields are provided as form data
+    if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
+        field_names_missing_value = valid_nonimage_field_names - provided_nonimage_fields.keys()
+        return jsonify({"error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
+
+    # Insert the wildlife entry
     wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
                                     (name, scientific_name, category_id))
 
-    # Insert additional field values (validation already performed)
-    for field_name, value in other_fields.items():
+    # Insert the non-image field values
+    for field_name, value in provided_nonimage_fields.items():
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
+
+    # Insert the image field values
+    for field_name, image_file in request.files.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        saved_filename = save_file(image_file)
+        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, saved_filename))
 
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
@@ -432,6 +488,20 @@ def get_categories_and_fields():
     return jsonify(output), 200
 
 
+@app.route("/api/get-image/<string:filename>/", methods=["GET"])
+def get_image(filename):
+    """
+    Gets a user-uploaded image file by its filename. Used for getting images associated with wildlife.
+
+    Example request:
+    GET /api/get-image/1234abcd.png
+
+    Example output:
+    (The image file)
+    """
+    return send_from_directory(app.config["IMAGE_UPLOAD_FOLDER"], filename)
+
+
 @app.route("/api/get-wildlife/", methods=["GET"])
 def get_wildlife():
     """
@@ -495,12 +565,13 @@ def get_wildlife():
                 field_value = int(fv["value"])
             elif field["type"] == "ENUM":
                 field_value = fv["value"]
+            elif field["type"] == "IMAGE":
+                field_value = fv["value"]
             else:
-                raise NotImplementedError("Unsupported field type")
+                raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
             cleaned_field_values.append({"field_id": field["id"], "value": field_value})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
-
 
 
 @app.route("/api/get-wildlife-by-id/<int:wildlife_id>", methods=["GET"])
@@ -542,9 +613,6 @@ def get_wildlife_by_id(wildlife_id):
     return jsonify(wildlife), 200
 
 
-
-
-
 @app.route("/api/create-field/", methods=["POST"])
 def create_field():
     """
@@ -576,8 +644,8 @@ def create_field():
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
     # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT", "ENUM"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, and ENUM."}), 400
+    if typ not in ("INTEGER", "TEXT", "ENUM", "IMAGE"):
+        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, ENUM, and IMAGE."}), 400
 
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
@@ -657,7 +725,7 @@ def delete_category():
         parent_id = category['parent_id']
         if parent_id is None:
             return jsonify({
-                               "error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
+                "error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
         else:
             # Reassign wildlife to the parent category
             db_helpers.update("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
@@ -669,8 +737,13 @@ def delete_category():
     else:
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
-        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})",
-                          category_ids)
+        wildlife_ids_to_delete = [x["id"] for x in
+                                  db_helpers.select_multiple(f"SELECT id FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)]
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+                          wildlife_ids_to_delete)
+        db_helpers.delete(
+            f"DELETE FROM FieldValues WHERE wildlife_id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+            wildlife_ids_to_delete)
         # Delete the category and its subcategories
         db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
         return jsonify({"message": "Category members and category successfully deleted"}), 200
@@ -690,9 +763,17 @@ def delete_wildlife():
     }
     """
     wildlife_id = request.args["id"]
-    n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
-    if n_rows == 0:
+    n_rows_deleted = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    if n_rows_deleted == 0:
         return jsonify({"error": "Wildlife not found"}), 404
+
+    image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
+    for image_filename in image_field_values:
+        image_path = os.path.join(app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    db_helpers.delete("DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id])
     return jsonify({"message": "Wildlife successfully deleted"}), 200
 
 

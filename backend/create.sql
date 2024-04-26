@@ -13,16 +13,9 @@ CREATE TABLE IF NOT EXISTS Wildlife (
     FOREIGN KEY (category_id) REFERENCES Categories(id)
 );
 
-CREATE TABLE IF NOT EXISTS Images (
-    filename TEXT PRIMARY KEY,
-    wildlife_id INTEGER NOT NULL,
-    alt_text TEXT,
-    caption TEXT
-);
-
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER', 'ENUM')),
+    type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER', 'ENUM', 'IMAGE')),
     name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name'))
 );
 
@@ -37,7 +30,7 @@ CREATE TABLE IF NOT EXISTS FieldsToCategories (
 CREATE TABLE IF NOT EXISTS FieldValues (
     wildlife_id INTEGER NOT NULL,
     field_id INTEGER NOT NULL,
-    value TEXT NOT NULL,
+    value TEXT,
     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
     FOREIGN KEY (field_id) REFERENCES Fields(id),
     PRIMARY KEY (wildlife_id, field_id)
@@ -55,6 +48,6 @@ CREATE TABLE IF NOT EXISTS EnumeratedFieldValues (
     wildlife_id INTEGER NOT NULL,
     option_id INTEGER NOT NULL,
     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
-    FOREIGN KEY (option_id) REFERENCES CategoricalOptions(id),
+    FOREIGN KEY (option_id) REFERENCES EnumeratedOptions(id),
     PRIMARY KEY (wildlife_id, option_id)
 );
