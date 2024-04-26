@@ -9,13 +9,24 @@
 - [Contributing Code](#contributing-code)
 
 ## Summary
-This project composes of two main components: a wildlife search engine that can sort and filter results based on various attributes such as name, color, and habitat, and an administrative platform to add, edit, and delete data.
+
+You can run the website with the `run_website.py` script.
+
+This project consists of two main components: a wildlife search engine that can sort and filter results based on various attributes such as name, color, and habitat, and an administrative platform to add, edit, and delete data.
 
 The goal is for people to be able to learn more about the local wildlife in Boulder County, but the technology can be adapted to wildlife anywhere. Our database is structured into categories, and each wildlife entry belongs to a category. Categories contain fields which organize relevant information for each category of animals, whether that be wingspan for birds or favorite food for bears. 
 
 More information can be found in the [More Details Section](#more-details)
 
 ## Running The App Locally
+
+Run `run_website.py` (Windows: `python run_website.py`, Mac/Linux: `python3.12 run_website.py`) and it should just work: it will install the dependencies and open the website.
+
+On Mac/Linux, if it can't find the `python3.12` command, you don't have Python 3.12 installed. Install it [here]((https://www.python.org/downloads/)).
+
+On Windows, if it fails, make sure you have Python 3.12 installed. You can check this with `python -V`. If it's not 3.12, install it [here]((https://www.python.org/downloads/)).
+
+If it still doesn't work, here's how to run it manually on Mac/Linux (Windows instructions TBA):
 
 #### Frontend
 
@@ -30,9 +41,9 @@ More information can be found in the [More Details Section](#more-details)
 - Start from the root directory of the project
 - Run `cd backend` in your terminal (you may need to create a new terminal if you're also running the frontend)
 - (Only on the first time) Run `python3.12 -m venv venv` to create the Python virtual environment. If this fails, you need to [install Python 3.12](https://www.python.org/downloads/). 
-- Run `source venv/bin/activate` to activate the virtual environment.
+- Run `source venv/bin/activate` to activate the virtual environment for this terminal window.
 - (Only on the first time) Run `pip install -r requirements.txt` to install the necessary libraries.
-- Run `python3 main.py` which will create the database for you the first time it runs, and then host the backend at `http://127.0.0.1:5000`
+- Run `python main.py` which will create the database for you the first time it runs, and then host the backend at `http://127.0.0.1:5000`
 - *Optional:* Run `sqlite3 database.db` in a new terminal form the `backend` folder if you'd like to check the database has the data you expect as you interact with API routes. You may need to run `source venv/bin/activate` again.
 
 

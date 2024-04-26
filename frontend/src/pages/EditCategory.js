@@ -205,6 +205,7 @@ export default function EditCategory() {
                                       focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" id="type" name="type" defaultValue="TEXT">
                                         <option value="TEXT">TEXT</option>
                                         <option value="INTEGER">INTEGER</option>
+                                        <option value="IMAGE">IMAGE</option>
                                     </select>
                                     <input type="hidden" value={selectedCategory.id} name="category_id"/>
                                     <div className="self-center flex gap-4 my-4 items-center">
