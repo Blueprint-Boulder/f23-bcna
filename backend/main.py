@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -11,7 +11,8 @@ app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
 
 # Set the folder for image uploads as uploaded_images, which is in the same folder as this file (main.py)
-app.config["IMAGE_UPLOAD_FOLDER"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploaded_images/")
+THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+app.config["IMAGE_UPLOAD_FOLDER"] = os.path.join(THIS_FOLDER, "uploaded_images/")
 
 
 @app.route("/api", methods=["GET"])
@@ -487,6 +488,20 @@ def get_categories_and_fields():
     return jsonify(output), 200
 
 
+@app.route("/api/get-image/<string:filename>/", methods=["GET"])
+def get_image(filename):
+    """
+    Gets a user-uploaded image file by its filename. Used for getting images associated with wildlife.
+
+    Example request:
+    GET /api/get-image/1234abcd.png
+
+    Example output:
+    (The image file)
+    """
+    return send_from_directory(app.config["IMAGE_UPLOAD_FOLDER"], filename)
+
+
 @app.route("/api/get-wildlife/", methods=["GET"])
 def get_wildlife():
     """
@@ -550,8 +565,10 @@ def get_wildlife():
                 field_value = int(fv["value"])
             elif field["type"] == "ENUM":
                 field_value = fv["value"]
+            elif field["type"] == "IMAGE":
+                field_value = fv["value"]
             else:
-                raise NotImplementedError("Unsupported field type")
+                raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
             cleaned_field_values.append({"field_id": field["id"], "value": field_value})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
@@ -746,11 +763,17 @@ def delete_wildlife():
     }
     """
     wildlife_id = request.args["id"]
-    n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
-    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
-    # TODO delete enum stuff too
-    if n_rows == 0:
+    n_rows_deleted = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    if n_rows_deleted == 0:
         return jsonify({"error": "Wildlife not found"}), 404
+
+    image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
+    for image_filename in image_field_values:
+        image_path = os.path.join(app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    db_helpers.delete("DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id])
     return jsonify({"message": "Wildlife successfully deleted"}), 200
 
 
