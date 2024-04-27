@@ -4,7 +4,7 @@ const CardResult = ({ data }) => {
     return (
       <div className="card-result p-4 border mb-4 rounded-lg">
         {/* Image on the top */}
-        <img src={data.image} alt={data.name} className="w-full h-40 object-cover mb-4 rounded-t-lg" />
+        <img src={`data:image/png;base64,${data.image}`} alt={data.name} className="w-full h-40 object-cover mb-4 rounded-t-lg" />
   
         {/* Details underneath */}
         <div className="flex flex-col">
