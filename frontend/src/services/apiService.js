@@ -86,6 +86,15 @@ const apiService = {
     }
   },
 
+  getImage: async(filename) => {
+    try{
+      const response = await api.get(`/api/get-image/${filename}/`)
+      return response.data;
+    }catch (error){
+      handleError(error);
+    }
+  },
+
   createCategory: async(form) => {
     try { 
       const response = await api.post(`/api/create-category/`, form);
