@@ -4,7 +4,7 @@ const ListResult = ({ data }) => {
     return (
       <div className="list-result flex items-center p-4 border mb-4 rounded-lg">
         {/* Image on the left */}
-        <img src={data.image} alt={data.name} className="w-24 h-22 object-cover mr-4" />
+        <img src={`data:image/jpg;base64,${data.image}`} alt={data.name} className="w-24 h-22 object-cover mr-4" />
   
         {/* Details on the right */}
         <div className="flex flex-col">

@@ -16,9 +16,12 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     }, [selectedCategories]);
 
     useEffect(() => {
-        console.log("filters:")
+        console.log("selected categories:")
+        console.log(selectedCategories)
+        console.log("filters")
         console.log(filters)
-    },[filters])
+    },[filters,selectedCategories])
+
 
     // Helper function to capitalize the first letter of a word
     function capitalizeFirstLetter(word) {
@@ -37,110 +40,155 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         }
     };
 
-    // Recurses through wildlife categories to find category with given id
-    const findCategoryById = (categoryArray, id) => {
-        for (let category of categoryArray) {
-            if (category.id === id) {
-                return category;
-            }
-            if (category.subcategories.length > 0) {
-                const subcategory = findCategoryById(category.subcategories, id);
-                if (subcategory) {
-                    return subcategory;
-                }
-            }
-        }
-        return null;
-    };
 
-    const findParentCategory = (categories, categoryId) => {
-        for (let category of categories) {
-            if (category.subcategories.some(subcategory => subcategory.id === categoryId)) {
-                return category;
-            }
-            if (category.subcategories.length > 0) {
-                const parentCategory = findParentCategory(category.subcategories, categoryId);
-                if (parentCategory) {
-                    return parentCategory;
-                }
-            }
+
+    // Create a hashmap of category objects using their ids
+    const idToCategoryMap = categories.reduce((map, category) => {
+        map[category.id] = category;
+        return map;
+    }, {});
+
+    
+    const findCategoryById = (categoryId) => {
+        // Check if the category object exists in the idToCategoryMap
+        if (idToCategoryMap[categoryId]) {
+            return idToCategoryMap[categoryId];
         }
-        return null;
+        // If not found, return undefined
+        return undefined;
     };
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
 
     const selectCategory = (categoryId) => {
+        console.log(`Selected ${categoryId}`)
+        // Make a copy of filters and selected categories
         const updatedFilters = { ...filters };
         const updatedSelectedCategories = [...selectedCategories];
-        const category = findCategoryById(categories, categoryId);
+    
+        // Find the category selected in categories array
+        const category = findCategoryById(categoryId);
+
+        console.log(category)
+    
+        // If category exists, add its subcategories recursively to filters and handle siblings' filters
         if (category) {
-            if (!updatedFilters.category.includes(categoryId)){
+            // If updated filters doesn't include category, add it
+            if (!updatedFilters.category.includes(categoryId)) {
                 updatedFilters.category.push(categoryId);
-            } 
-            if(!updatedSelectedCategories.includes(categoryId)) {
+            }
+    
+            // If updated selected categories doesn't include category, add it
+            if (!updatedSelectedCategories.includes(categoryId)) {
                 updatedSelectedCategories.push(categoryId);
             }
-
+    
+            // Recursively add category's subcategories to updated filters
             const addSubcategories = (subcategories) => {
-                subcategories.forEach((subcategory) => {
-                    updatedFilters.category.push(subcategory.id);
-                    if (subcategory.subcategories.length > 0) {
-                        addSubcategories(subcategory.subcategories);
+                subcategories.forEach((subcategoryId) => {
+                    // Find the category object by its ID
+                    const subcategory = findCategoryById(subcategoryId);
+                    if (subcategory) {
+                        updatedFilters.category.push(subcategory.id);
+                        // If the subcategory has subcategories, recurse with the subcategories array
+                        if (subcategory.subcategories && subcategory.subcategories.length > 0) {
+                            addSubcategories(subcategory.subcategories);
+                        }
                     }
                 });
             };
+    
             addSubcategories(category.subcategories);
-
-            const parentCategory = findParentCategory(categories, categoryId);
+    
+            // Get parent category
+            const parentCategory = findCategoryById(category.parent_id);
+    
+            // If parent category found, update the siblings of category selected accordingly
             if (parentCategory) {
+                // For each sibling / subcategory of category's parent:
                 parentCategory.subcategories.forEach((sibling) => {
-                    if (updatedSelectedCategories.includes(sibling.id) && !updatedFilters.category.includes(sibling.id)) {
-                        updatedFilters.category.push(sibling.id);
+                    // If sibling in selected categories but not in filters, add sibling to filters
+                    if (updatedSelectedCategories.includes(sibling) && !updatedFilters.category.includes(sibling)) {
+                        updatedFilters.category.push(sibling);
                     }
-                    if (!updatedSelectedCategories.includes(sibling.id) && updatedFilters.category.includes(sibling.id)) {
-                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling.id);
+                    // If sibling not selected but in filters, remove it from filter
+                    if (!updatedSelectedCategories.includes(sibling) && updatedFilters.category.includes(sibling)) {
+                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling);
                     }
                 });
             }
+    
+            setFilters(updatedFilters);
+            setSelectedCategories(updatedSelectedCategories);
         }
-        setFilters(updatedFilters);
-        setSelectedCategories(updatedSelectedCategories);
     };
-
+    
     const deselectCategory = (categoryId) => {
-        const updatedFilters = { ...filters };
-        const category = findCategoryById(categories, categoryId);
 
+
+        // Make a copy of filters
+        const updatedFilters = { ...filters };
+    
+        // Get category that's deselected
+        const category = findCategoryById(categoryId);
+    
+        // If category exists, handle logic accordingly
         if (category) {
+            // Get rid of category from filters
             updatedFilters.category = updatedFilters.category.filter((catId) => catId !== categoryId);
+    
+            // Remove every subcategory of category from filters recursively
             const deselectSubcategories = (subcategories) => {
-                subcategories.forEach((subcategory) => {
-                    updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory.id);
-                    if (subcategory.subcategories.length > 0) {
-                        deselectSubcategories(subcategory.subcategories);
+                subcategories.forEach((subcategoryId) => {
+                    // Find the category object by its ID
+                    const subcategory = findCategoryById(subcategoryId);
+                    if (subcategory) {
+                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory.id);
+                        // If the subcategory has subcategories, recursively deselect them
+                        if (subcategory.subcategories && subcategory.subcategories.length > 0) {
+                            deselectSubcategories(subcategory.subcategories);
+                        }
                     }
                 });
             };
-            deselectSubcategories(category.subcategories);
-
+    
+            deselectSubcategories(category.subcategories || []);
+    
+            // Get rid of category from selected categories
             let updatedSelectedCategories = [...selectedCategories].filter((catId) => catId !== categoryId);
+    
+            // Deselect every subcategory of category recursively
             const deselectSubcategoriesFromSelected = (subcategories) => {
                 subcategories.forEach((subcategory) => {
-                    updatedSelectedCategories = updatedSelectedCategories.filter((catId) => catId !== subcategory.id);
-                    if (subcategory.subcategories.length > 0) {
+                    updatedSelectedCategories = updatedSelectedCategories.filter((catId) => catId !== subcategory);
+                    if (subcategory.subcategories && subcategory.subcategories.length > 0) {
                         deselectSubcategoriesFromSelected(subcategory.subcategories);
                     }
                 });
             };
-            deselectSubcategoriesFromSelected(category.subcategories);
-
-            const parentCategory = findParentCategory(categories, categoryId);
+            deselectSubcategoriesFromSelected(category.subcategories || []);
+    
+            // Get parent of category
+            const parentCategory = findCategoryById(category.parent_id);
+    
+            // If parent exists and all siblings are deselected, add all siblings to filters (just not selected filters)
             if (parentCategory) {
-                const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling.id));
+                const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling));
                 if (allSiblingsDeselected) {
                     const addSubcategoryIds = (subcategories) => {
                         subcategories.forEach((subcategory) => {
-                            updatedFilters.category.push(subcategory.id);
-                            if (subcategory.subcategories.length > 0) {
+                            updatedFilters.category.push(subcategory);
+                            if (subcategory.subcategories && subcategory.subcategories.length > 0) {
                                 addSubcategoryIds(subcategory.subcategories);
                             }
                         });
@@ -148,18 +196,19 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                     addSubcategoryIds(parentCategory.subcategories);
                 }
             }
-
+    
             setFilters(updatedFilters);
             setSelectedCategories(updatedSelectedCategories);
         }
     };
-
+    
+    
 
     // Helper function to update shared fields based on selected categories
     const updateSharedFields = () => {
         const fieldCount = {};
         selectedCategories.forEach(categoryId => {
-            const category = findCategoryById(categories, categoryId);
+            const category = findCategoryById(categoryId);
             if (category) {
                 category.field_ids.forEach(fieldId => {
                     fieldCount[fieldId] = (fieldCount[fieldId] || 0) + 1;
@@ -184,11 +233,11 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         setExpandedFilters([]);
     };
 
-    // Helper function to render category filters recursively
     const renderCategoryFilters = (categories, level) => {
         const marginLeft = 10 * level;
         return (
             <div className="flex flex-col">
+                {/* Render categories */}
                 {categories.map((category) => (
                     <div key={category.id} style={{ marginLeft: `${marginLeft}px` }}>
                         <div className="flex items-center">
@@ -207,12 +256,29 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                             />
                             <label className="ml-2 text-gray-700">{category.name}</label>
                         </div>
-                        {filters.category.includes(category.id) && category.subcategories.length > 0 && renderCategoryFilters(category.subcategories, level + 1)}
+                        {/* Render subcategories if category is selected and has subcategories */}
+                        {(filters.category.includes(category.id) || selectedCategories.includes(category.id)) && category.subcategories.length > 0 && (
+                            <div className="ml-8">
+                                {/* Recursively render subcategories */}
+                                {category.subcategories.map((subcategoryId) => {
+                                    // Find the subcategory by its ID
+                                    const subcategory = findCategoryById(subcategoryId);
+                                    // Check if the subcategory exists before rendering
+                                    return subcategory && renderCategoryFilters([subcategory], level + 1);
+                                })}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
         );
     };
+    
+
+
+
+
+
 
     // Helper function to render field filters
     const renderFieldFilters = () => {
@@ -311,6 +377,22 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
         ));
     };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Render the component
     return (
         <div className="flex flex-col items-left text-left">
@@ -328,7 +410,7 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                         {expandedFilters.includes("Category") ? "-" : "+"}
                     </button>
                 </div>
-                {expandedFilters.includes("Category") ? renderCategoryFilters(categories, 1) : null}
+                {expandedFilters.includes("Category") ? renderCategoryFilters(categories.filter(category => category.parent_id === null), 1) : null}
                 <hr className="my-2 border-t border-gray-300 w-3/4" />
             </div>
 
@@ -342,4 +424,4 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             </button>
         </div>
     );
-};
+}

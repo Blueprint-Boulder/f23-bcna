@@ -15,42 +15,66 @@ export const Wildlife = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [resultsPerPage, setResultsPerPage] = useState(5);
 
+
+    const convertDataToArray = (data) => {
+        return Object.keys(data).map(key => data[key]);
+    }
+
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const categoriesAndFields = await apiService.getCategoriesAndFields();
                 const data = await apiService.getAllWildlife();
-                console.log(data)
-                setWildlifeData(data);
+
+                const fetchedWildlife = convertDataToArray(data)
+                const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
+                const fetchedFields = convertDataToArray(categoriesAndFields.fields);
+    
+                // Fetch image URLs for each result
+                const updatedData = await Promise.all(fetchedWildlife.map(async result => {
+                    if (result.field_values) {
+                        const thumbnailField = fetchedFields.find(field => field.name === 'Thumbnail');
+                        if (thumbnailField) {
+                            const thumbnailValue = result.field_values.find(field => field.field_id === thumbnailField.id);
+                            if (thumbnailValue) {
+                                const imageUrl = await apiService.getImage(thumbnailValue.value);
+                                return { ...result, image: imageUrl };
+                            }
+                        }
+                    }
+                    return result;
+                }));
+
+                console.log(fetchedWildlife)
+                console.log(fetchedCategories)
+                console.log(fetchedFields)
+
+                setWildlifeData(fetchedWildlife);
+                setCategories(fetchedCategories);
+                setFields(fetchedFields);
             } catch (error) {
                 console.error("Error fetching wildlife data:", error);
             }
         };
-
-        const fetchCategoriesAndFields = async () => {
-            try {
-                const data = await apiService.getCategoriesAndFields();
-                setCategories(data.categories);
-                setFields(data.fields);
-            } catch (error) {
-                console.error("Error fetching categories and fields:", error);
-            }
-        };
-
+    
         fetchData();
-        fetchCategoriesAndFields();
     }, []);
+    
 
     useEffect(() => {
         const applyFilters = () => {
             let filteredResults = [...wildlifeData];
-
+    
             // Filter by category
             if (filters.category.length > 0) {
                 filteredResults = filteredResults.filter(result => filters.category.includes(result.category_id));
             }
-
-            // Add additional filtering logic here for other filters
-
+    
+            // Filter by field
+            if (filters.field && filters.field.length > 0) {
+                filteredResults = filteredResults.filter(result => filters.field.includes(result.field_id));
+            }
+    
             // Sort results
             switch (sortBy) {
                 case 'name':
@@ -59,12 +83,14 @@ export const Wildlife = () => {
                 default:
                     // No sorting
             }
-
+    
             setResults(filteredResults);
         };
-
+    
         applyFilters();
     }, [wildlifeData, filters, sortBy]);
+    
+    
 
     const totalPages = Math.ceil(results.length / resultsPerPage);
 
