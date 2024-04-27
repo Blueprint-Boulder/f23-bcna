@@ -1,17 +1,23 @@
-from flask import Flask, jsonify, request
+import os
+import uuid
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
+
 import db_helpers
 
 app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
 
+# Set the folder for image uploads as uploaded_images, which is in the same folder as this file (main.py)
+THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+app.config["IMAGE_UPLOAD_FOLDER"] = os.path.join(THIS_FOLDER, "uploaded_images/")
 
-@app.route("/api")
+
+@app.route("/api", methods=["GET"])
 def hello_world():
     """
-    Simple endpoint to check if the API is running.
-    Returns a greeting message.
-
     Example request:
     GET /api
     
@@ -19,6 +25,11 @@ def hello_world():
     "Hello, from Flask!"
     """
     return 'Hello, from Flask!'
+
+
+@app.route("/api/ping/", methods=["GET"])
+def ping():
+    return "Pong", 200
 
 
 def get_subcategory_ids(top_level_category_ids):
@@ -67,11 +78,26 @@ def get_parent_ids(category_id):
     return parent_ids_list
 
 
+def save_file(file):
+    """Generates a unique filename and saves the file to the IMAGE_UPLOAD_FOLDER."""
+    original_name = secure_filename(file.filename)
+    extension = original_name.rsplit('.', 1)[1] if '.' in original_name else ''
+    unique_filename = f"{uuid.uuid4().hex}.{extension}"
+    file_path = os.path.join(app.config['IMAGE_UPLOAD_FOLDER'], unique_filename)
+    file.save(file_path)
+    return unique_filename
+
+
 @app.route("/api/create-wildlife/", methods=["POST"])
 def create_wildlife():
     """
     Create a wildlife instance. Requires name, scientific_name, and category_id.
     Additional custom fields can be provided at the end, with the format name=value (see example).
+    For image fields, you should upload them as files. Like with other fields, the key should be the field name.
+    Make sure to use enctype="multipart/form-data" on the HTML form; otherwise, you won't be able to upload images.
+
+    Image files must be <10 MB. All common image formats should work by default.
+    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute `accept="image/*"` to restrict the files to images.
 
     Example request:
     POST /api/create-wildlife/
@@ -90,48 +116,81 @@ def create_wildlife():
     if wildlife_with_name_exists:
         return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
 
-    wildlife_with_scientific_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
+    wildlife_with_scientific_name_exists = db_helpers.select_multiple(
+        "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
     if wildlife_with_scientific_name_exists:
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
     category_id = request.form["category_id"]
-    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
     if not category_exists:
         return jsonify({"error": "Category not found"}), 400
 
-    # Get all parent category IDs, including the category itself
+    # Get all parent category IDs, and the ID of the category itself
     parent_category_ids = get_parent_ids(category_id)
 
     # Fetch all fields valid for the category, including those inherited from parent categories
     valid_fields = db_helpers.select_multiple(f"""
-            SELECT Fields.name FROM Fields
+            SELECT Fields.name, Fields.type FROM Fields
             JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
             WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
         """, parent_category_ids)
 
+    valid_nonimage_fields = filter(lambda field: field["type"] != "IMAGE", valid_fields)
+    valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
+
     valid_field_names = {field['name'] for field in valid_fields}
+    valid_nonimage_field_names = {field['name'] for field in valid_nonimage_fields}
+    valid_image_field_names = {field['name'] for field in valid_image_fields}
 
-    # Check if all provided fields are valid
-    provided_field_names = set(other_fields.keys())
+    # Ensure all provided fields exist
+    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
     if not provided_field_names.issubset(valid_field_names):
-        invalid_fields = provided_field_names - valid_field_names
-        return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
+        invalid_field_names = provided_field_names - valid_field_names
+        return jsonify({"error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
 
-    # Check if all required fields are provided
+    # Ensure all required fields are provided
     if not valid_field_names.issubset(provided_field_names):
-        missing_fields = valid_field_names - provided_field_names
-        return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        missing_field_names = valid_field_names - provided_field_names
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_field_names)}"}), 400
 
+    # Ensure all image fields are provided as files
+    if not valid_image_field_names.issubset(request.files.keys()):
+        field_names_missing_file = valid_image_field_names - request.files.keys()
+        return jsonify({"error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
+
+    # Ensure all image files are a reasonable size and format
+    for image_file in request.files.values():
+        file_length = image_file.seek(0, os.SEEK_END)
+        image_file.seek(0, os.SEEK_SET)
+        if file_length > 10 * 1024 * 1024:
+            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+        if not image_file.mimetype.startswith("image/"):
+            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+
+    # Ensure all non-image fields are provided as form data
+    if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
+        field_names_missing_value = valid_nonimage_field_names - provided_nonimage_fields.keys()
+        return jsonify({"error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
+
+    # Insert the wildlife entry
     wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
                                     (name, scientific_name, category_id))
 
-    # Insert additional field values (validation already performed)
-    for field_name, value in other_fields.items():
+    # Insert the non-image field values
+    for field_name, value in provided_nonimage_fields.items():
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
+
+    # Insert the image field values
+    for field_name, image_file in request.files.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        saved_filename = save_file(image_file)
+        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, saved_filename))
 
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
@@ -323,95 +382,124 @@ def get_categories_and_fields():
     """
     Retrieves all categories and their associated fields.
     The output format is complicated, so it's best to just look at the example below.
-    
+
     Example request:
     GET /api/get-categories-and-fields/
-    
+
     Example output:
-    
+
     {
         "categories": [
-            {
+            "3": {
                 "id": 3,
+                "parent_id": null,
                 "field_ids": [5, 4],
                 "name": "Animals",
-                "subcategories": [
-                    {
-                        "field_ids": [3, 1, 2],
-                        "name": "Birds",
-                        "subcategories": []
-                    },
-                    {
-                        "field_ids": [1, 2],
-                        "name": "Cats",
-                        "subcategories": []
-                    }
-                ]
+                "subcategories": [6, 8]
+            },
+            "8": {
+                "id": 8,
+                "parent_id": 3,
+                "field_ids": [5, 4, 2],
+                "name": "Birds",
+                "subcategories": []
+            },
+            "6": {
+                "id": 6,
+                "parent_id": 3,
+                "field_ids": [5, 4],
+                "name": "Cats",
+                "subcategories": []
             }
         ],
         "fields": [
-            {
+            "5": {
                 "id": 5,
                 "name": "Description",
                 "type": "TEXT"
             },
-            {
+            "2": {
                 "id": 2,
-                "name": "Note",
-                "type": "TEXT"
+                "name": "Average Lifespan",
+                "type": "INTEGER"
             },
-            {
+            "4": {
                 "id": 4,
                 "name": "Wingspan",
                 "type": "INTEGER"
             }
         ]
     }
-    
-    Here, the "Animals" category has the "Description" and "Note" text fields.
-    The "Birds" category is a subcategory of "Animals" and has the "Wingspan" integer field.
+
+    Here, the "Animals" category has the "Description" and "Average Lifespan" text fields.
+    The "Birds" category is a subcategory of "Animals" and has the extra field "Wingspan".
     The "Cats" category is a subcategory of "Animals" and has no extra fields.
-    In this example, there's only one top-level category (Animals) but it's possible for there to be multiple.
     Note that subcategories always inherit the field IDs of their parent; i.e. the field_ids of a subcategory is a superset of its parent's field_ids.
-    Also note that a category's field_ids might not be sorted. Don't rely on it being in any particular order.
+    Don't rely on things being in a particular order, e.g. don't assume field_ids are sorted.
     """
+    # The code here is pretty unreadable; if you're reading this and know what you're doing, feel free to clean it up
 
-    def construct_category_structure(category_id=None, inherited_field_ids=None):
-        if inherited_field_ids is None:
-            inherited_field_ids = []
+    category_data = db_helpers.select_multiple("SELECT * FROM Categories")
+    fields_to_categories = db_helpers.select_multiple("SELECT * FROM FieldsToCategories")
 
-        if category_id:
-            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id = ?",
-                                                    [category_id])
+    # Make a dict from categories to their fields
+    category_fields = {}
+    for entry in fields_to_categories:
+        if entry["category_id"] in category_fields:
+            category_fields[entry["category_id"]].append(entry["field_id"])
         else:
-            categories = db_helpers.select_multiple("SELECT id, name FROM Categories WHERE parent_id IS NULL")
+            category_fields[entry["category_id"]] = [entry["field_id"]]
+    for category in category_data:
+        if category["id"] not in category_fields:
+            category_fields[category["id"]] = []
 
-        category_list = []
-        for category in categories:
-            field_ids_row = db_helpers.select_multiple("SELECT field_id FROM FieldsToCategories WHERE category_id = ?",
-                                                       [category["id"]])
-            field_ids = [row['field_id'] for row in field_ids_row]
+    category_dict = {}
+    # First pass: id, name, empty subcategories list, and parent ID
+    for category in category_data:
+        category_dict[category["id"]] = {
+            "id": category["id"],
+            "name": category["name"],
+            "parent_id": category["parent_id"],
+            "subcategories": []
+        }
 
-            # Combine the current category's field_ids with those inherited from its parent
-            combined_field_ids = field_ids + inherited_field_ids
+    # Helper function for the second pass; gets all the field IDs that belong to a category
+    def get_field_ids(category_id):
+        category = category_dict[category_id]
+        immediate_ids = category_fields[category["id"]]
+        if category["parent_id"]:
+            return list(set(immediate_ids + get_field_ids(category["parent_id"])))  # list(set()) removes duplicates
+        else:
+            return immediate_ids
 
-            category_obj = {
-                "id": category['id'],
-                "name": category['name'],
-                "field_ids": combined_field_ids,
-                "subcategories": construct_category_structure(category['id'], combined_field_ids)
-            }
-            category_list.append(category_obj)
+    # Second pass: get subcategories and field IDs
+    for category in category_data:
+        if category["parent_id"]:
+            category_dict[category["parent_id"]]["subcategories"].append(category["id"])
+        category_dict[category["id"]]["field_ids"] = get_field_ids(category["id"])
 
-        return category_list
+    # Make fields
+    fields_dict = {}
+    fields_data = db_helpers.select_multiple("SELECT id, name, type FROM Fields")
+    for field in fields_data:
+        fields_dict[field["id"]] = field
 
-    # Retrieve the fields
-    all_fields = db_helpers.select_multiple("SELECT id, type, name FROM Fields")
-    fields_array = [{"id": field["id"], "name": field["name"], "type": field["type"]} for field in all_fields]
+    output = {"categories": category_dict, "fields": fields_dict}
+    return jsonify(output), 200
 
-    categories_structure = construct_category_structure()
-    return jsonify({"categories": categories_structure, "fields": fields_array}), 200
 
+@app.route("/api/get-image/<string:filename>/", methods=["GET"])
+def get_image(filename):
+    """
+    Gets a user-uploaded image file by its filename. Used for getting images associated with wildlife.
+
+    Example request:
+    GET /api/get-image/1234abcd.png
+
+    Example output:
+    (The image file)
+    """
+    return send_from_directory(app.config["IMAGE_UPLOAD_FOLDER"], filename)
 
 
 @app.route("/api/get-wildlife/", methods=["GET"])
@@ -466,7 +554,8 @@ def get_wildlife():
     all_wildlife = db_helpers.select_multiple("SELECT * FROM Wildlife")
     out = []
     for wildlife in all_wildlife:
-        field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?", [wildlife["id"]])
+        field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE FieldValues.wildlife_id = ?",
+                                                  [wildlife["id"]])
         cleaned_field_values = []
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
@@ -474,12 +563,15 @@ def get_wildlife():
                 field_value = fv["value"]
             elif field["type"] == "INTEGER":
                 field_value = int(fv["value"])
+            elif field["type"] == "ENUM":
+                field_value = fv["value"]
+            elif field["type"] == "IMAGE":
+                field_value = fv["value"]
             else:
-                raise NotImplementedError("Unsupported field type")
+                raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
             cleaned_field_values.append({"field_id": field["id"], "value": field_value})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
-
 
 
 @app.route("/api/get-wildlife-by-id/<int:wildlife_id>", methods=["GET"])
@@ -521,14 +613,11 @@ def get_wildlife_by_id(wildlife_id):
     return jsonify(wildlife), 200
 
 
-
-
-
 @app.route("/api/create-field/", methods=["POST"])
 def create_field():
     """
     Creates a new field and associates it with zero or more categories.
-    Requires 'name', 'type', and 'category_id' (can be repeated for multiple categories).
+    Requires 'name' and 'type'. 'category_id' can be repeated for multiple categories.
 
     Example request:
     POST /api/create-field/
@@ -550,21 +639,67 @@ def create_field():
 
     for category_id in category_ids:
         # Check if category exists
-        category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
+        category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
         if not category_exists:
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
     # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER and TEXT."}), 400
+    if typ not in ("INTEGER", "TEXT", "ENUM", "IMAGE"):
+        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, ENUM, and IMAGE."}), 400
 
-    field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", (name, typ))
+    field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
     for category_id in category_ids:
         db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
-                          (field_id, category_id))
+                          [field_id, category_id])
 
     return jsonify({"message": "Field created successfully", "field_id": field_id}), 201
+
+
+@app.route("/api/edit-field/", methods=["POST"])
+def edit_field():
+    """
+    Associates the field with zero or more new categories, provided by `new_category_id`. Keeps existing field-category associations.
+    'new_category_id' can be repeated for multiple categories.
+    `new_name` is optional, and changes the name of the field if provided.
+
+    Example request:
+    POST /api/edit-field/
+    Form Data: field_id=2, new_name=Habitat, new_category_id=1, new_category_id=2
+
+    Example output:
+    {
+        "message": "Field updated successfully",
+    }
+    """
+    field_id = request.form["field_id"]
+    new_name = request.form.get("new_name")
+    new_category_ids = request.form.getlist("new_category_id", type=int)
+
+    # Check if the field exists
+    field_exists = db_helpers.select_one("SELECT 1 FROM Fields WHERE id = ?", (field_id,))
+    if not field_exists:
+        return jsonify({"error": "Field not found"}), 400
+
+    # Verify all new categories exist and get the categories that are already associated with this field
+    existing_categories = set()
+    for category_id in new_category_ids:
+        if not db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,)):
+            return jsonify({"error": f"Category {category_id} not found"}), 400
+        # Check if the category is already associated with the field
+        if db_helpers.select_one("SELECT 1 FROM FieldsToCategories WHERE field_id = ? AND category_id = ?",
+                                 (field_id, category_id)):
+            existing_categories.add(category_id)
+
+    # Add the field to new categories, excluding already associated ones
+    for category_id in set(new_category_ids) - existing_categories:
+        db_helpers.insert("INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
+                          (field_id, category_id))
+
+    if new_name:
+        db_helpers.update("UPDATE Fields SET name = ? WHERE id = ?", [new_name, field_id])
+
+    return jsonify({"message": "Field updated successfully"}), 200
 
 
 @app.route("/api/delete-category/", methods=["DELETE"])
@@ -589,7 +724,8 @@ def delete_category():
     if delete_members is None:
         parent_id = category['parent_id']
         if parent_id is None:
-            return jsonify({"error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
+            return jsonify({
+                "error": "Delete failed; cannot reassign members to the parent category because it does not exist."}), 400
         else:
             # Reassign wildlife to the parent category
             db_helpers.update("UPDATE Wildlife SET category_id = ? WHERE category_id = ?", [parent_id, category_id])
@@ -601,7 +737,13 @@ def delete_category():
     else:
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
-        db_helpers.delete(f"DELETE FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)
+        wildlife_ids_to_delete = [x["id"] for x in
+                                  db_helpers.select_multiple(f"SELECT id FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)]
+        db_helpers.delete(f"DELETE FROM Wildlife WHERE id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+                          wildlife_ids_to_delete)
+        db_helpers.delete(
+            f"DELETE FROM FieldValues WHERE wildlife_id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
+            wildlife_ids_to_delete)
         # Delete the category and its subcategories
         db_helpers.delete(f"DELETE FROM Categories WHERE id IN ({','.join('?' for _ in category_ids)})", category_ids)
         return jsonify({"message": "Category members and category successfully deleted"}), 200
@@ -621,9 +763,17 @@ def delete_wildlife():
     }
     """
     wildlife_id = request.args["id"]
-    n_rows = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
-    if n_rows == 0:
+    n_rows_deleted = db_helpers.delete("DELETE FROM Wildlife WHERE id = ?", [wildlife_id])
+    if n_rows_deleted == 0:
         return jsonify({"error": "Wildlife not found"}), 404
+
+    image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
+    for image_filename in image_field_values:
+        image_path = os.path.join(app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
+    db_helpers.delete("DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id])
     return jsonify({"message": "Wildlife successfully deleted"}), 200
 
 
