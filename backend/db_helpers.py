@@ -1,9 +1,12 @@
+import os
 import sqlite3
 from typing import Sequence, Any
 
+THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_connection():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(os.path.join(THIS_FOLDER, "database.db"))
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -61,7 +64,7 @@ def select_one(query: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
-    with open("create.sql", "r") as sql_file:
+    with open(os.path.join(THIS_FOLDER, "create.sql"), "r") as sql_file:
         sql_script = sql_file.read()
     cursor.executescript(sql_script)
     conn.commit()

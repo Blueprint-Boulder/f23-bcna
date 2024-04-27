@@ -4,7 +4,7 @@
 // src/services/api.js
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'http://127.0.0.1:5000'
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -30,6 +30,17 @@ const apiService = {
   getCategoriesAndFields: async () => {
     try {
       const response = await api.get('/api/get-categories-and-fields');
+      console.log("Response:")
+      console.log(response)
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  getCategories: async () => {
+    try {
+      const response = await api.get('/api/get-categories');
       console.log("Response:")
       console.log(response)
       return response.data;
@@ -73,8 +84,52 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
-  }
+  },
 
+  getImage: async(filename) => {
+    try{
+      const response = await api.get(`/api/get-image/${filename}/`)
+      return response.data;
+    }catch (error){
+      handleError(error);
+    }
+  },
+
+  createCategory: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-category/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  createField: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-field/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  editField: async(form) => {
+    try { 
+      const response = await api.post(`/api/edit-field/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  createWildlife: async(form) => {
+    try { 
+      const response = await api.post(`/api/create-wildlife/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
 
 
 };
