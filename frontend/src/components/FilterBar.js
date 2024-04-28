@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-export const FilterBar = ({ categories, fields, filters, setFilters }) => {
+export const FilterBar = ({ wildlife, categories, fields, filters, setFilters }) => {
     // State for selected categories
     const [selectedCategories, setSelectedCategories] = useState([]);
 
@@ -218,10 +218,14 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
     
     
 
-    // Helper function to update shared fields based on selected categories
     const updateSharedFields = () => {
         const fieldCount = {};
-        selectedCategories.forEach(categoryId => {
+        const leafCategories = selectedCategories.filter(categoryId => {
+            const category = findCategoryById(categoryId);
+            return category && category.subcategories.every(subcategoryId => !selectedCategories.includes(subcategoryId));
+        });
+    
+        leafCategories.forEach(categoryId => {
             const category = findCategoryById(categoryId);
             if (category) {
                 category.field_ids.forEach(fieldId => {
@@ -229,9 +233,11 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 });
             }
         });
-        const newSharedFields = fields.filter(field => fieldCount[field.id] === selectedCategories.length);
+    
+        const newSharedFields = fields.filter(field => fieldCount[field.id] === leafCategories.length);
         setSharedFields(newSharedFields);
     };
+    
 
     // Helper function to handle toggling of field filters
     // const toggleFieldFilter = (field, option, value) => {
@@ -282,109 +288,125 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
             </div>
         );
     };
+
+    // Handler for changing INTEGER field values
+    const handleIntegerFieldChange = (fieldId, rangeType, value) => {
+        const updatedFilters = { ...filters };
+
+        if (!updatedFilters.fields) {
+            updatedFilters.fields = {};
+        }
+
+        if (!updatedFilters.fields[fieldId]) {
+            updatedFilters.fields[fieldId] = {};
+        }
+
+        updatedFilters.fields[fieldId]["id"] = fieldId;
+        updatedFilters.fields[fieldId]["filterValues"] = [value];
+
+        setFilters(updatedFilters);
+    };
+
+    // Handler for changing TEXT field values
+    const handleTextFieldChange = (fieldId, option, isChecked) => {
+        const updatedFilters = { ...filters };
+
+        if (!updatedFilters.fields) {
+            updatedFilters.fields = {};
+        }
+
+        if (!updatedFilters.fields[fieldId]) {
+            updatedFilters.fields[fieldId] = {};
+        }
+
+        if (!updatedFilters.fields[fieldId]["filterValues"]) {
+            updatedFilters.fields[fieldId]["filterValues"] = [];
+        }
+
+        if (isChecked) {
+            updatedFilters.fields[fieldId]["filterValues"].push(option);
+        } else {
+            updatedFilters.fields[fieldId]["filterValues"] = updatedFilters.fields[fieldId]["filterValues"].filter((item) => item !== option);
+        }
+
+        setFilters(updatedFilters);
+    };
+
+
+
     
 
 
-
-
-
-
-    // Helper function to render field filters
     const renderFieldFilters = () => {
         return sharedFields.map((field) => (
-            <div key={field.id}>
-                <div className="flex flex-row justify-between w-3/4">
-                    <h5 className="text-lg font-bold">{capitalizeFirstLetter(field.name)}</h5>
-                    <button className="text-lg" onClick={() => handleExpandFilter(field.name)}>
-                        {expandedFilters.includes(field.name) ? "-" : "+"}
-                    </button>
-                </div>
-                {expandedFilters.includes(field.name) && (
-                    <div className="flex flex-col w-3/4">
-                        {/* Check if the field type is INTEGER or other */}
-                        {field.type === "INTEGER" ? (
-                            <div className="flex items-center p-3">
-                                <input 
-                                    type="number" 
-                                    placeholder="Min" 
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        const updatedFilters = { ...filters };
-                                        const fieldId = field.id;
-                                        const lowercaseField = field.name ? field.name.toLowerCase() : "";
-                            
-                                        if (!updatedFilters[lowercaseField]) {
-                                            updatedFilters[lowercaseField] = {};
-                                        }
-                            
-                                        updatedFilters[lowercaseField]["range"] = [
-                                            value,
-                                            filters[lowercaseField]?.["range"]?.[1] || "min"
-                                        ];
-                            
-                                        setFilters(updatedFilters);
-                                    }} 
-                                    value={filters[field.name]?.["range"]?.[0] || ""} 
-                                    className="form-input w-1/2 mr-2" 
-                                />
-                                <input 
-                                    type="number" 
-                                    placeholder="Max" 
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        const updatedFilters = { ...filters };
-                                        const fieldId = field.id;
-                                        const lowercaseField = field.name ? field.name.toLowerCase() : "";
-                            
-                                        if (!updatedFilters[lowercaseField]) {
-                                            updatedFilters[lowercaseField] = {};
-                                        }
-                            
-                                        updatedFilters[lowercaseField]["range"] = [
-                                            filters[lowercaseField]?.["range"]?.[0] || "max",
-                                            value
-                                        ];
-                            
-                                        setFilters(updatedFilters);
-                                    }} 
-                                    value={filters[field.name]?.["range"]?.[1] || ""} 
-                                    className="form-input w-1/2" 
-                                />
-                            </div>
-                        
-                        ) : (
-                            // Render checkboxes for other types
-                            field.options.map((option) => (
-                                <label className="flex items-center" key={option}>
-                                    <input 
-                                        type="checkbox" 
-                                        className="form-checkbox" 
-                                        onChange={(e) => {
-                                            const isChecked = e.target.checked;
-                                            const updatedFilters = { ...filters };
-                                            const fieldId = field.id;
-                                            const lowercaseField = field.name ? field.name.toLowerCase() : "";
-
-                                            if (!updatedFilters[lowercaseField]) {
-                                                updatedFilters[lowercaseField] = {};
-                                            }
-
-                                            updatedFilters[lowercaseField][option] = isChecked;
-
-                                            setFilters(updatedFilters);
-                                        }} 
-                                        checked={filters[field.name] && filters[field.name][option]} // Assuming the field name is lowercase
-                                    />
-                                    <span className="ml-2">{capitalizeFirstLetter(option)}</span>
-                                </label>
-                            ))
-                        )}
+            // Check if the field type is not "IMAGE"
+            field.type !== "IMAGE" && (
+                <div key={field.id}>
+                    <div className="flex flex-row justify-between w-3/4">
+                        <h5 className="text-lg font-bold">{capitalizeFirstLetter(field.name)}</h5>
+                        <button className="text-lg" onClick={() => handleExpandFilter(field.name)}>
+                            {expandedFilters.includes(field.name) ? "-" : "+"}
+                        </button>
                     </div>
-                )}
-                <hr className="my-2 border-t border-gray-300 w-3/4" />
-            </div>
+                    {expandedFilters.includes(field.name) && (
+                        <div className="flex flex-col w-3/4">
+                            {field.type === "INTEGER" ? (
+                                // Render INTEGER fields as input ranges
+                                <div className="flex items-center p-3">
+                                    <input 
+                                        type="number" 
+                                        placeholder="Min" 
+                                        onChange={(e) => handleIntegerFieldChange(field.id, "min", e.target.value)} 
+                                        value={(filters.fields && filters.fields[field.id]?.["filterValues"]?.[0]) || ""} 
+                                        className="form-input w-1/2 mr-2" 
+                                    />
+                                    <input 
+                                        type="number" 
+                                        placeholder="Max" 
+                                        onChange={(e) => handleIntegerFieldChange(field.id, "max", e.target.value)} 
+                                        value={(filters.fields && filters.fields[field.id]?.["filterValues"]?.[1]) || ""} 
+                                        className="form-input w-1/2" 
+                                    />
+                                </div>
+                            ) : field.type === "TEXT" ? (
+                                // Render TEXT fields with options collected from field values
+                                <div className="flex flex-col">
+                                    {getFieldOptions(field.id).map((option) => (
+                                        <label className="flex items-center" key={option}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="form-checkbox" 
+                                                onChange={(e) => handleTextFieldChange(field.id, option, e.target.checked)} 
+                                                checked={(filters.fields && filters.fields[field.id] && filters.fields[field.id]["filterValues"] && filters.fields[field.id]["filterValues"].includes(option)) || false} 
+                                            />
+                                            <span className="ml-2">{capitalizeFirstLetter(option)}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            ) : (
+                                null
+                            )}
+                        </div>
+                    )}
+                    <hr className="my-2 border-t border-gray-300 w-3/4" />
+                </div>
+            )
         ));
     };
+    
+    
+    
+    
+    // Helper function to collect options for TEXT fields from field values
+    const getFieldOptions = (fieldId) => {
+        const values = wildlife
+            .filter((item) => item.field_values.some((value) => value.field_id === fieldId))
+            .map((item) => item.field_values.find((value) => value.field_id === fieldId).value);
+        return Array.from(new Set(values));
+    };
+
+    
+
 
 
 

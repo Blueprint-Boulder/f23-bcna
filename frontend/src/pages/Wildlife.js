@@ -66,6 +66,7 @@ export const Wildlife = () => {
       
             console.log(`Fetched Wilflife : `, fetchedWildlife)
             console.log(`Fetched Categories : `, fetchedCategories)
+            console.log(`Fetched Fields` , fetchedFields)
       
             setWildlifeData(fetchedWildlife); // Set the updated data with image URLs
             setCategories(fetchedCategories);
@@ -82,20 +83,32 @@ export const Wildlife = () => {
     
     
 
-    useEffect(() => {
+      useEffect(() => {
         const applyFilters = () => {
             let filteredResults = [...wildlifeData];
-    
+        
             // Filter by category
             if (filters.category.length > 0) {
                 filteredResults = filteredResults.filter(result => filters.category.includes(result.category_id));
             }
-    
-            // Filter by field
-            if (filters.field && filters.field.length > 0) {
-                filteredResults = filteredResults.filter(result => filters.field.includes(result.field_id));
+        
+            if (filters.fields) {
+                // Filter by field filters
+                Object.keys(filters.fields).forEach(fieldId => {
+                    const fieldFilterValues = filters.fields[fieldId].filterValues;
+                    if (fieldFilterValues.length > 0) {
+                        console.log(`Filtering by field ${fieldId} with values:`, fieldFilterValues);
+                        filteredResults = filteredResults.filter(result =>
+                            result.field_values.some(fieldValue => {
+                                const isMatch = fieldValue.field_id === parseInt(fieldId) && fieldFilterValues.includes(fieldValue.value);
+                                return isMatch;
+                            })
+                        );
+                    }
+                });
             }
-    
+            
+        
             // Sort results
             switch (sortBy) {
                 case 'name':
@@ -104,12 +117,15 @@ export const Wildlife = () => {
                 default:
                     // No sorting
             }
-    
+        
             setResults(filteredResults);
         };
+        
     
         applyFilters();
     }, [wildlifeData, filters, sortBy]);
+    
+    
     
     
 
@@ -192,7 +208,7 @@ export const Wildlife = () => {
             <div className="search-results flex mx-20 my-10 gap-5">
                 {categories && (
                     <div className="search-results__filters w-1/4">
-                        <FilterBar categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
+                        <FilterBar wildlife={wildlifeData} categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
                     </div>
                 )}
                 <div className="search-results__list w-3/4">
