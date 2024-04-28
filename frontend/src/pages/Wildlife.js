@@ -22,43 +22,64 @@ export const Wildlife = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                const categoriesAndFields = await apiService.getCategoriesAndFields();
-                const data = await apiService.getAllWildlife();
-
-                const fetchedWildlife = convertDataToArray(data)
-                const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
-                const fetchedFields = convertDataToArray(categoriesAndFields.fields);
-    
-                // Fetch image URLs for each result
-                const updatedData = await Promise.all(fetchedWildlife.map(async result => {
-                    if (result.field_values) {
-                        const thumbnailField = fetchedFields.find(field => field.name === 'Thumbnail');
-                        if (thumbnailField) {
-                            const thumbnailValue = result.field_values.find(field => field.field_id === thumbnailField.id);
-                            if (thumbnailValue) {
-                                const imageUrl = await apiService.getImage(thumbnailValue.value);
-                                return { ...result, image: imageUrl };
-                            }
-                        }
-                    }
-                    return result;
-                }));
-
-                console.log(fetchedWildlife)
-                console.log(fetchedCategories)
-                console.log(fetchedFields)
-
-                setWildlifeData(fetchedWildlife);
-                setCategories(fetchedCategories);
-                setFields(fetchedFields);
-            } catch (error) {
-                console.error("Error fetching wildlife data:", error);
-            }
+          try {
+            const categoriesAndFields = await apiService.getCategoriesAndFields();
+            const data = await apiService.getAllWildlife();
+      
+            const fetchedWildlife = convertDataToArray(data);
+            const fetchedCategories = convertDataToArray(
+              categoriesAndFields.categories
+            );
+            const fetchedFields = convertDataToArray(categoriesAndFields.fields);
+      
+            // Fetch image URLs for each result
+            // const updatedData = await Promise.all(
+            //   fetchedWildlife.map(async (result) => {
+            //     if (result.field_values) {
+            //       const thumbnailField = fetchedFields.find(
+            //         (field) => field.name === "Thumbnail"
+            //       );
+            //       if (thumbnailField) {
+            //         console.log(`thumbnail field :`)
+            //         console.log(thumbnailField)
+            //         const thumbnailValue = result.field_values.find(
+            //           (field) => field.field_id === thumbnailField.id
+            //         );
+            //         if (thumbnailValue) {
+            //             console.log(`thubmnail value:`,thumbnailValue)
+            //           try {
+            //             // Fetch image using apiService
+            //             const response = await apiService.getImage(thumbnailValue.value);
+            //             console.log(`Response : `, response)
+                        
+      
+            //             return { ...result, image: null };
+            //           } catch (error) {
+            //             console.error("Error fetching image:", error);
+            //           }
+            //         }
+            //       }
+            //     }
+            //     return result;
+            //   })
+            // );
+      
+            console.log(`Fetched Wilflife : `, fetchedWildlife)
+            console.log(`Fetched Categories : `, fetchedCategories)
+      
+            setWildlifeData(fetchedWildlife); // Set the updated data with image URLs
+            setCategories(fetchedCategories);
+            setFields(fetchedFields);
+          } catch (error) {
+            console.error("Error fetching wildlife data:", error);
+          }
         };
-    
+      
         fetchData();
-    }, []);
+      }, []);
+      
+    
+    
     
 
     useEffect(() => {
