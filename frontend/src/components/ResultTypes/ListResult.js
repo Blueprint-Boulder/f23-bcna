@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 
 const ListResult = ({ data }) => {
+  console.log("Image Data:", data.image); // Log image data to console
     return (
       <div className="list-result flex items-center p-4 border mb-4 rounded-lg">
         {/* Image on the left */}
