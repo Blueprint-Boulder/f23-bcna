@@ -1,21 +1,22 @@
-import { useEffect, useState } from "react"
-import { NavLink } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
 
 export const NavBar = () => {
-  const [isScrolled, setIsScrolled] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY
-      setIsScrolled(scrollPosition > 0)
-    }
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 0);
+    };
 
-    window.addEventListener("scroll", handleScroll)
+    window.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
 
   return (
     <div className={`navbar p-6`}>
@@ -34,6 +35,7 @@ export const NavBar = () => {
             />
           </div>
           <ul className="flex items-center space-x-4">
+            {/* Existing navigation links */}
             <li>
               <NavLink
                 exact="true"
@@ -45,31 +47,53 @@ export const NavBar = () => {
             </li>
             <li>
               <NavLink
+                to="/about"
+                className={`hover:text-light-blue transition-all duration-300`}
+              >
+                About
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/contact"
+                className={`hover:text-light-blue transition-all duration-300`}
+              >
+                Contact
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/resources"
+                className={`hover:text-light-blue transition-all duration-300`}
+              >
+                Resources
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
                 to="/wildlife"
                 className={`hover:text-light-blue transition-all duration-300`}
               >
                 Wildlife
               </NavLink>
             </li>
+
             <li>
               <NavLink
-                to="/api"
+                to="/admin"
                 className={`hover:text-light-blue transition-all duration-300`}
               >
-                API
+                Admin
               </NavLink>
             </li>
-            <li>
-              <NavLink
-                to="/api"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Test
-              </NavLink>
-            </li>
+
+            
           </ul>
         </div>
       </nav>
     </div>
-  )
-}
+  );
+};

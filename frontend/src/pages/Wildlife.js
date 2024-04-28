@@ -15,41 +15,100 @@ export const Wildlife = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [resultsPerPage, setResultsPerPage] = useState(5);
 
+
+    const convertDataToArray = (data) => {
+        return Object.keys(data).map(key => data[key]);
+    }
+
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                const data = await apiService.getAllWildlife();
-                setWildlifeData(data);
-            } catch (error) {
-                console.error("Error fetching wildlife data:", error);
-            }
+          try {
+            const categoriesAndFields = await apiService.getCategoriesAndFields();
+            const data = await apiService.getAllWildlife();
+      
+            const fetchedWildlife = convertDataToArray(data);
+            const fetchedCategories = convertDataToArray(
+              categoriesAndFields.categories
+            );
+            const fetchedFields = convertDataToArray(categoriesAndFields.fields);
+      
+            // Fetch image URLs for each result
+            // const updatedData = await Promise.all(
+            //   fetchedWildlife.map(async (result) => {
+            //     if (result.field_values) {
+            //       const thumbnailField = fetchedFields.find(
+            //         (field) => field.name === "Thumbnail"
+            //       );
+            //       if (thumbnailField) {
+            //         console.log(`thumbnail field :`)
+            //         console.log(thumbnailField)
+            //         const thumbnailValue = result.field_values.find(
+            //           (field) => field.field_id === thumbnailField.id
+            //         );
+            //         if (thumbnailValue) {
+            //             console.log(`thubmnail value:`,thumbnailValue)
+            //           try {
+            //             // Fetch image using apiService
+            //             const response = await apiService.getImage(thumbnailValue.value);
+            //             console.log(`Response : `, response)
+                        
+      
+            //             return { ...result, image: null };
+            //           } catch (error) {
+            //             console.error("Error fetching image:", error);
+            //           }
+            //         }
+            //       }
+            //     }
+            //     return result;
+            //   })
+            // );
+      
+            console.log(`Fetched Wilflife : `, fetchedWildlife)
+            console.log(`Fetched Categories : `, fetchedCategories)
+            console.log(`Fetched Fields` , fetchedFields)
+      
+            setWildlifeData(fetchedWildlife); // Set the updated data with image URLs
+            setCategories(fetchedCategories);
+            setFields(fetchedFields);
+          } catch (error) {
+            console.error("Error fetching wildlife data:", error);
+          }
         };
-
-        const fetchCategoriesAndFields = async () => {
-            try {
-                const data = await apiService.getCategoriesAndFields();
-                setCategories(data.categories);
-                setFields(data.fields);
-            } catch (error) {
-                console.error("Error fetching categories and fields:", error);
-            }
-        };
-
+      
         fetchData();
-        fetchCategoriesAndFields();
-    }, []);
+      }, []);
+      
+    
+    
+    
 
-    useEffect(() => {
+      useEffect(() => {
         const applyFilters = () => {
             let filteredResults = [...wildlifeData];
-
+        
             // Filter by category
             if (filters.category.length > 0) {
                 filteredResults = filteredResults.filter(result => filters.category.includes(result.category_id));
             }
-
-            // Add additional filtering logic here for other filters
-
+        
+            if (filters.fields) {
+                // Filter by field filters
+                Object.keys(filters.fields).forEach(fieldId => {
+                    const fieldFilterValues = filters.fields[fieldId].filterValues;
+                    if (fieldFilterValues.length > 0) {
+                        console.log(`Filtering by field ${fieldId} with values:`, fieldFilterValues);
+                        filteredResults = filteredResults.filter(result =>
+                            result.field_values.some(fieldValue => {
+                                const isMatch = fieldValue.field_id === parseInt(fieldId) && fieldFilterValues.includes(fieldValue.value);
+                                return isMatch;
+                            })
+                        );
+                    }
+                });
+            }
+            
+        
             // Sort results
             switch (sortBy) {
                 case 'name':
@@ -58,12 +117,17 @@ export const Wildlife = () => {
                 default:
                     // No sorting
             }
-
+        
             setResults(filteredResults);
         };
-
+        
+    
         applyFilters();
     }, [wildlifeData, filters, sortBy]);
+    
+    
+    
+    
 
     const totalPages = Math.ceil(results.length / resultsPerPage);
 
@@ -82,8 +146,8 @@ export const Wildlife = () => {
                     <table className="table-auto w-full">
                         <thead className="bg-gray-300 text-black">
                             <tr>
-                                <th className="px-4 py-2 text-left">Name</th>
-                                <th className="px-4 py-2 text-left">Subcategory</th>
+                                <th className="text-left">Name</th>
+                                <th className="text-left">Subcategory</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,7 +208,7 @@ export const Wildlife = () => {
             <div className="search-results flex mx-20 my-10 gap-5">
                 {categories && (
                     <div className="search-results__filters w-1/4">
-                        <FilterBar categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
+                        <FilterBar wildlife={wildlifeData} categories={categories} fields={fields} filters={filters} setFilters={setFilters}/>
                     </div>
                 )}
                 <div className="search-results__list w-3/4">
