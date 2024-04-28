@@ -1,177 +1,209 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-export const FilterBar = ({ categories, fields, filters, setFilters }) => {
-    
-    // Expanded filters are the expandable rows in the filter bar, including Category and shared fields between results
-    const [expandedFilters, setExpandedFilters] = useState([]);
+export const FilterBar = ({ wildlife, categories, fields, filters, setFilters }) => {
+    // State for selected categories
     const [selectedCategories, setSelectedCategories] = useState([]);
 
+    // State for shared fields
+    const [sharedFields, setSharedFields] = useState([]);
 
-    /* ------------------------------------------------------------------------------------------
-                                HELPER FUNCTIONS
-    ------------------------------------------------------------------------------------------ */
+    // State for expanded filters
+    const [expandedFilters, setExpandedFilters] = useState([]);
 
-  
+    // useEffect to call updateSharedFields whenever selectedCategories changes
+    useEffect(() => {
+        updateSharedFields();
+    }, [selectedCategories]);
 
-    // Helper function that capitalizes the first letter of a word
+    useEffect(() => {
+        console.log("selected categories:")
+        console.log(selectedCategories)
+        console.log("filters")
+        console.log(filters)
+    },[filters,selectedCategories])
+
+
+    // Helper function to capitalize the first letter of a word
     function capitalizeFirstLetter(word) {
-        // Check if the input is a string and not empty
         if (typeof word !== 'string' || word.length === 0) {
-            return word; // Return the input unchanged if it's not a string or empty
+            return word;
         }
-        
-        // Capitalize the first letter and concatenate it with the rest of the word
         return word.charAt(0).toUpperCase() + word.slice(1);
     }
 
-    // When selecting expand button on filter row, will update expandedFilters
+    // Handler for expanding/collapsing filter rows
     const handleExpandFilter = (filterName) => {
         if (expandedFilters.includes(filterName)) {
             setExpandedFilters(expandedFilters.filter((filter) => filter !== filterName));
         } else {
             setExpandedFilters([...expandedFilters, filterName]);
         }
-        // CULPRIT
-        console.log(`handle expand filter ${filterName}`)
-        console.log(filters)
     };
 
-    // Recurses through wildlife categories to find category with given id
-    const findCategoryById = (categoryArray, id) => {
-        for (let category of categoryArray) {
-            if (category.id === id) {
-                return category;
-            }
-            if (category.subcategories.length > 0) {
-                const subcategory = findCategoryById(category.subcategories, id);
-                if (subcategory) {
-                    return subcategory;
-                }
-            }
-        }
-        return null;
-    };
 
-    const findParentCategory = (categories, categoryId) => {
-        for (let category of categories) {
-            // Check if the current category's subcategories include the categoryId
-            if (category.subcategories.some(subcategory => subcategory.id === categoryId)) {
-                // If found, return the current category
-                return category;
-            }
-            // If the category has subcategories, recursively search them
-            if (category.subcategories.length > 0) {
-                const parentCategory = findParentCategory(category.subcategories, categoryId);
-                if (parentCategory) {
-                    return parentCategory;
-                }
-            }
+
+    // Create a hashmap of category objects using their ids
+    const idToCategoryMap = categories.reduce((map, category) => {
+        map[category.id] = category;
+        return map;
+    }, {});
+
+    
+    const findCategoryById = (categoryId) => {
+        // Check if the category object exists in the idToCategoryMap
+        if (idToCategoryMap[categoryId]) {
+            return idToCategoryMap[categoryId];
         }
-        // If no parent category found, return null
-        return null;
+        // If not found, return undefined
+        return undefined;
     };
+    
+    
+    
+    
+    
+    
     
 
 
-    /* ------------------------------------------------------------------------------------------
-                                    Categories  
-    ------------------------------------------------------------------------------------------ */
 
-  
-    
+    // Expecting ID, get corresponding category, handle subcategories
+
+
+
     const selectCategory = (categoryId) => {
-        console.log('SELECT CATEGORY!')
+        console.log(`Selected ${categoryId}`)
+        // Make a copy of filters and selected categories
         const updatedFilters = { ...filters };
-        const updatedSelectedCategories = [...selectedCategories]; // Copy the selectedCategories array
-        const category = findCategoryById(categories, categoryId);
+        const updatedSelectedCategories = [...selectedCategories];
+    
+        // Find the category selected in categories array
+        const category = findCategoryById(categoryId);
+
+        console.log(category)
+    
+        // If category exists, add its subcategories recursively to filters and handle siblings' filters
         if (category) {
-            // Add the selected category ID to filters
-            if (!updatedFilters.category.includes(categoryId)){
+            // If updated filters doesn't include category, add it
+            if (!updatedFilters.category.includes(categoryId)) {
                 updatedFilters.category.push(categoryId);
-            } 
-            if(!updatedSelectedCategories.includes(categoryId)) {
+            }
+    
+            // If updated selected categories doesn't include category, add it
+            if (!updatedSelectedCategories.includes(categoryId)) {
                 updatedSelectedCategories.push(categoryId);
             }
     
             // Add all subcategories (children) to updatedFilters.category recursively
             const addSubcategories = (subcategories) => {
+                console.log(`Subcategories: `,subcategories)
                 subcategories.forEach((subcategory) => {
-                    updatedFilters.category.push(subcategory.id); // Add the subcategory ID to filters
-                    if (subcategory.subcategories.length > 0) {
-                        addSubcategories(subcategory.subcategories); // Recursively add subcategories
+                    console.log(`Subcategory being added: `,subcategory)
+                    if (!updatedFilters.category.includes(subcategory)) {
+                        updatedFilters.category.push(subcategory);
+                    }
+                     // Add the subcategory ID to filters
+                    const subcategoryObject = findCategoryById(subcategory);
+                    console.log(`Subcategory object: `,subcategoryObject)
+                    if (subcategoryObject.subcategories.length > 0) {
+                        addSubcategories(subcategoryObject.subcategories); // Recursively add subcategories
                     }
                 });
             };
             addSubcategories(category.subcategories);
     
-            // Get parent category of category and go through the category's siblings
-            const parentCategory = findParentCategory(categories, categoryId);
+    
+            // Get parent category
+            const parentCategory = findCategoryById(category.parent_id);
+    
+            // If parent category found, update the siblings of category selected accordingly
             if (parentCategory) {
                 parentCategory.subcategories.forEach((sibling) => {
-                    // If sibling is in both selectedCategories and filters.categories, keep sibling in filters.categories
-                    if (updatedSelectedCategories.includes(sibling.id) && !updatedFilters.category.includes(sibling.id)) {
-                        updatedFilters.category.push(sibling.id);
+                    // If sibling is selected , leave it alone
+
+                    // If sibling isn't selected, recursively remove sibling and its subcategories from filtres
+                    if (!updatedSelectedCategories.includes(sibling)){
+                        // Get rid of sibling from filters
+                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling);
+
+                        const siblingObject = findCategoryById(sibling)
+
+                        // Remove every subcategory of category from filters recursively
+                        const removeSubcategoriesFromFilters = (subcategories) => {
+                            subcategories.forEach((subcategory) => {
+
+                                updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory);
+                                const subcategoryObject = findCategoryById(subcategory);
+
+                                if (subcategoryObject.subcategories.length > 0) {
+                                    removeSubcategoriesFromFilters(subcategoryObject.subcategories);
+                                }
+                            });
+                        };
+                        removeSubcategoriesFromFilters(siblingObject.subcategories)
+
                     }
-                    // If sibling is in filters.categories but not in selectedCategories, remove sibling from filters.categories
-                    if (!updatedSelectedCategories.includes(sibling.id) && updatedFilters.category.includes(sibling.id)) {
-                        updatedFilters.category = updatedFilters.category.filter((catId) => catId !== sibling.id);
-                    }
+                    
                 });
             }
+    
+            setFilters(updatedFilters);
+            setSelectedCategories(updatedSelectedCategories);
         }
-        // Update the filters with the new list of category IDs
-        setFilters(updatedFilters);
-        // Update the selectedCategories state
-        setSelectedCategories(updatedSelectedCategories);
-        console.log('Filter categories:')
-        console.log(updatedFilters);
-        console.log('Selected categories:')
-        console.log(updatedSelectedCategories)
     };
     
-    
-
-
     const deselectCategory = (categoryId) => {
+
+
+        // Make a copy of filters
         const updatedFilters = { ...filters };
-        const category = findCategoryById(categories, categoryId);
     
+        // Get category that's deselected
+        const category = findCategoryById(categoryId);
+    
+        // If category exists, handle logic accordingly
         if (category) {
-            // Remove the category and its subcategories from filters.category
+
+            // Get rid of category from filters
             updatedFilters.category = updatedFilters.category.filter((catId) => catId !== categoryId);
+            // Get rid of category from selected categories
+            let updatedSelectedCategories = [...selectedCategories].filter((catId) => catId !== categoryId);
+
+            // Remove every subcategory of category from filters recursively
             const deselectSubcategories = (subcategories) => {
                 subcategories.forEach((subcategory) => {
-                    updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory.id);
-                    if (subcategory.subcategories.length > 0) {
-                        deselectSubcategories(subcategory.subcategories);
+
+                    updatedFilters.category = updatedFilters.category.filter((catId) => catId !== subcategory);
+                    updatedSelectedCategories = updatedSelectedCategories.filter((catId) => catId !== subcategory);
+
+                    const subcategoryObject = findCategoryById(subcategory);
+
+                    if (subcategoryObject.subcategories.length > 0) {
+                        deselectSubcategories(subcategoryObject.subcategories);
                     }
                 });
             };
+    
             deselectSubcategories(category.subcategories);
     
-            // Remove the category and its subcategories from selectedCategories
-            let updatedSelectedCategories = [...selectedCategories].filter((catId) => catId !== categoryId);
-            const deselectSubcategoriesFromSelected = (subcategories) => {
-                subcategories.forEach((subcategory) => {
-                    updatedSelectedCategories = updatedSelectedCategories.filter((catId) => catId !== subcategory.id);
-                    if (subcategory.subcategories.length > 0) {
-                        deselectSubcategoriesFromSelected(subcategory.subcategories);
-                    }
-                });
-            };
-            deselectSubcategoriesFromSelected(category.subcategories);
+            
     
-            // Check if all siblings of the category have been deselected
-            const parentCategory = findParentCategory(categories, categoryId);
+            // Get parent of category
+            const parentCategory = findCategoryById(category.parent_id);
+    
+            // If parent exists and all siblings are deselected, add all siblings to filters (just not selected filters)
             if (parentCategory) {
-                const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling.id));
+                const allSiblingsDeselected = parentCategory.subcategories.every((sibling) => !updatedFilters.category.includes(sibling));
                 if (allSiblingsDeselected) {
                     // Add all subcategory children of the parent to filters
                     const addSubcategoryIds = (subcategories) => {
                         subcategories.forEach((subcategory) => {
-                            updatedFilters.category.push(subcategory.id);
-                            if (subcategory.subcategories.length > 0) {
-                                addSubcategoryIds(subcategory.subcategories);
+
+                            updatedFilters.category.push(subcategory);
+                            const subcategoryObject = findCategoryById(subcategory);
+
+                            if (subcategoryObject.subcategories.length > 0) {
+                                addSubcategoryIds(subcategoryObject.subcategories);
                             }
                         });
                     };
@@ -179,27 +211,58 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                 }
             }
     
-            // Update the state with the updated filters and selectedCategories
             setFilters(updatedFilters);
             setSelectedCategories(updatedSelectedCategories);
-            console.log('Filter categories:')
-            console.log(updatedFilters);
-            console.log('Selected categories:')
-            console.log(updatedSelectedCategories)
         }
     };
     
     
 
+    const updateSharedFields = () => {
+        const fieldCount = {};
+        const leafCategories = selectedCategories.filter(categoryId => {
+            const category = findCategoryById(categoryId);
+            return category && category.subcategories.every(subcategoryId => !selectedCategories.includes(subcategoryId));
+        });
+    
+        leafCategories.forEach(categoryId => {
+            const category = findCategoryById(categoryId);
+            if (category) {
+                category.field_ids.forEach(fieldId => {
+                    fieldCount[fieldId] = (fieldCount[fieldId] || 0) + 1;
+                });
+            }
+        });
+    
+        const newSharedFields = fields.filter(field => fieldCount[field.id] === leafCategories.length);
+        setSharedFields(newSharedFields);
+    };
     
 
-    // Renders categoryies and their subcategories recursively and adds styling to indicate hierarchy
+    // Helper function to handle toggling of field filters
+    // const toggleFieldFilter = (field, option, value) => {
+        
+    // };
+
+
+    // Helper function to reset all filters
+    const handleResetFilters = () => {
+        setSelectedCategories([]);
+        setSharedFields([]);
+        setFilters({ category: [] });
+        setExpandedFilters([]);
+    };
+
     const renderCategoryFilters = (categories, level) => {
         const marginLeft = 10 * level;
-    
         return (
             <div className="flex flex-col">
-                {categories.map((category) => (
+                {/* Render categories */}
+                {categories.map((categoryId) => {
+
+                    const category = findCategoryById(categoryId)
+                    
+                    return (
                     <div key={category.id} style={{ marginLeft: `${marginLeft}px` }}>
                         <div className="flex items-center">
                             <input
@@ -217,157 +280,184 @@ export const FilterBar = ({ categories, fields, filters, setFilters }) => {
                             />
                             <label className="ml-2 text-gray-700">{category.name}</label>
                         </div>
-                        {filters.category.includes(category.id) && category.subcategories.length > 0 && renderCategoryFilters(category.subcategories, level + 1)}
+                        {/* Render subcategories if category is selected and has subcategories */}
+                        {selectedCategories.includes(category.id) && category.subcategories.length > 0 && renderCategoryFilters(category.subcategories, level + 1)}
                     </div>
-                ))}
+                    )
+                })}
             </div>
         );
     };
 
-
-
-    /* ------------------------------------------------------------------------------------------
-                                        FIELDS
-    ------------------------------------------------------------------------------------------ */
-
-  
-
-    // When option under shared field is selected, updates filters
-    const toggleFieldFilter = (field, option) => {
-        // Make a copy of the current filters object
+    // Handler for changing INTEGER field values
+    const handleIntegerFieldChange = (fieldId, rangeType, value) => {
         const updatedFilters = { ...filters };
-        
-        // Convert the field to lowercase
-        const lowercaseField = field.toLowerCase();
-        
-        // Initialize the field array if it doesn't exist
-        if (!updatedFilters[lowercaseField]) {
-            updatedFilters[lowercaseField] = [];
+
+        if (!updatedFilters.fields) {
+            updatedFilters.fields = {};
         }
-        
-        // Find the index of the option in the array
-        const index = updatedFilters[lowercaseField].indexOf(option);
-        
-        if (index !== -1) {
-            // If the option is selected, remove it
-            updatedFilters[lowercaseField].splice(index, 1);
-            
-            // If the array is empty after removal, delete the key from filters
-            if (updatedFilters[lowercaseField].length === 0) {
-                delete updatedFilters[lowercaseField];
-            }
-        } else {
-            // If the option is not selected, add it
-            updatedFilters[lowercaseField].push(option);
+
+        if (!updatedFilters.fields[fieldId]) {
+            updatedFilters.fields[fieldId] = {};
         }
-        
-        // Update the state with the updated filters object
+
+        updatedFilters.fields[fieldId]["id"] = fieldId;
+        updatedFilters.fields[fieldId]["filterValues"] = [value];
+
         setFilters(updatedFilters);
-        console.log(updatedFilters)
     };
-    
+
+    // Handler for changing TEXT field values
+    const handleTextFieldChange = (fieldId, option, isChecked) => {
+        const updatedFilters = { ...filters };
+
+        if (!updatedFilters.fields) {
+            updatedFilters.fields = {};
+        }
+
+        if (!updatedFilters.fields[fieldId]) {
+            updatedFilters.fields[fieldId] = {};
+        }
+
+        if (!updatedFilters.fields[fieldId]["filterValues"]) {
+            updatedFilters.fields[fieldId]["filterValues"] = [];
+        }
+
+        if (isChecked) {
+            updatedFilters.fields[fieldId]["filterValues"].push(option);
+        } else {
+            updatedFilters.fields[fieldId]["filterValues"] = updatedFilters.fields[fieldId]["filterValues"].filter((item) => item !== option);
+        }
+
+        setFilters(updatedFilters);
+    };
+
+
+
     
 
-    const handleResetFilters = () => {
-        // Set the filters back to the initial state
-        // Assuming the initial state of filters is an object with an empty array for `category`
-        setFilters({
-            category: [],
-            // If there are other filter types, you can reset them as well
-            // color: [],
-            // location: [],
-            // ...
-        });
-        
-        // Also, if you have expanded filters you want to collapse, reset them as well
-        setExpandedFilters([]);
-    }
-    
-    
-      
 
-
-    // Renders shared fields as well as their respective options
     const renderFieldFilters = () => {
-        return fields.map((field) => (
-            <div key={field.id}>
-                <hr className="my-2 border-t border-gray-300 w-3/4" />
-                <div className="flex flex-row justify-between w-3/4">
-                    <h5 className="text-lg font-bold">{capitalizeFirstLetter(field.name)}</h5>
-                    <button className="text-lg" onClick={() => handleExpandFilter(field.name)}>
-                        {expandedFilters.includes(field.name) ? "-" : "+"}
-                    </button>
-                </div>
-                {expandedFilters.includes(field.name) && (
-                    <div className="flex flex-col w-3/4">
-                        {/* Check if the field type is INTEGER or other */}
-                        {field.type === "INTEGER" ? (
-                            // Render a range input for INTEGER type
-                            <input type="range" min="0" max="100" step="1" />
-                        ) : (
-                            // Render checkboxes for other types
-                            field.options.map((option) => (
-                                <label className="flex items-center" key={option}>
-                                    <input 
-                                        type="checkbox" 
-                                        className="form-checkbox" 
-                                        onChange={(e) => toggleFieldFilter(field.name, option, e.target.checked)} 
-                                        checked={filters[field.name] && filters[field.name].includes(option)}
-                                    />
-                                    <span className="ml-2">{capitalizeFirstLetter(option)}</span>
-                                </label>
-                            ))
-                        )}
+        return sharedFields.map((field) => (
+            // Check if the field type is not "IMAGE"
+            field.type !== "IMAGE" && (
+                <div key={field.id}>
+                    <div className="flex flex-row justify-between w-3/4">
+                        <h5 className="text-lg font-bold">{capitalizeFirstLetter(field.name)}</h5>
+                        <button className="text-lg" onClick={() => handleExpandFilter(field.name)}>
+                            {expandedFilters.includes(field.name) ? "-" : "+"}
+                        </button>
                     </div>
-                )}
-            </div>
+                    {expandedFilters.includes(field.name) && (
+                        <div className="flex flex-col w-3/4">
+                            {field.type === "INTEGER" ? (
+                                // Render INTEGER fields as input ranges
+                                <div className="flex items-center p-3">
+                                    <input 
+                                        type="number" 
+                                        placeholder="Min" 
+                                        onChange={(e) => handleIntegerFieldChange(field.id, "min", e.target.value)} 
+                                        value={(filters.fields && filters.fields[field.id]?.["filterValues"]?.[0]) || ""} 
+                                        className="form-input w-1/2 mr-2" 
+                                    />
+                                    <input 
+                                        type="number" 
+                                        placeholder="Max" 
+                                        onChange={(e) => handleIntegerFieldChange(field.id, "max", e.target.value)} 
+                                        value={(filters.fields && filters.fields[field.id]?.["filterValues"]?.[1]) || ""} 
+                                        className="form-input w-1/2" 
+                                    />
+                                </div>
+                            ) : field.type === "TEXT" ? (
+                                // Render TEXT fields with options collected from field values
+                                <div className="flex flex-col">
+                                    {getFieldOptions(field.id).map((option) => (
+                                        <label className="flex items-center" key={option}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="form-checkbox" 
+                                                onChange={(e) => handleTextFieldChange(field.id, option, e.target.checked)} 
+                                                checked={(filters.fields && filters.fields[field.id] && filters.fields[field.id]["filterValues"] && filters.fields[field.id]["filterValues"].includes(option)) || false} 
+                                            />
+                                            <span className="ml-2">{capitalizeFirstLetter(option)}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            ) : (
+                                null
+                            )}
+                        </div>
+                    )}
+                    <hr className="my-2 border-t border-gray-300 w-3/4" />
+                </div>
+            )
         ));
     };
     
+    
+    
+    
+    // Helper function to collect options for TEXT fields from field values
+    const getFieldOptions = (fieldId) => {
+        const values = wildlife
+            .filter((item) => item.field_values.some((value) => value.field_id === fieldId))
+            .map((item) => item.field_values.find((value) => value.field_id === fieldId).value);
+        return Array.from(new Set(values));
+    };
+
+    
 
 
-    /* ------------------------------------------------------------------------------------------
-                                    Render Display 
-    ------------------------------------------------------------------------------------------ */
 
-  
 
-      
 
-    // If no categories or fields defined, no FilterBar returned
-    if(categories === undefined && fields === undefined){
-        return (null)
+
+
+
+
+
+    const getParentCategoryArray = () => {
+        return categories
+            .filter(category => category.parent_id === null)
+            .map(category => category.id);
     }
+    
 
-    // FilterBar
+
+
+
+
+
+
+    // Render the component
     return (
-        <div class="flex flex-col items-left text-left">
-            <div class="my-2">
-                <h3 class="text-lg font-bold">Filter by</h3>
+        <div className="flex flex-col items-left text-left">
+            <div className="my-2">
+                <h3 className="text-lg font-bold">Filter by</h3>
             </div>
 
             <div className="flex flex-col">
-                <hr class="my-2 border-t border-gray-300 w-3/4" />
-                <div class="flex flex-row justify-between w-3/4">
-                    <h5 for="categoryFilter" class="text-lg font-bold">
+                <hr className="my-2 border-t border-gray-300 w-3/4" />
+                <div className="flex flex-row justify-between w-3/4">
+                    <h5 htmlFor="categoryFilter" className="text-lg font-bold">
                         Category
                     </h5>
-                    <button class="text-lg" onClick={() => handleExpandFilter("Category")}>
+                    <button className="text-lg" onClick={() => handleExpandFilter("Category")}>
                         {expandedFilters.includes("Category") ? "-" : "+"}
                     </button>
                 </div>
-                {expandedFilters.includes("Category") ? renderCategoryFilters(categories, 1) : null}
+                {expandedFilters.includes("Category") ? renderCategoryFilters(getParentCategoryArray(), 1) : null}
+                <hr className="my-2 border-t border-gray-300 w-3/4" />
             </div>
 
             <div>{renderFieldFilters()}</div>
 
             <br/>
-
             <button 
-            className="text-left underline text-gray-600"
-            onClick={handleResetFilters}>
+                className="text-left underline text-gray-600"
+                onClick={handleResetFilters}>
                 Reset all filters
             </button>
         </div>
     );
-};
+}
