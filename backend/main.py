@@ -122,7 +122,8 @@ def create_wildlife():
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
     category_id = request.form["category_id"]
-    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+    provided_nonimage_fields = {k: v for k, v in request.form.items() if
+                                k not in ("name", "scientific_name", "category_id")}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
     if not category_exists:
@@ -149,7 +150,8 @@ def create_wildlife():
     provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
     if not provided_field_names.issubset(valid_field_names):
         invalid_field_names = provided_field_names - valid_field_names
-        return jsonify({"error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
+        return jsonify({
+                           "error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
 
     # Ensure all required fields are provided
     if not valid_field_names.issubset(provided_field_names):
@@ -159,7 +161,8 @@ def create_wildlife():
     # Ensure all image fields are provided as files
     if not valid_image_field_names.issubset(request.files.keys()):
         field_names_missing_file = valid_image_field_names - request.files.keys()
-        return jsonify({"error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
+        return jsonify({
+                           "error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
 
     # Ensure all image files are a reasonable size and format
     for image_file in request.files.values():
@@ -168,12 +171,14 @@ def create_wildlife():
         if file_length > 10 * 1024 * 1024:
             return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
         if not image_file.mimetype.startswith("image/"):
-            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+            return jsonify({
+                               "error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
 
     # Ensure all non-image fields are provided as form data
     if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
         field_names_missing_value = valid_nonimage_field_names - provided_nonimage_fields.keys()
-        return jsonify({"error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
+        return jsonify({
+                           "error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
 
     # Insert the wildlife entry
     wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
@@ -702,6 +707,42 @@ def edit_field():
     return jsonify({"message": "Field updated successfully"}), 200
 
 
+@app.route("/api/delete-field/", methods=["DELETE"])
+def delete_field():
+    """
+    Deletes a field. This removes it from all categories and deletes all its associated field values.
+
+    Example request:
+    DELETE /api/delete-field/?id=3
+
+    Example output:
+    {
+        "message": "Field deleted successfully"
+    }
+    """
+    field_id = request.args["id"]
+
+    # Check if the field exists
+    field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [field_id])
+    if not field:
+        return jsonify({"error": "Field not found"}), 400
+
+    # Delete the image files
+    if field["type"] == "IMAGE":
+        image_filenames = [x["value"] for x in db_helpers.select_multiple(
+            "SELECT value FROM FieldValues WHERE field_id = ?", [field_id])]
+        for image_filename in image_filenames:
+            image_path = os.path.join(app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+
+    db_helpers.delete("DELETE FROM FieldsToCategories WHERE field_id = ?", [field_id])
+    db_helpers.delete("DELETE FROM FieldValues WHERE field_id = ?", [field_id])
+    db_helpers.delete("DELETE FROM Fields WHERE id = ?", [field_id])
+
+    return jsonify({"message": "Field deleted successfully"}), 200
+
+
 @app.route("/api/delete-category/", methods=["DELETE"])
 def delete_category():
     """
@@ -738,7 +779,9 @@ def delete_category():
         category_ids = get_subcategory_ids([category_id])
         # Delete the members
         wildlife_ids_to_delete = [x["id"] for x in
-                                  db_helpers.select_multiple(f"SELECT id FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})", category_ids)]
+                                  db_helpers.select_multiple(
+                                      f"SELECT id FROM Wildlife WHERE category_id IN ({','.join('?' for _ in category_ids)})",
+                                      category_ids)]
         db_helpers.delete(f"DELETE FROM Wildlife WHERE id IN ({','.join('?' for _ in wildlife_ids_to_delete)})",
                           wildlife_ids_to_delete)
         db_helpers.delete(
@@ -767,7 +810,9 @@ def delete_wildlife():
     if n_rows_deleted == 0:
         return jsonify({"error": "Wildlife not found"}), 404
 
-    image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
+    image_field_values = [fv["value"] for fv in db_helpers.select_multiple(
+        "SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')",
+        [wildlife_id])]
     for image_filename in image_field_values:
         image_path = os.path.join(app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
         if os.path.exists(image_path):
