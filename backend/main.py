@@ -501,35 +501,7 @@ def get_image(filename):
     Example output:
     (The image file)
     """
-    # Construct the path to the image file
-    image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-
-    try:
-        # Read the image file
-        with open(image_path, "rb") as img_file:
-            # Read the image data
-            image_data = img_file.read()
-
-            # Encode the image data as base64
-            encoded_image = base64.b64encode(image_data).decode("utf-8")
-
-        # Log the encoded image data
-        print("Encoded Image:", encoded_image)
-
-        # Set the appropriate response headers for CORS
-        response = jsonify({"image": encoded_image})
-        response.headers.add("Access-Control-Allow-Origin", "*")  # Allow access from any origin
-        response.headers.add("Content-Type", "image/jpeg")  # Set the content type
-
-        # Return the base64-encoded image data
-        return response
-
-    except Exception as e:
-        # Log the error
-        print("Error:", e)
-
-        # Return error response if unable to read or encode image
-        return jsonify({"error": str(e)}), 500
+    return send_from_directory(app.config["IMAGE_UPLOAD_FOLDER"], filename)
 
 
 
