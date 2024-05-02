@@ -7,6 +7,7 @@ export default function WildlifeDetails() {
 
     const [wildlife, setWildlife] = useState(null);
     const [highlight, setHighlight] = useState(null);
+    const [imageSrc, setImageSrc] = useState("");
 
     useEffect(() => {
         const fetchWildlifeById = async () => {
@@ -16,14 +17,34 @@ export default function WildlifeDetails() {
                 console.log(data)
                 setWildlife(data); // Set the wildlife state with the fetched data
                 // Set the initial highlight image to the first image in the images array
-                setHighlight(data.images[0]);
             } catch (error) {
                 console.error("Error fetching wildlife details:", error);
             }
         };
 
         fetchWildlifeById(); // Call the function to fetch wildlife data when component mounts
+        console.log(wildlife);
     }, [wildlifeId]); // Re-run the effect when wildlifeId changes
+
+    useEffect(() => {
+        const fetchImages = async () => {
+            try{
+                console.log(wildlife);
+                console.log(wildlife["image"])
+                const data = await apiService.getImage(wildlife["image"]);
+                console.log(data);
+                const imageUrl = URL.createObjectURL(data);
+                setImageSrc(imageUrl);
+                setHighlight(data.images[0]);
+            } catch (error) {
+                console.error("Error fetching image:", error);
+            }
+        }
+
+        if(wildlife){
+            fetchImages();
+        }
+    }, [wildlife])
 
     return (
         <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] w-screen h-[120vh]">
@@ -44,19 +65,16 @@ export default function WildlifeDetails() {
                                         </div>
                                 ))}
                             </div>
-                            {highlight && (
-                                <>
-                                    <img src={highlight.file} alt={highlight.alt} className="mx-auto mb-5" />
-                                    <div className="flex justify-center gap-3">
+
+                                    <img src={`http://127.0.0.1:5000/api/get-image/${wildlife["image"]}`} alt="" className="mx-auto mb-5 w-48 object-cover" />
+                                    {/* <div className="flex justify-center gap-3">
                                         {wildlife.images.map((image) => (
                                             <button key={image.alt} onClick={() => setHighlight(image)}>
                                                 <img draggable="false" className={"object-cover w-16 h-8 md:w-36 md:h-16 rounded-md " + (highlight === image ? " border-blue-500 border-2" : "hover:border-blue-300 hover:border-2")}
-                                                    src={image.file} alt={image.alt} />
+                                                    src={imageSrc} alt="" />
                                             </button>
                                         ))}
-                                    </div>
-                                </>
-                            )}
+                                    </div> */}
                         </div>
                     </>
                 )}
