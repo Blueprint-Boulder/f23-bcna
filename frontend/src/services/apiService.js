@@ -123,6 +123,15 @@ const apiService = {
     }
   },
 
+  editWildlife: async(form) => {
+    try {
+      const response = await api.post(`/api/edit-wildlife`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
 
 };
 
