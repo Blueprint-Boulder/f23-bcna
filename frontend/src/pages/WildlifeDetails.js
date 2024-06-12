@@ -19,10 +19,10 @@ export default function WildlifeDetails() {
             return acc;
         }, {});
         return {
-            ...filtered,
             "Name": name,
             "Scientific Name": scientific_name,
-            "Category": catsAndFields["categories"][category_id]["name"]
+            "Category": catsAndFields["categories"][category_id]["name"],
+            ...filtered
         }
     }
 

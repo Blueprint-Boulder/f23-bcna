@@ -58,9 +58,25 @@ export default function EditWildlife() {
         fetchWildlife();
     }, []);
 
-    const handleSubmit = async() => {
+    const handleSubmit = async (event) => {
+       
+        event.preventDefault();
+    
+        try {
 
-    }
+          const formData = new FormData(event.target);
+          console.log(formData);
+          const response = await apiService.editWildlife(formData);
+          console.log(response);
+          
+          alert("Wildlife edited successfully!")
+          window.location.href = window.location.pathname
+
+        } catch (error) {
+          console.error('Error creating category:', error);
+          alert('Failed to edit wildlife');
+        }
+    };
 
     return(
         <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] bg-cover w-screen h-[120vh]">
