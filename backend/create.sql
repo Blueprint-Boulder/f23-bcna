@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS Wildlife (
 
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL CHECK (type in ('TEXT', 'INTEGER', 'ENUM', 'IMAGE')),
+    type TEXT NOT NULL CHECK (type in ('TEXT', 'NUMBER', 'ENUM', 'IMAGE')),
     name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name'))
 );
 

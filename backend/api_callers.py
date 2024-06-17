@@ -16,7 +16,7 @@ def complain_if_server_not_running():
 
 
 def create_wildlife(name: str, scientific_name: str, category_id: int,
-                    custom_field_values: dict[str, str | int]) -> int:
+                    custom_field_values: dict[str, str]) -> int:
     complain_if_server_not_running()
     response = requests.post(f"{BASE_URL}/create-wildlife/",
                              data={"name": name, "scientific_name": scientific_name, "category_id": category_id,
@@ -28,7 +28,7 @@ def create_wildlife(name: str, scientific_name: str, category_id: int,
             f"Failed to create wildlife (server returned {response.status_code}). Full response: {response.text}")
 
 
-def create_field(name: str, type: Literal["INTEGER", "TEXT"], category_ids: list[int]):
+def create_field(name: str, type: Literal["NUMBER", "TEXT"], category_ids: list[int]):
     complain_if_server_not_running()
     response = requests.post(f"{BASE_URL}/create-field/",
                              data={"name": name, "type": type, "category_id": category_ids})

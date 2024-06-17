@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -13,18 +14,6 @@ CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
 # Set the folder for image uploads as uploaded_images, which is in the same folder as this file (main.py)
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 app.config["IMAGE_UPLOAD_FOLDER"] = os.path.join(THIS_FOLDER, "uploaded_images/")
-
-
-@app.route("/api", methods=["GET"])
-def hello_world():
-    """
-    Example request:
-    GET /api
-    
-    Example output (always outputs exactly this):
-    "Hello, from Flask!"
-    """
-    return 'Hello, from Flask!'
 
 
 @app.route("/api/ping/", methods=["GET"])
@@ -88,20 +77,68 @@ def save_file(file):
     return unique_filename
 
 
+def number_field_is_valid(value: str) -> bool:
+    """
+    Examples:
+    5000 is valid
+    5 000 is valid
+    005000 is valid
+    5000. is invalid
+    -5000.00 is valid
+    -0500 is valid
+    --50 is invalid
+    5e4 is invalid
+    5.0.0 is invalid
+    5..0 is invalid
+    .5 is valid
+    0.5 is valid
+    00.5 is valid
+    . is invalid
+    5,1 is valid (and will be interpreted as 51)
+    ,5,,4,,,  .,1,, is valid (and will be interpreted as 54.1)
+    """
+    value = value.replace(",", "").replace(" ", "")
+    return re.match(r"^-?(\d+(\.\d*)?|\.\d+)$", value) is not None
+
+
+def normalize_number_field(value: str) -> str:
+    value = value.replace(",", "").replace(" ", "")  # 5 000 -> 5000; 5,000 -> 5000
+    sign = "-" if value[0] == "-" else ""
+    value_no_sign = value.lstrip("-")
+    if "." in value:
+        int_part, decimal_part = value_no_sign.split(".")
+    else:
+        int_part, decimal_part = value_no_sign, ""
+    int_part = int_part.lstrip("0")
+    decimal_part = decimal_part.rstrip("0")
+    if int_part == "":
+        int_part = "0"  # .5 -> 0.5
+    if decimal_part == "":
+        decimal_part = "0"  # 50. -> 50.0
+    return sign + int_part + "." + decimal_part
+
+
 @app.route("/api/create-wildlife/", methods=["POST"])
 def create_wildlife():
-    """
+    r"""
     Create a wildlife instance. Requires name, scientific_name, and category_id.
-    Additional custom fields can be provided at the end, with the format name=value (see example).
+    Additional custom fields can be provided at the end, with the format name=value (see example request).
+
+    Numeric fields can be integers or floats, and can be negative. Commas and spaces are ignored.
+    After the commas and spaces are removed, this is the regex to tell if a number is valid: ^-?(\d+(\.\d+)?|\.\d+)$
+    There are no limits on the size or precision of the number.
+    All mathematically equivalent numbers will be stored as the same value, e.g. 5000, 5000.0, and 05000 are all the same.
+    If the number is invalid, the route will give an error.
+    See number_field_is_valid's documentation for examples of valid and invalid numbers.
+
     For image fields, you should upload them as files. Like with other fields, the key should be the field name.
     Make sure to use enctype="multipart/form-data" on the HTML form; otherwise, you won't be able to upload images.
-
     Image files must be <10 MB. All common image formats should work by default.
-    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute `accept="image/*"` to restrict the files to images.
+    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute accept="image/*" to restrict the files to images.
 
     Example request:
     POST /api/create-wildlife/
-    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Forest
+    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Forest, Population=5000
 
     Example output (successful creation):
     {
@@ -180,12 +217,21 @@ def create_wildlife():
         return jsonify({
                            "error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
 
+    number_field_names = [field["name"] for field in valid_fields if field["type"] == "NUMBER"]
+
+    # Ensure all number fields are actually provided as numbers
+    for field_name, value in provided_nonimage_fields.items():
+        if field_name in number_field_names and not number_field_is_valid(value):
+            return jsonify({"error": f"Field {field_name} is a number field, but the provided value is not a valid number"}), 400
+
     # Insert the wildlife entry
     wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
                                     (name, scientific_name, category_id))
 
     # Insert the non-image field values
     for field_name, value in provided_nonimage_fields.items():
+        if field_name in number_field_names:
+            value = normalize_number_field(value)
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
@@ -200,130 +246,8 @@ def create_wildlife():
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
 
-@app.route("/api/search-wildlife-names/", methods=["GET"])
-def search_wildlife_names():
-    """
-    Searches for wildlife by name or scientific name within specified categories. Case-insensitive.
-    The 'category_id' parameter is optional and can be repeated to search across multiple categories.
-    If no categories are provided, it searches across all categories.
-
-    Example request:
-    GET /api/search-wildlife-names/?query=fox&category_id=1&category_id=2
-
-    Example output:
-    [
-        {
-            "id": 2,
-            "category_id": 1,
-            "name": "Arctic Fox",
-            "scientific_name": "Vulpes lagopus"
-        },
-        {
-            "id": 3,
-            "category_id": 2,
-            "name": "Red Fox",
-            "scientific_name": "Vulpes vulpes"
-        }
-    ]
-    """
-    category_ids = request.args.getlist("category_id", type=int)
-    user_query = request.args.get("query")
-
-    if category_ids:
-        all_category_ids = get_subcategory_ids(category_ids)
-        # This special case is necessary because "IN ()" is invalid syntax (it needs at least one value inside the parenthesis)
-        if not all_category_ids:
-            return jsonify([]), 200  # Return an empty list if no categories found
-
-        # Create a placeholder string for SQL query
-        placeholders = ','.join('?' for _ in all_category_ids)
-
-        sql_query = f"""
-        SELECT w.* FROM Wildlife w
-        WHERE w.category_id IN ({placeholders})
-        AND (w.name LIKE ? OR w.scientific_name LIKE ?)
-        """
-
-        params = all_category_ids + [f'%{user_query}%', f'%{user_query}%']
-    else:
-        # If no category IDs are provided, search across all wildlife
-        sql_query = "SELECT * FROM Wildlife WHERE name LIKE ? OR scientific_name LIKE ?"
-        params = [f'%{user_query}%', f'%{user_query}%']
-
-    wildlife_results = db_helpers.select_multiple(sql_query, params)
-    return jsonify(wildlife_results), 200
-
-
-@app.route("/api/search-wildlife-text-field/", methods=["GET"])
-def search_wildlife_text_field():
-    """
-    Searches for wildlife by a specified text field within specified categories. Case-insensitive.
-    Requires 'field_id' and 'query'.
-    The 'category_id' parameter is optional and can be repeated for multiple categories.
-    If no categories are provided, it searches across all categories.
-
-    Note that you can't search for name or scientific name using this route, as they are part of the wildlife table itself, and aren't custom fields.
-    To search for those, use the search-wildlife-names route (see above).
-
-    Example request:
-    GET /api/search-wildlife-text-field/?field_id=2&query=sea&category_id=1
-
-    Example output:
-    [
-        {
-            "id": 4,
-            "category_id": 1,
-            "name": "Green Turtle",
-            "scientific_name": "Chelonia mydas"
-        }
-    ]
-    For the example request to produce this output, Green Turtle would need a text field with field_id=2 that contains the string "sea".
-    For example, maybe its parent category has an "extra notes" field, whose value for the Green Turtle is "It's also known as the green sea turtle".
-    """
-    category_ids = request.args.getlist("category_id", type=int)
-    field_id = request.args.get("field_id", type=int)
-    user_query = request.args.get("query")
-
-    # Check if the field_id corresponds to a TEXT type field
-    field_info = db_helpers.select_one("SELECT type FROM Fields WHERE id = ?", (field_id,))
-    if not field_info or field_info["type"] != "TEXT":
-        return jsonify({"error": "Field not found or not of type TEXT"}), 400
-
-    if category_ids:
-        all_category_ids = get_subcategory_ids(category_ids)
-        if not all_category_ids:
-            # If there are no categories found, return an empty list
-            return jsonify([]), 200
-
-        # Create a placeholder string for SQL query
-        placeholders = ','.join('?' for _ in all_category_ids)
-
-        sql_query = f"""
-        WITH RECURSIVE wildlife_in_categories(id) AS (
-            SELECT id FROM Wildlife WHERE category_id IN ({placeholders})
-        )
-        SELECT w.* FROM Wildlife w
-        JOIN FieldValues fv ON fv.wildlife_id = w.id
-        JOIN wildlife_in_categories wic ON wic.id = w.id
-        WHERE fv.field_id = ? AND fv.value LIKE ?
-        """
-        params = all_category_ids + [field_id, f'%{user_query}%']
-    else:
-        # If no category IDs are provided, search across all wildlife
-        sql_query = """
-        SELECT w.* FROM Wildlife w
-        JOIN FieldValues fv ON fv.wildlife_id = w.id
-        WHERE fv.field_id = ? AND fv.value LIKE ?
-        """
-        params = [field_id, f'%{user_query}%']
-
-    wildlife_results = db_helpers.select_multiple(sql_query, params)
-    return jsonify(wildlife_results), 200
-
-
 @app.route("/api/create-category/", methods=["POST"])
 def create_category():
-    # TODO add nesting limit of 5
     """
     Creates a new category with an optional parent category.
     Requires 'name'. 'parent_id' is optional.
@@ -426,12 +350,12 @@ def get_categories_and_fields():
             "2": {
                 "id": 2,
                 "name": "Average Lifespan",
-                "type": "INTEGER"
+                "type": "NUMBER"
             },
             "4": {
                 "id": 4,
                 "name": "Wingspan",
-                "type": "INTEGER"
+                "type": "NUMBER"
             }
         ]
     }
@@ -514,7 +438,14 @@ def get_wildlife():
 
     Each entry includes id, name, scientific_name, category_id, and all the custom field values.
     Custom fields have their name as the key and their value as the value.
-    Text field values are returned as strings; integer field values are returned as integers.
+    Text field values are returned as strings, e.g. "Small fish and insects".
+    Images are returned as their filenames, e.g. "abcd.png". You can use the get-image route to get the actual image.
+
+    Numeric field values are returned as floats inside strings, e.g. "50000.0" or "0.5". You can use decimal.js (https://mikemcl.github.io/decimal.js/) if you need to do math or comparisons with these values.
+    If two numbers are mathematically equal, they will be returned as the same string. For example, there is no difference between 5.0 and 5; both are "5.0".
+    The reason they're formatted this way is to avoid floating-point precision issues in JavaScript; otherwise e.g. 0.3 might be stored as 0.30000000000000004.
+
+    TODO: Add enum support
 
     Example request:
     GET /api/get-wildlife/
@@ -533,7 +464,7 @@ def get_wildlife():
                 },
                 {
                     "field_id": 2,
-                    "value": 500000
+                    "value": "500000.0"
                 }
             ]
         },
@@ -564,22 +495,14 @@ def get_wildlife():
         cleaned_field_values = []
         for fv in field_values:
             field = db_helpers.select_one("SELECT * FROM Fields WHERE id = ?", [fv["field_id"]])
-            if field["type"] == "TEXT":
-                field_value = fv["value"]
-            elif field["type"] == "INTEGER":
-                field_value = int(fv["value"])
-            elif field["type"] == "ENUM":
-                field_value = fv["value"]
-            elif field["type"] == "IMAGE":
-                field_value = fv["value"]
-            else:
-                raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
-            cleaned_field_values.append({"field_id": field["id"], "value": field_value})
+            if field["type"] == "ENUM":
+                raise NotImplementedError("Enum fields are not yet supported in get-wildlife")
+            cleaned_field_values.append({"field_id": field["id"], "value": fv["value"]})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
 
 
-@app.route("/api/get-wildlife-by-id/<int:wildlife_id>", methods=["GET"])
+@app.route("/api/get-wildlife-by-id/<int:wildlife_id>/", methods=["GET"])
 def get_wildlife_by_id(wildlife_id):
     """
     Retrieves wildlife by its ID.
@@ -594,8 +517,10 @@ def get_wildlife_by_id(wildlife_id):
         "name": "European Hedgehog",
         "scientific_name": "Erinaceus europaeus",
         "Habitat": "Forests and grasslands",
-        "Population": 500000
+        "Population": "500000.0"
     }
+
+    (Number fields are stored as strings to avoid precision issues. See the get-wildlife documentation.)
     """
     wildlife = db_helpers.select_one("SELECT * FROM Wildlife WHERE id = ?", [wildlife_id])
     if not wildlife:
@@ -649,8 +574,8 @@ def create_field():
             return jsonify({"error": f"Category {category_id} not found"}), 400
 
     # Check if field type is valid
-    if typ not in ("INTEGER", "TEXT", "ENUM", "IMAGE"):
-        return jsonify({"error": "Invalid field type. Allowed types are INTEGER, TEXT, ENUM, and IMAGE."}), 400
+    if typ not in ("NUMBER", "TEXT", "ENUM", "IMAGE"):
+        return jsonify({"error": "Invalid field type. Allowed types are NUMBER, TEXT, ENUM, and IMAGE."}), 400
 
     field_id = db_helpers.insert("INSERT INTO Fields (name, type) VALUES (?, ?)", [name, typ])
 
@@ -820,88 +745,6 @@ def delete_wildlife():
     db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
     db_helpers.delete("DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id])
     return jsonify({"message": "Wildlife successfully deleted"}), 200
-
-
-@app.route("/api/search-wildlife-by-integer-field/", methods=["GET"])
-def search_wildlife_by_integer_field():
-    """
-Searches wildlife records by any specified integer field. This can be used to search for records with an exact value, within a range (greater than a minimum value, less than a maximum value, or between a minimum and maximum value).
-
-Requires:
-- 'field_id': The ID of the integer field to search on.
-- 'exact_value': (Optional) The exact value to search for. Cannot be used with min_value or max_value.
-- 'min_value': (Optional) The minimum value to search for. Use alone for greater than queries or with max_value for range queries.
-- 'max_value': (Optional) The maximum value to search for. Use alone for less than queries or with min_value for range queries.
-Note: 'field_id' is required. Either 'exact_value' or one/both of 'min_value' and 'max_value' must be provided. It's not valid to provide 'exact_value' together with 'min_value' or 'max_value'.
-
-Returns a JSON structure with a 'results' key containing search results.
-
-Example request for an exact value search (searching for wildlife with a wingspan (where wingspan has a field_id of 7) of exactly 17 inches):
-GET /api/search-wildlife-by-integer-field/?field_id=7&exact_value=17
-
-Example request for a range value search (searching for wildlife with a wingspan greater than 15 inches but less than 30 inches):
-GET /api/search-wildlife-by-integer-field/?field_id=7&min_value=15&max_value=30
-
-Example output (for the exact value search, formatted as a JSON response):
-{
-  "results": [
-    {
-      "id": 12,
-      "category_id": 4,
-      "name": "Common Sparrow",
-      "scientific_name": "Passer domesticus"
-    }
-  ]
-}
-
-Example output (for the range value search, formatted as a JSON response):
-{
-  "results": [
-    {
-      "id": 8,
-      "category_id": 4,
-      "name": "American Goldfinch",
-      "scientific_name": "Spinus tristis"
-    },
-    {
-      "id": 9,
-      "category_id": 4,
-      "name": "Eastern Bluebird",
-      "scientific_name": "Sialia sialis"
-    }
-  ]
-}
-"""
-    field_id = request.args.get("field_id", type=int)
-    exact_value = request.args.get("exact_value", type=int, default=None)
-    min_value = request.args.get("min_value", type=int, default=None)
-    max_value = request.args.get("max_value", type=int, default=None)
-
-    if field_id is None:
-        return jsonify({"error": "field_id is required"}), 400
-    field_info = db_helpers.select_one("SELECT * FROM Fields WHERE id = ? AND type = 'INTEGER'", (field_id,))
-    if not field_info:
-        return jsonify({"error": "Invalid field ID or field is not of type INTEGER"}), 400
-
-    if exact_value is not None and (min_value is not None or max_value is not None):
-        return jsonify({"error": "Cannot specify exact_value together with min_value or max_value"}), 400
-
-    sql_query = "SELECT w.* FROM Wildlife w JOIN FieldValues fv ON w.id = fv.wildlife_id WHERE fv.field_id = ?"
-    params = [field_id]
-
-    if exact_value is not None:
-        sql_query += " AND fv.value = ?"
-        params.append(str(exact_value))
-    else:
-        if min_value is not None:
-            sql_query += " AND fv.value > ?"
-            params.append(str(min_value))
-        if max_value is not None:
-            sql_query += " AND fv.value < ?"
-            params.append(str(max_value))
-
-    results = db_helpers.select_multiple(sql_query, params)
-    return jsonify(results), 200
 
 
 if __name__ == "__main__":
