@@ -10,13 +10,14 @@ CREATE TABLE IF NOT EXISTS Wildlife (
     category_id INTEGER NOT NULL,
     name TEXT NOT NULL UNIQUE,
     scientific_name TEXT NOT NULL UNIQUE,
+    thumbnail TEXT,
     FOREIGN KEY (category_id) REFERENCES Categories(id)
 );
 
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,
     type TEXT NOT NULL CHECK (type in ('TEXT', 'NUMBER', 'ENUM', 'IMAGE')),
-    name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name'))
+    name TEXT NOT NULL UNIQUE CHECK (name not in ('name', 'scientific_name', 'thumbnail', 'category_id'))
 );
 
 CREATE TABLE IF NOT EXISTS FieldsToCategories (

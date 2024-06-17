@@ -2,8 +2,9 @@ import os
 import re
 import uuid
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
+from werkzeug.datastructures.file_storage import FileStorage
 from werkzeug.utils import secure_filename
 
 import db_helpers
@@ -118,10 +119,20 @@ def normalize_number_field(value: str) -> str:
     return sign + int_part + "." + decimal_part
 
 
+def get_image_field_error(image_file: FileStorage) -> tuple[Response, int] | None:
+    file_length = image_file.seek(0, os.SEEK_END)
+    image_file.seek(0, os.SEEK_SET)
+    if file_length > 10 * 1024 * 1024:
+        return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+    if not image_file.mimetype.startswith("image/"):
+        return jsonify({
+            "error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+
+
 @app.route("/api/create-wildlife/", methods=["POST"])
 def create_wildlife():
     r"""
-    Create a wildlife instance. Requires name, scientific_name, and category_id.
+    Create a wildlife instance. Requires name, scientific_name, and category_id; thumbnail is optional and should be uploaded as a file.
     Additional custom fields can be provided at the end, with the format name=value (see example request).
 
     Numeric fields can be integers or floats, and can be negative. Commas and spaces are ignored.
@@ -157,10 +168,14 @@ def create_wildlife():
         "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
     if wildlife_with_scientific_name_exists:
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
+    
+    if name in ["name", "scientific_name", "category_id", "thumbnail"]:
+        return jsonify({"error": 'Wildlife name cannot be any of the following: "name", "scientific_name", "category_id", "thumbnail"'}), 400
 
     category_id = request.form["category_id"]
     provided_nonimage_fields = {k: v for k, v in request.form.items() if
                                 k not in ("name", "scientific_name", "category_id")}
+    provided_image_fields = {k: v for k, v in request.files.items() if k != "thumbnail"}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
     if not category_exists:
@@ -184,7 +199,7 @@ def create_wildlife():
     valid_image_field_names = {field['name'] for field in valid_image_fields}
 
     # Ensure all provided fields exist
-    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
+    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(provided_image_fields.keys() - ["thumbnail"]))
     if not provided_field_names.issubset(valid_field_names):
         invalid_field_names = provided_field_names - valid_field_names
         return jsonify({
@@ -196,20 +211,16 @@ def create_wildlife():
         return jsonify({"error": f"Missing required fields: {', '.join(missing_field_names)}"}), 400
 
     # Ensure all image fields are provided as files
-    if not valid_image_field_names.issubset(request.files.keys()):
+    if not valid_image_field_names.issubset(provided_image_fields.keys()):
         field_names_missing_file = valid_image_field_names - request.files.keys()
         return jsonify({
                            "error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
 
     # Ensure all image files are a reasonable size and format
-    for image_file in request.files.values():
-        file_length = image_file.seek(0, os.SEEK_END)
-        image_file.seek(0, os.SEEK_SET)
-        if file_length > 10 * 1024 * 1024:
-            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
-        if not image_file.mimetype.startswith("image/"):
-            return jsonify({
-                               "error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+    for image_file in provided_image_fields.values():
+        image_err = get_image_field_error(image_file)
+        if image_err:
+            return image_err
 
     # Ensure all non-image fields are provided as form data
     if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
@@ -224,9 +235,19 @@ def create_wildlife():
         if field_name in number_field_names and not number_field_is_valid(value):
             return jsonify({"error": f"Field {field_name} is a number field, but the provided value is not a valid number"}), 400
 
+    # Save the thumbnail if it exists
+    if request.files["thumbnail"].filename != "":
+        thumbnail_file = request.files["thumbnail"]
+        err = get_image_field_error(thumbnail_file)
+        if err:
+            return err
+        thumbnail_saved_filename = save_file(thumbnail_file)
+    else:
+        thumbnail_saved_filename = None
+    
     # Insert the wildlife entry
-    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
-                                    (name, scientific_name, category_id))
+    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, thumbnail, category_id) VALUES (?, ?, ?, ?)",
+                                    (name, scientific_name, thumbnail_saved_filename, category_id))
 
     # Insert the non-image field values
     for field_name, value in provided_nonimage_fields.items():
@@ -237,7 +258,7 @@ def create_wildlife():
                           (wildlife_id, field_id, value))
 
     # Insert the image field values
-    for field_name, image_file in request.files.items():
+    for field_name, image_file in provided_image_fields.values():
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
         saved_filename = save_file(image_file)
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
@@ -436,10 +457,10 @@ def get_wildlife():
     """
     Retrieves all wildlife entries, including their associated custom field values.
 
-    Each entry includes id, name, scientific_name, category_id, and all the custom field values.
+    Each entry includes id, name, scientific_name, category_id, thumbnail (may be null), and all the custom field values.
     Custom fields have their name as the key and their value as the value.
     Text field values are returned as strings, e.g. "Small fish and insects".
-    Images are returned as their filenames, e.g. "abcd.png". You can use the get-image route to get the actual image.
+    Images, including the thumbnail, are returned as their filenames, e.g. "abcd.png". You can use the get-image route to get the actual image.
 
     Numeric field values are returned as floats inside strings, e.g. "50000.0" or "0.5". You can use decimal.js (https://mikemcl.github.io/decimal.js/) if you need to do math or comparisons with these values.
     If two numbers are mathematically equal, they will be returned as the same string. For example, there is no difference between 5.0 and 5; both are "5.0".
@@ -457,6 +478,7 @@ def get_wildlife():
             "category_id": 2,
             "name": "European Hedgehog",
             "scientific_name": "Erinaceus europaeus",
+            "thumbnail": "1234abcd.png",
             "field_values": [
                 {
                     "field_id": 1,
@@ -473,7 +495,7 @@ def get_wildlife():
             "category_id": 3,
             "name": "Red Fox",
             "scientific_name": "Vulpes vulpes",
-
+            "thumbnail": null,
             "field_values": {
                 {
                     "field_id": 1,
