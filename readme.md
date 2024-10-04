@@ -24,8 +24,8 @@ More information can be found in the [More Details Section](#more-details)
 
 Prerequisites:
 
-- [Python 3.12](<(https://www.python.org/downloads/)>)
-- [NodeJS (best to download v20 LTS)](<(https://nodejs.org/en/download/prebuilt-installer)>)
+- [Python 3.12](https://www.python.org/downloads/)
+- [NodeJS (best to download v20 LTS)](https://nodejs.org/en/download/prebuilt-installer)
 - Note: On the first page of the Python installer, ensure that the "Add Python to PATH" option at the bottom is checked. Aside from that, the default settings in each installer can be left alone as you click through the steps.
 
 - In a terminal, navigate to the project's directory
@@ -34,9 +34,9 @@ Prerequisites:
 
 The website should now be available on `localhost:3000` in the browser, with pages such as 'admin' being at `localhost:3000/admin`. Backend updates will be shown live in the terminal. The script can be exited by hitting `CTRL+C`.
 
-On Mac/Linux, if it can't find the `python3.12` command, you don't have Python 3.12 installed. Install it [here](<(https://www.python.org/downloads/)>).
+On Mac/Linux, if it can't find the `python3.12` command, you don't have Python 3.12 installed. Install it [here](https://www.python.org/downloads/).
 
-On Windows, if it fails, make sure you have Python 3.12 installed. You can check this with `python --version`. If it's not 3.12, install it [here](<(https://www.python.org/downloads/)>). You may also need to close and reopen your terminal after installing Python and NodeJS.
+On Windows, if it fails, make sure you have Python 3.12 installed. You can check this with `python --version`. If it's not 3.12, install it [here](https://www.python.org/downloads/). You may also need to close and reopen your terminal after installing Python and NodeJS.
 
 If it still doesn't work, here's how to run it manually on Mac/Linux (Windows instructions TBA):
 
