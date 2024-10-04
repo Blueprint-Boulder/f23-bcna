@@ -28,6 +28,8 @@ Prerequisites:
 - [NodeJS (best to download v20 LTS)](https://nodejs.org/en/download/prebuilt-installer)
 - Note: On the first page of the Python installer, ensure that the "Add Python to PATH" option at the bottom is checked. Aside from that, the default settings in each installer can be left alone as you click through the steps.
 
+Running the script:
+
 - In a terminal, navigate to the project's directory
 - Windows: Run `python run_website.py`
 - MacOS/Linux: Run `python3 run_website.py` or `python3.12 run_website.py`
