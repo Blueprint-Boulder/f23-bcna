@@ -572,7 +572,7 @@ def get_wildlife():
                 field_value = fv["value"]
             else:
                 raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
-            cleaned_field_values.append({"field_id": field["id"], "value": field_value})
+            cleaned_field_values.append({"field_id": field["id"], "value": field_value, "name": field["name"]})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
 
