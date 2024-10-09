@@ -1,17 +1,16 @@
 // currently not using this but preserving it in case we want to restructure later
 
-
 // src/services/api.js
-import axios from 'axios';
+import axios from "axios";
 
-const BASE_URL = 'http://127.0.0.1:5000'
+const BASE_URL = "http://127.0.0.1:5000";
 
 const api = axios.create({
   baseURL: BASE_URL,
 });
 
 const handleError = (error) => {
-  console.error('API Error:', error);
+  console.error("API Error:", error);
   throw error;
 };
 
@@ -20,7 +19,7 @@ const apiService = {
 
   getTest: async () => {
     try {
-      const response = await api.get('/api');
+      const response = await api.get("/api");
       return response.data;
     } catch (error) {
       handleError(error);
@@ -29,9 +28,7 @@ const apiService = {
 
   getCategoriesAndFields: async () => {
     try {
-      const response = await api.get('/api/get-categories-and-fields');
-      console.log("Response:")
-      console.log(response)
+      const response = await api.get("/api/get-categories-and-fields");
       return response.data;
     } catch (error) {
       handleError(error);
@@ -40,42 +37,40 @@ const apiService = {
 
   getCategories: async () => {
     try {
-      const response = await api.get('/api/get-categories');
-      console.log("Response:")
-      console.log(response)
+      const response = await api.get("/api/get-categories");
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
-
   searchWildlifeNames: async (query, categoryIds = []) => {
     try {
-        // Construct the parameters object
-        let params = new URLSearchParams();
-        params.append('query', query);
-        
-        // If categoryIds are provided, append each one to the params
-        categoryIds.forEach(id => params.append('category_id', id));
+      // Construct the parameters object
+      let params = new URLSearchParams();
+      params.append("query", query);
 
-        // Make the GET request with axios, including the parameters
-        const response = await axios.get(`/api/search-wildlife-names/`, { params: params });
-        return response.data; // Return the data from the response
+      // If categoryIds are provided, append each one to the params
+      categoryIds.forEach((id) => params.append("category_id", id));
+
+      // Make the GET request with axios, including the parameters
+      const response = await axios.get(`/api/search-wildlife-names/`, {
+        params: params,
+      });
+      return response.data; // Return the data from the response
     } catch (error) {
-        handleError(error);
+      handleError(error);
     }
   },
 
   getAllWildlife: async () => {
     try {
       const response = await api.get(`/api/get-wildlife`);
-      return response.data
+      return response.data;
     } catch (error) {
       handleError(error);
     }
   },
-
 
   getWildlifeById: async (wildlifeId) => {
     try {
@@ -86,9 +81,8 @@ const apiService = {
     }
   },
 
-
-  createCategory: async(form) => {
-    try { 
+  createCategory: async (form) => {
+    try {
       const response = await api.post(`/api/create-category/`, form);
       return response.data;
     } catch (error) {
@@ -96,8 +90,8 @@ const apiService = {
     }
   },
 
-  createField: async(form) => {
-    try { 
+  createField: async (form) => {
+    try {
       const response = await api.post(`/api/create-field/`, form);
       return response.data;
     } catch (error) {
@@ -105,8 +99,8 @@ const apiService = {
     }
   },
 
-  editField: async(form) => {
-    try { 
+  editField: async (form) => {
+    try {
       const response = await api.post(`/api/edit-field/`, form);
       return response.data;
     } catch (error) {
@@ -114,8 +108,8 @@ const apiService = {
     }
   },
 
-  createWildlife: async(form) => {
-    try { 
+  createWildlife: async (form) => {
+    try {
       const response = await api.post(`/api/create-wildlife/`, form);
       return response.data;
     } catch (error) {
@@ -123,16 +117,14 @@ const apiService = {
     }
   },
 
-  editWildlife: async(form) => {
+  editWildlife: async (form) => {
     try {
       const response = await api.post(`/api/edit-wildlife`, form);
       return response.data;
     } catch (error) {
       handleError(error);
     }
-  }
-
-
+  },
 };
 
-export default apiService; 
+export default apiService;

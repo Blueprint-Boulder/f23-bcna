@@ -109,7 +109,6 @@ export default function EditCategory() {
     try {
       const formData = new FormData(event.target);
       const response = await apiService.editField(formData);
-      console.log(response);
       fetchData();
     } catch (error) {
       console.error("Error editing field:", error);
@@ -123,7 +122,6 @@ export default function EditCategory() {
     try {
       const formData = new FormData(event.target);
       const response = await apiService.createField(formData);
-      console.log(response);
       fetchData();
       setNewField("");
     } catch (error) {
@@ -158,7 +156,7 @@ export default function EditCategory() {
   };
 
   return (
-    <div className="bg-cover bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] bg-cover w-screen h-[120vh]">
+    <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] bg-cover w-screen h-[120vh]">
       <div className="h-8"></div>
       <div className="bg-neutral-50 rounded-lg w-11/12 lg:w-3/5 mx-auto shadow-lg">
         <h1 className="text-3xl font-bold mb-8 pt-4 text-center">
