@@ -74,9 +74,16 @@ export default function AddCategory() {
                 </option>
               ))}
             </select>
-            <ActionButton type="submit" color="green">
-              Create Category
-            </ActionButton>
+            <div className="self-center flex gap-8 my-4 items-center">
+              <ActionButton
+                onClick={() => (window.location.href = "/admin")}
+                color="red"
+                size="lg"
+              >
+                Cancel
+              </ActionButton>
+              <ActionButton size="lg">Confirm</ActionButton>
+            </div>
           </div>
         </form>
       </div>

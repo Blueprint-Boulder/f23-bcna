@@ -131,7 +131,11 @@ export default function AddWildlife() {
               ))}
           </div>
           <div className="self-center flex gap-8 my-4 items-center">
-            <ActionButton color="red" size="lg">
+            <ActionButton
+              onClick={() => (window.location.href = "/admin")}
+              color="red"
+              size="lg"
+            >
               Cancel
             </ActionButton>
             <ActionButton size="lg">Confirm</ActionButton>

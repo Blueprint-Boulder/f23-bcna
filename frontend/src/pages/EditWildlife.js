@@ -73,8 +73,25 @@ export default function EditWildlife() {
       alert("Wildlife edited successfully!");
       window.location.href = window.location.pathname;
     } catch (error) {
-      console.error("Error creating category:", error);
+      console.error("Error editing wildlife:", error);
       alert("Failed to edit wildlife");
+    }
+  };
+
+  const deleteWildlife = async () => {
+    try {
+      let deleteString = `http://127.0.0.1:5000/api/delete-wildlife/?id=${selectedWildlife.id}`;
+
+      const response = await fetch(deleteString, { method: "DELETE" });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete wildlife");
+      } else {
+        alert("Wildlife deleted successfully!");
+        window.location.href = window.location.pathname;
+      }
+    } catch (error) {
+      console.error("Error deleting wildlife", error);
     }
   };
 
@@ -151,6 +168,11 @@ export default function EditWildlife() {
                       />
                     </div>
                   ))}
+                {selectedWildlife && (
+                  <ActionButton color="red" size="lg" onClick={deleteWildlife}>
+                    Delete Wildlife
+                  </ActionButton>
+                )}
               </>
             )}
           </div>
@@ -158,7 +180,7 @@ export default function EditWildlife() {
             <ActionButton
               color="red"
               size="lg"
-              onClick={() => (window.location.href = window.location.pathname)}
+              onClick={() => (window.location.href = "/admin")}
             >
               Cancel
             </ActionButton>
