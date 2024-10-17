@@ -82,7 +82,9 @@ export default function AddCategory() {
               >
                 Cancel
               </ActionButton>
-              <ActionButton size="lg">Confirm</ActionButton>
+              <ActionButton type="submit" size="lg">
+                Confirm
+              </ActionButton>
             </div>
           </div>
         </form>

@@ -138,7 +138,9 @@ export default function AddWildlife() {
             >
               Cancel
             </ActionButton>
-            <ActionButton size="lg">Confirm</ActionButton>
+            <ActionButton type="submit" size="lg">
+              Confirm
+            </ActionButton>
           </div>
         </form>
       </div>
