@@ -186,11 +186,7 @@ export const Wildlife = () => {
   return (
     <>
       <div className="wildlife relative text-center">
-        <img
-          src="http://coloradofrontrangebutterflies.com/wp-content/uploads/2016/02/inner5.jpg"
-          alt="Wildlife"
-          className="w-full"
-        />
+        <img src="/searchBackground.jpg" alt="Wildlife" className="w-full" />
         <div className="absolute w-2/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
           <SearchBar className="" />
         </div>
