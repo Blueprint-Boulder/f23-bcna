@@ -15,7 +15,7 @@ const ListResult = ({ data }) => {
         `http://127.0.0.1:5000/api/get-image/${thumbnailField.value}`
       );
     }
-  }, []);
+  }, [data]);
   return (
     <div className="list-result flex items-center p-4 border mb-4 rounded-lg">
       {/* Image on the left */}

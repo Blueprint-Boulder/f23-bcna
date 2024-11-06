@@ -17,7 +17,6 @@ export const NavBar = () => {
     };
   }, []);
 
-
   return (
     <div className={`navbar p-6`}>
       <nav>
@@ -28,11 +27,7 @@ export const NavBar = () => {
               isScrolled ? "h-18" : "h-28"
             } transition-all duration-300`}
           >
-            <img
-              src="https://coloradofrontrangebutterflies.com/wp-content/uploads/2016/04/cfrb_logo4.jpg"
-              alt="Logo"
-              className="max-h-full"
-            />
+            <img src="/logo.png" alt="Logo" className="max-h-full" />
           </div>
           <ul className="flex items-center space-x-4">
             {/* Existing navigation links */}
@@ -89,8 +84,6 @@ export const NavBar = () => {
                 Admin
               </NavLink>
             </li>
-
-            
           </ul>
         </div>
       </nav>

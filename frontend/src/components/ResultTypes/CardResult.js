@@ -14,7 +14,7 @@ const CardResult = ({ data }) => {
         `http://127.0.0.1:5000/api/get-image/${thumbnailField.value}`
       );
     }
-  }, []);
+  }, [data]);
 
   return (
     <div className="card-result p-4 border mb-4 rounded-lg">
