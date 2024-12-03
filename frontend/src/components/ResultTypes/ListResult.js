@@ -22,7 +22,7 @@ const ListResult = ({ data }) => {
       <img
         src={thumbnail}
         alt={data.name}
-        className="w-24 h-22 object-contain mr-4"
+        className="w-36 h-22 object-contain mr-4"
       />
 
       {/* Details on the right */}
