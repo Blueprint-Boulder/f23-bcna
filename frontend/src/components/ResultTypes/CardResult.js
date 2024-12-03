@@ -19,7 +19,10 @@ const CardResult = ({ data }) => {
   return (
     <div className="card-result p-4 border mb-4 rounded-lg">
       {/* Image on the top */}
-      <img src={thumbnail} className="mx-auto object-cover w-64 aspect-video" />
+      <img
+        src={thumbnail}
+        className="mx-auto object-contain w-64 aspect-video"
+      />
 
       {/* Details underneath */}
       <div className="flex flex-col">
