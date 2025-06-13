@@ -7,6 +7,9 @@ THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 def get_connection():
     conn = sqlite3.connect(os.path.join(THIS_FOLDER, "database.db"))
+    print("Connected to database")
+    if conn is None:
+        raise Exception("Failed to connect to the database")
     conn.row_factory = sqlite3.Row
     return conn
 
