@@ -88,112 +88,6 @@ def save_file(file):
     return unique_filename
 
 
-@app.route("/api/create-wildlife/", methods=["POST"])
-def create_wildlife():
-    """
-    Create a wildlife instance. Requires name, scientific_name, and category_id.
-    Additional custom fields can be provided at the end, with the format name=value (see example).
-    For image fields, you should upload them as files. Like with other fields, the key should be the field name.
-    Make sure to use enctype="multipart/form-data" on the HTML form; otherwise, you won't be able to upload images.
-
-    Image files must be <10 MB. All common image formats should work by default.
-    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute `accept="image/*"` to restrict the files to images.
-
-    Example request:
-    POST /api/create-wildlife/
-    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Forest
-
-    Example output (successful creation):
-    {
-        "message": "Wildlife created successfully",
-        "wildlife_id": 3
-    }
-    """
-    name = request.form["name"]
-    scientific_name = request.form["scientific_name"]
-
-    wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
-    if wildlife_with_name_exists:
-        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
-
-    wildlife_with_scientific_name_exists = db_helpers.select_multiple(
-        "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
-    if wildlife_with_scientific_name_exists:
-        return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
-
-    category_id = request.form["category_id"]
-    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
-
-    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
-    if not category_exists:
-        return jsonify({"error": "Category not found"}), 400
-
-    # Get all parent category IDs, and the ID of the category itself
-    parent_category_ids = get_parent_ids(category_id)
-
-    # Fetch all fields valid for the category, including those inherited from parent categories
-    valid_fields = db_helpers.select_multiple(f"""
-            SELECT Fields.name, Fields.type FROM Fields
-            JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
-            WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
-        """, parent_category_ids)
-
-    valid_nonimage_fields = filter(lambda field: field["type"] != "IMAGE", valid_fields)
-    valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
-
-    valid_field_names = {field['name'] for field in valid_fields}
-    valid_nonimage_field_names = {field['name'] for field in valid_nonimage_fields}
-    valid_image_field_names = {field['name'] for field in valid_image_fields}
-
-    # Ensure all provided fields exist
-    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
-    if not provided_field_names.issubset(valid_field_names):
-        invalid_field_names = provided_field_names - valid_field_names
-        return jsonify({"error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
-
-    # Ensure all required fields are provided
-    if not valid_field_names.issubset(provided_field_names):
-        missing_field_names = valid_field_names - provided_field_names
-        return jsonify({"error": f"Missing required fields: {', '.join(missing_field_names)}"}), 400
-
-    # Ensure all image fields are provided as files
-    if not valid_image_field_names.issubset(request.files.keys()):
-        field_names_missing_file = valid_image_field_names - request.files.keys()
-        return jsonify({"error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
-
-    # Ensure all image files are a reasonable size and format
-    for image_file in request.files.values():
-        file_length = image_file.seek(0, os.SEEK_END)
-        image_file.seek(0, os.SEEK_SET)
-        if file_length > 10 * 1024 * 1024:
-            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
-        if not image_file.mimetype.startswith("image/"):
-            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
-
-    # Ensure all non-image fields are provided as form data
-    if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
-        field_names_missing_value = valid_nonimage_field_names - provided_nonimage_fields.keys()
-        return jsonify({"error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
-
-    # Insert the wildlife entry
-    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
-                                    (name, scientific_name, category_id))
-
-    # Insert the non-image field values
-    for field_name, value in provided_nonimage_fields.items():
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
-        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-                          (wildlife_id, field_id, value))
-
-    # Insert the image field values
-    for field_name, image_file in request.files.items():
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
-        saved_filename = save_file(image_file)
-        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-                          (wildlife_id, field_id, saved_filename))
-
-    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
-
 
 @app.route("/api/search-wildlife-names/", methods=["GET"])
 def search_wildlife_names():
@@ -571,7 +465,8 @@ def get_wildlife():
             elif field["type"] == "IMAGE":
                 field_value = fv["value"]
             else:
-                raise NotImplementedError(f"Unsupported field type '{field["type"]}'")
+                raise NotImplementedError("Unsupported field type '{}'".format(field["type"]))
+
             cleaned_field_values.append({"field_id": field["id"], "value": field_value, "name": field["name"]})
         out.append({**wildlife, "field_values": cleaned_field_values})
     return jsonify(out), 200
@@ -896,7 +791,7 @@ def edit_wildlife():
     if not category_exists:
         return jsonify({"error": "Category not found"}), 400
 
-    #checking for valid fields
+        #checking for valid fields
     parent_category_ids = get_parent_ids(category_id)
     valid_fields = db_helpers.select_multiple(f"""
         SELECT Fields.name FROM Fields
@@ -908,20 +803,150 @@ def edit_wildlife():
     if not provided_field_names.issubset(valid_field_names):
         invalid_fields = provided_field_names - valid_field_names
         return jsonify({"error": f"Provided fields not valid for category: {', '.join(invalid_fields)}"}), 400
+    
+    valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
+    # valid_image_field_names = {field['name'] for field in valid_image_fields}
+
+    # print(valid_image_field_names)
+
+    for image_file in request.files.values():
+        file_length = image_file.seek(0, os.SEEK_END)
+        image_file.seek(0, os.SEEK_SET)
+        if file_length > 10 * 1024 * 1024:
+            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+        if not image_file.mimetype.startswith("image/"):
+            print("this is not an image")
+            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+    
     #------------------------------------------------------------------------------------#
 
     #---------------------------UPDATING INFORMATION-------------------------------------#
-
     #modify remaining fields
+
     for field_name, value in other_fields.items():
+        print(field_name, value)
         field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
         db_helpers.update("REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
 
+    
+    for field_name, image_file in request.files.items():
+        print(field_name, image_file)
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        saved_filename = save_file(image_file)
+        print(saved_filename)
+        db_helpers.insert("REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, saved_filename))
     #success message
     return jsonify({"message": "wildlife updated successfully", "wildlife_id": wildlife_id}), 201
     #------------------------------------------------------------------------------------#
 
+
+@app.route("/api/create-wildlife/", methods=["POST"])
+def create_wildlife():
+    """
+    Create a wildlife instance. Requires name, scientific_name, and category_id.
+    Additional custom fields can be provided at the end, with the format name=value (see example).
+    For image fields, you should upload them as files. Like with other fields, the key should be the field name.
+    Make sure to use enctype="multipart/form-data" on the HTML form; otherwise, you won't be able to upload images.
+
+    Image files must be <10 MB. All common image formats should work by default.
+    The route only accepts files whose MIME type starts with "image/". In the file input, you can add the attribute `accept="image/*"` to restrict the files to images.
+
+    Example request:
+    POST /api/create-wildlife/
+    Form Data: name=Fox, scientific_name=Vulpes vulpes, category_id=1, Habitat=Forest
+
+    Example output (successful creation):
+    {
+        "message": "Wildlife created successfully",
+        "wildlife_id": 3
+    }
+    """
+    name = request.form["name"]
+    scientific_name = request.form["scientific_name"]
+
+    wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
+    if wildlife_with_name_exists:
+        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
+
+    wildlife_with_scientific_name_exists = db_helpers.select_multiple(
+        "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
+    if wildlife_with_scientific_name_exists:
+        return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
+
+    category_id = request.form["category_id"]
+    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+
+    category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
+    if not category_exists:
+        return jsonify({"error": "Category not found"}), 400
+
+    # Get all parent category IDs, and the ID of the category itself
+    parent_category_ids = get_parent_ids(category_id)
+
+    # Fetch all fields valid for the category, including those inherited from parent categories
+    valid_fields = db_helpers.select_multiple(f"""
+            SELECT Fields.name, Fields.type FROM Fields
+            JOIN FieldsToCategories ON Fields.id = FieldsToCategories.field_id
+            WHERE FieldsToCategories.category_id IN ({','.join('?' for _ in parent_category_ids)})
+        """, parent_category_ids)
+
+    valid_nonimage_fields = filter(lambda field: field["type"] != "IMAGE", valid_fields)
+    valid_image_fields = filter(lambda field: field["type"] == "IMAGE", valid_fields)
+
+    valid_field_names = {field['name'] for field in valid_fields}
+    valid_nonimage_field_names = {field['name'] for field in valid_nonimage_fields}
+    valid_image_field_names = {field['name'] for field in valid_image_fields}
+
+    # Ensure all provided fields exist
+    provided_field_names = set(list(provided_nonimage_fields.keys()) + list(request.files.keys()))
+    if not provided_field_names.issubset(valid_field_names):
+        invalid_field_names = provided_field_names - valid_field_names
+        return jsonify({"error": f"The following fields are invalid for the category with ID {category_id}: {', '.join(invalid_field_names)}"}), 400
+
+    # Ensure all required fields are provided
+    if not valid_field_names.issubset(provided_field_names):
+        missing_field_names = valid_field_names - provided_field_names
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_field_names)}"}), 400
+
+    # Ensure all image fields are provided as files
+    if not valid_image_field_names.issubset(request.files.keys()):
+        field_names_missing_file = valid_image_field_names - request.files.keys()
+        return jsonify({"error": f"The following are image fields, but you provided them as non-files: {', '.join(field_names_missing_file)}"}), 400
+
+    # Ensure all image files are a reasonable size and format
+    for image_file in request.files.values():
+        file_length = image_file.seek(0, os.SEEK_END)
+        image_file.seek(0, os.SEEK_SET)
+        if file_length > 10 * 1024 * 1024:
+            return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+        if not image_file.mimetype.startswith("image/"):
+            return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+
+    # Ensure all non-image fields are provided as form data
+    if not valid_nonimage_field_names.issubset(provided_nonimage_fields.keys()):
+        field_names_missing_value = valid_nonimage_field_names - provided_nonimage_fields.keys()
+        return jsonify({"error": f"The following are non-image fields, but you provided them as files: {', '.join(field_names_missing_value)}"}), 400
+
+    # Insert the wildlife entry
+    wildlife_id = db_helpers.insert("INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
+                                    (name, scientific_name, category_id))
+
+    # Insert the non-image field values
+    for field_name, value in provided_nonimage_fields.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, value))
+
+    # Insert the image field values
+    for field_name, image_file in request.files.items():
+        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        saved_filename = save_file(image_file)
+        db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                          (wildlife_id, field_id, saved_filename))
+
+    return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
 
 if __name__ == "__main__":

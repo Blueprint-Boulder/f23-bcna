@@ -120,6 +120,9 @@ const apiService = {
   editWildlife: async (form) => {
     try {
       const response = await api.post(`/api/edit-wildlife`, form);
+      for (const pair of form.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+      }
       return response.data;
     } catch (error) {
       handleError(error);

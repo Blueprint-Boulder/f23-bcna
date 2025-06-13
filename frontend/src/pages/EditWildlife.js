@@ -10,7 +10,20 @@ export default function EditWildlife() {
   const [wildlife, setWildlife] = useState([]);
   const [displayedWildlife, setDisplayedWildlife] = useState([]);
   const [selectedWildlife, setSelectedWildlife] = useState(null);
+  const [selectedWildlifeInfo, setSelectedWildlifeInfo] = useState(null);
+  // Removed unused images state
 
+  // FOR LOADING PAGE, CATEGORIES, AND WILDLIFE
+  //_______________________________________________//
+
+  // Fetch all data needed for the form on page load
+  useEffect(() => {
+    // fetch data on page load
+    fetchCategories();
+    fetchWildlife();
+  }, []);
+
+  // Fetch categories and fields from the API
   const fetchCategories = async () => {
     // gets all categories and fields from the database with an API route
     try {
@@ -32,15 +45,21 @@ export default function EditWildlife() {
     }
   };
 
+
+  // FOR HANDLING CATEGORY AND WILDLIFE SELECTION
+  //_______________________________________________//
+
   const handleCategoryChange = (e) => {
     setSelectedCategory(categories[e.target.value]);
   };
 
   const handleWildlifeChange = (e) => {
-    setSelectedWildlife(
-      displayedWildlife.find((entry) => entry.id == e.target.value)
-    );
+    const selected = displayedWildlife.find((entry) => entry.id == e.target.value);
+    setSelectedWildlife(selected);
+    console.log("Selected Wildlife ID: ", selected ? selected.id : null);
   };
+
+  // Loading Fields based on selected category
 
   useEffect(() => {
     const findFields = () => {
@@ -58,20 +77,46 @@ export default function EditWildlife() {
     }
   }, [selectedCategory]);
 
+  // Fetch wildlife details by ID when the wildlifeId changes
+  
   useEffect(() => {
-    // fetch data on page load
-    fetchCategories();
-    fetchWildlife();
-  }, []);
+    const fetchWildlifeById = async () => {
+      if (selectedWildlife) {
+        try {
+          // Fetch wildlife data by ID
+          const data = await apiService.getWildlifeById(selectedWildlife.id);
+          setSelectedWildlifeInfo(data);
+        } catch (error) {
+          console.error("Error fetching wildlife details:", error);
+        }
+      }
+    };
+    console.log("fetching wildlife info");
+    fetchWildlifeById();
+    console.log("Selected Wildlife: ", selectedWildlifeInfo);
+
+  }, [selectedWildlife]);
+
+
+  // FOR HANDLING FORM SUBMISSION AND DELETION
+  //_______________________________________________//
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+    console.log("Submitting form with data:", event.target);
     try {
       const formData = new FormData(event.target);
-      const response = await apiService.editWildlife(formData);
+
+      // Remove empty files from FormData
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File && value.size === 0) {
+          formData.delete(key);
+        }
+      }
+
+      await apiService.editWildlife(formData);
       alert("Wildlife edited successfully!");
-      window.location.href = window.location.pathname;
+      // window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error editing wildlife:", error);
       alert("Failed to edit wildlife");
@@ -115,7 +160,7 @@ export default function EditWildlife() {
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               id="categoryName"
               onChange={handleCategoryChange}
-              defaultValue="default"
+              defaultValue={selectedCategory ? selectedCategory.id : "default"}
               name="category_id"
               required
             >
@@ -138,7 +183,7 @@ export default function EditWildlife() {
                                 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                   id="wildlifeName"
                   onChange={handleWildlifeChange}
-                  defaultValue="default"
+                  defaultValue={selectedWildlife ? selectedWildlife.id : "default"}
                   name="wildlife_id"
                   required
                 >
@@ -151,13 +196,20 @@ export default function EditWildlife() {
                     </option>
                   ))}
                 </select>
-                {selectedWildlife &&
+                {selectedWildlifeInfo &&
                   displayedFields.length > 0 &&
                   displayedFields.map((item) => (
                     <div key={item.id}>
                       <label htmlFor={item.id}>
                         {item.name} ({item.type})
                       </label>
+                      <div className="mb-4">
+                      {item.type === "IMAGE" &&
+                          <img
+                            src={`http://127.0.0.1:5000/api/get-image/${selectedWildlifeInfo[item.name]}`}
+                            alt={item.name}
+                            className="w-32 h-32 object-cover mb-2"
+                          />}
                       <input
                         type={item.type === "IMAGE" ? "file" : "text"}
                         name={item.name}
@@ -165,10 +217,22 @@ export default function EditWildlife() {
                         id={item.id}
                         className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                        {...(item.type !== "IMAGE" && {
+                          defaultValue: selectedWildlifeInfo[item.name] || "",
+                        })}
+                        onChange={(e) => {
+                          if (item.type !== "IMAGE") {
+                            setSelectedWildlifeInfo((prev) => ({
+                              ...prev,
+                              [item.name]: e.target.value,
+                            }));
+                          }
+                        }}
                       />
+                        </div>
                     </div>
                   ))}
-                {selectedWildlife && (
+                {displayedWildlife && (
                   <ActionButton color="red" size="lg" onClick={deleteWildlife}>
                     Delete Wildlife
                   </ActionButton>
