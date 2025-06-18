@@ -599,6 +599,55 @@ def edit_field():
 
     return jsonify({"message": "Field updated successfully"}), 200
 
+@app.route("/api/delete-field/", methods=["DELETE"])
+def delete_field():
+    print("Received request to delete field")
+    """
+    Deletes a field by ID. 
+    Requires 'field_id' and 'category_id'
+    Example request:
+    DELETE /api/delete-field/?field_id=2&category_id=1
+    Example output:
+    {
+        "message": "Field successfully deleted"
+    }
+    """
+    
+    field_id = request.args["field_id"]
+    category_id = request.args["category_id"]
+
+    """
+    Checking existence and association is redundant as Edit_Wildlife sends information from pre_existing queries.
+    But for the sake of completeness, and perhaps futured debugging, 
+    we will check if the field exists and if it is associated with the category
+    """
+    print("Deleting field with ID:", field_id, "from category ID:", category_id)
+
+    row = db_helpers.select_one(
+    """
+    SELECT 
+        EXISTS(SELECT 1 FROM Fields WHERE id = ?) AS field_exists,
+        EXISTS(SELECT 1 FROM Categories WHERE id = ?) AS category_exists,
+        EXISTS(SELECT 1 FROM FieldsToCategories WHERE field_id = ? AND category_id = ?) AS association_exists
+    """,
+    (field_id, category_id, field_id, category_id)
+    )   
+    if not row["field_exists"]:
+        return jsonify({"error": f"Field {field_id} not found"}), 400
+    if not row["category_exists"]:
+        return jsonify({"error": f"Category {category_id} not found"}), 400
+    if not row["association_exists"]:
+        return jsonify({"error": f"Field {field_id} is not associated with category {category_id}"}), 400
+    
+    # Delete the field-category association
+    db_helpers.delete("DELETE FROM FieldsToCategories WHERE field_id = ? AND category_id = ?", (field_id, category_id))
+
+    return jsonify({"message": "Field successfully deleted"}), 200
+
+
+
+
+
 
 @app.route("/api/delete-category/", methods=["DELETE"])
 def delete_category():
