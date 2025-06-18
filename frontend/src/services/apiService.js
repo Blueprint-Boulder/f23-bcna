@@ -108,6 +108,7 @@ const apiService = {
     }
   },
 
+
   createWildlife: async (form) => {
     try {
       const response = await api.post(`/api/create-wildlife/`, form);

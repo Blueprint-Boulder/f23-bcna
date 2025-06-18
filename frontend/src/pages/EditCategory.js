@@ -130,12 +130,32 @@ export default function EditCategory() {
     }
   };
 
+  const deleteField = async (fieldId) => {
+    console.log("Deleting field:", fieldId);
+
+    try {
+      const deleteString = `http://127.0.0.1:5000/api/delete-field/?field_id=${fieldId}&category_id=${selectedCategory.id}`;
+      const response = await fetch(deleteString, { method: "DELETE" });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete field");
+      }
+
+      console.log("Field deleted successfully");
+      fetchData(); // Refresh data after deletion
+    } catch (error) {
+      console.error("Error deleting field:", error);
+      alert("Failed to delete field");
+    }
+  }
+
   const toggleSubDeletion = (e) => {
     setSubDeletion({ ...subDeletion, deleteSubs: e.target.checked });
   };
 
   const deleteCategory = async () => {
     try {
+      console.log("Deleting category:", selectedCategory);
       let deleteString = `http://127.0.0.1:5000/api/delete-category/?id=${selectedCategory.id}`;
 
       if (subDeletion.deleteSubs) {
@@ -197,6 +217,9 @@ export default function EditCategory() {
                         <button
                           key={`button-${item.id}`}
                           className="bg-red-500 rounded-full inline px-4 py-1.5 lg:px-3 lg:py-0.5 text-white font-bold text-lg"
+                          onClick={() => {
+                            deleteField(item.id);
+                          }}
                         >
                           -
                         </button>
