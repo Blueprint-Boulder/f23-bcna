@@ -45,6 +45,13 @@ export default function AddWildlife() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const formData = new FormData(event.target);
+    for (const [key, value] of formData.entries()) {
+      if (!value || (typeof value === 'string' && value.trim() === '') || (value instanceof File && value.size === 0)) {
+        alert(`Please fill in all fields with information`);
+        return;
+      }
+    }
 
     try {
       const formData = new FormData(event.target);
@@ -53,7 +60,12 @@ export default function AddWildlife() {
       window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error creating wildlife:", error);
-      alert("Failed to create wildlife");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to create wildlife: ${error.response.data.message}`);
+      } else {
+        alert("Failed to create wildlife");
+      }
     }
   };
 

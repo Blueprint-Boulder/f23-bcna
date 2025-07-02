@@ -116,10 +116,15 @@ export default function EditWildlife() {
 
       await apiService.editWildlife(formData);
       alert("Wildlife edited successfully!");
-      // window.location.href = window.location.pathname;
+      window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error editing wildlife:", error);
-      alert("Failed to edit wildlife");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to edit wildlife: ${error.response.data.message}`);
+      } else {
+        alert("Failed to edit wildlife");
+      }
     }
   };
 

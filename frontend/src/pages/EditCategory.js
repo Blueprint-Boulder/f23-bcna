@@ -112,7 +112,12 @@ export default function EditCategory() {
       fetchData();
     } catch (error) {
       console.error("Error editing field:", error);
-      alert("Failed to edit field");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to edit field: ${error.response.data.message}`);
+      } else {
+        alert("Failed to edit field");
+      }
     }
   };
 
@@ -126,7 +131,12 @@ export default function EditCategory() {
       setNewField("");
     } catch (error) {
       console.error("Error creating field:", error);
-      alert("Failed to create field");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to create field: ${error.response.data.message}`);
+      } else {
+        alert("Failed to create field");
+      }
     }
   };
 
@@ -145,7 +155,12 @@ export default function EditCategory() {
       fetchData(); // Refresh data after deletion
     } catch (error) {
       console.error("Error deleting field:", error);
-      alert("Failed to delete field");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to delete field: ${error.response.data.message}`);
+      } else {
+        alert("Failed to delete field");
+      }
     }
   }
 
@@ -165,13 +180,19 @@ export default function EditCategory() {
       const response = await fetch(deleteString, { method: "DELETE" });
 
       if (!response.ok) {
-        throw new Error("Failed to create field");
+        throw new Error("Failed to delete category");
       } else {
         alert("Category deleted successfully!");
         window.location.href = window.location.pathname;
       }
     } catch (error) {
       console.error("Error deleting categories", error);
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to delete category: ${error.response.data.message}`);
+      } else {
+        alert("Failed to delete category");
+      }
     }
   };
 
