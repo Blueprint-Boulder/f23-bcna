@@ -18,7 +18,52 @@ export default function AddCategory() {
     fetchData();
   }, []);
 
+  const deleteCategory = async (categoryId) => {
+    try {
+      console.log("Deleting category:", categoryId);
+      let deleteString = `http://127.0.0.1:5000/api/delete-category/?id=${categoryId}`;
+      deleteString += "&delete-members=true";
+
+      const response = await fetch(deleteString, { method: "DELETE" });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete category");
+      } else {
+        alert("Category deleted successfully!");
+        
+      }
+    } catch (error) {
+      console.error("Error deleting categories", error);
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to delete category: ${error.response.data.message}`);
+      } else {
+        alert("Failed to delete category");
+      }
+    }
+  };
+
   const handleSubmit = async (event) => {
+    const categoryName = event.target.name.value;
+    if (categoryName === "") {
+      alert("Category name is required");
+      return;
+    }
+
+    if (categories.some((category) => category.name === categoryName)) {
+      const confirmDelete = window.confirm(`Category "${categoryName}" already exists. Would you like to delete it?`);
+      if (confirmDelete) {
+        try {
+          const categoryId = categories.find((category) => category.name === categoryName).id;
+          deleteCategory(categoryId);
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          alert("Failed to delete category");
+        }
+      }
+      return;
+    }
+
     event.preventDefault();
 
     try {
@@ -28,7 +73,12 @@ export default function AddCategory() {
       window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error creating category:", error);
-      alert("Failed to create category");
+      // Show specific error message from backend if available
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(`Failed to create category: ${error.response.data.message}`);
+      } else {
+        alert("Failed to create category");
+      }
     }
   };
 
