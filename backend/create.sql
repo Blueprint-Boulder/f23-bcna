@@ -13,13 +13,13 @@ CREATE TABLE IF NOT EXISTS Wildlife (
     FOREIGN KEY (category_id) REFERENCES Categories(id)
 );
 
--- CREATE TABLE IF NOT EXISTS Images (
---     id INTEGER PRIMARY KEY, 
---     wildlife_id INTEGER NOT NULL, 
---     image_path TEXT NOT NULL,
---     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
---     UNIQUE (wildlife_id, image_path)
--- )
+CREATE TABLE IF NOT EXISTS Images (
+    id INTEGER PRIMARY KEY, 
+    wildlife_id INTEGER NOT NULL, 
+    image_path TEXT NOT NULL,
+    FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
+    UNIQUE (wildlife_id, image_path)
+);
 
 CREATE TABLE IF NOT EXISTS Fields (
     id INTEGER PRIMARY KEY,

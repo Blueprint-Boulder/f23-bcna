@@ -81,6 +81,16 @@ const apiService = {
     }
   },
 
+  getImagesByWildlifeId: async (wildlifeId) => {
+    console.log("getImagesByWildlifeId", wildlifeId);
+    try {
+      const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   createCategory: async (form) => {
     try {
       const response = await api.post(`/api/create-category/`, form);
@@ -112,6 +122,16 @@ const apiService = {
   createWildlife: async (form) => {
     try {
       const response = await api.post(`/api/create-wildlife/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  addImage: async(form) => {
+    console.log("addImage", form);
+    try {
+      const response = await api.post(`/api/add-image/`, form);
       return response.data;
     } catch (error) {
       handleError(error);
