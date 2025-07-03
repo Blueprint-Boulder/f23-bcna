@@ -22,6 +22,8 @@ def insert(query: str, params: Sequence[Any] = ()) -> int:
     last_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    if last_id is None:
+        raise Exception("Failed to insert row")
     return last_id
 
 

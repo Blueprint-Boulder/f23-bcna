@@ -1,16 +1,14 @@
 import { Footer } from "./Footer"
 import { NavBar } from "./NavBar"
 
-export const Layout = ({children}) => {
+export const Layout = ({ children }) => {
     return (
-        <div className="layout">
-            <NavBar/>
-            <div className="flex flex-col min-h-screen">
-            <div className="flex-1">
-            {children}
-            </div>
-            <Footer/>
-            </div>
-        </div>
-    )
-}
+      <div className="flex flex-col min-h-screen">
+        <NavBar />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    );
+  };

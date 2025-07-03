@@ -4,7 +4,7 @@ import uuid
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-
+import pdb
 import db_helpers
 
 app = Flask(__name__)
@@ -859,6 +859,8 @@ def edit_wildlife():
     # print(valid_image_field_names)
 
     for image_file in request.files.values():
+        if image_file.filename == "":
+            continue
         file_length = image_file.seek(0, os.SEEK_END)
         image_file.seek(0, os.SEEK_SET)
         if file_length > 10 * 1024 * 1024:
@@ -874,14 +876,22 @@ def edit_wildlife():
 
     for field_name, value in other_fields.items():
         print(field_name, value)
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        field = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])
+        if not field:
+            return jsonify({"error": f"Field {field_name} not found"}), 400
+        field_id = field["id"]
         db_helpers.update("REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
 
     
     for field_name, image_file in request.files.items():
+        if image_file.filename == "":
+            continue
         print(field_name, image_file)
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        field = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])
+        if not field:
+            return jsonify({"error": f"Field {field_name} not found"}), 400
+        field_id = field["id"]
         saved_filename = save_file(image_file)
         print(saved_filename)
         db_helpers.insert("REPLACE INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
@@ -997,6 +1007,55 @@ def create_wildlife():
 
     return jsonify({"message": "Wildlife created successfully", "wildlife_id": wildlife_id}), 201
 
+# CREATE TABLE IF NOT EXISTS Images (
+#     id INTEGER PRIMARY KEY, 
+#     wildlife_id INTEGER NOT NULL, 
+#     image_path TEXT NOT NULL,
+#     FOREIGN KEY (wildlife_id) REFERENCES Wildlife(id),
+#     UNIQUE (wildlife_id, image_path)
+# );
+
+
+@app.route("/api/add-image/", methods=["POST"])
+def add_image():
+    """
+    Add an image to a wildlife instance.
+    Requires wildlife_id and field_id.
+    """
+    print("HEEERREE")
+    print("add_image", request.form)
+    wildlife_id = request.form["wildlife_id"]
+    image_file = request.files["image_file"]
+
+    file_length = image_file.seek(0, os.SEEK_END)
+    image_file.seek(0, os.SEEK_SET)
+    print("file_length", file_length)
+    if file_length > 10 * 1024 * 1024:
+        return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+    if not image_file.mimetype.startswith("image/"):
+        return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+    saved_filename = save_file(image_file)
+    print("saved_filename", saved_filename)
+    db_helpers.insert("INSERT INTO Images (wildlife_id, image_path) VALUES (?, ?)",
+                      (wildlife_id, saved_filename))
+                
+    return jsonify({"message": "Image added successfully", "wildlife_id": wildlife_id}), 201
+
+
+@app.route("/api/get-images-by-wildlife-id/<int:wildlife_id>", methods=["GET"])
+def get_images_by_wildlife_id(wildlife_id):
+    """
+    Get all images for a wildlife instance.
+    Requires wildlife_id.
+    """
+    print("get_images_by_wildlife_id", wildlife_id)
+    try:
+        images = db_helpers.select_multiple("SELECT image_path FROM Images WHERE wildlife_id = ?", [wildlife_id])
+        print("images", images)
+        return jsonify(images), 200
+    except Exception as e:
+        print("Error in get_images_by_wildlife_id:", e)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     db_helpers.init_db()

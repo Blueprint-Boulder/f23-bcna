@@ -155,6 +155,7 @@ export const Wildlife = () => {
         return (
           <div className="grid grid-cols-3 gap-2">
             {currentResults.map((result, index) => (
+              console.log(result),
               <div key={index} className="w-full">
                 <CardResult data={result} />
               </div>

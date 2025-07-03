@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ActionButton } from "../components/ActionButton";
 import apiService from "../services/apiService";
 
@@ -7,6 +7,8 @@ export default function AddWildlife() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [fields, setFields] = useState({});
   const [displayedFields, setDisplayedFields] = useState([]);
+  const [images, setImages] = useState([]);
+  const imageRefs = useRef([]);
 
   const fetchData = async () => {
     // gets all categories and fields from the database with an API route
@@ -44,26 +46,57 @@ export default function AddWildlife() {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    for (const [key, value] of formData.entries()) {
-      if (!value || (typeof value === 'string' && value.trim() === '') || (value instanceof File && value.size === 0)) {
-        alert(`Please fill in all fields with information`);
-        return;
-      }
-    }
+    event.preventDefault();;
 
     try {
       const formData = new FormData(event.target);
+      for (const [key, value] of formData.entries()) {
+        if (!value || (typeof value === 'string' && value.trim() === '') || (value instanceof File && value.size === 0)) {
+          alert(`Please fill in all fields with information`);
+          return;
+        }
+      }
+      const imagesFormData = new FormData();
+      imageRefs.current.forEach((ref, index) => {
+        if (ref && ref.files && ref.files[0]) {
+          imagesFormData.append(`image_${index}`, ref.files[0]);
+        }
+      });
+  
+      // Debugging logs
+      console.log("Main FormData:");
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      // create wildlife
       const response = await apiService.createWildlife(formData);
-      alert("Wildlife created successfully!");
+
+      console.log(response.wildlife_id)
+      if (response.wildlife_id) {
+        const wildlifeId = response.wildlife_id;
+        imageRefs.current.forEach(async (ref, index) => {
+          if (ref && ref.files && ref.files[0]) {
+            const imageFormData = new FormData();
+            imageFormData.append("image_file", ref.files[0]);
+            imageFormData.append("wildlife_id", wildlifeId);
+            const imageResponse = await apiService.addImage(imageFormData);
+          }
+        });
+        alert("Wildlife created successfully and images added!");
+      }
+      else{
+        alert("Wildlife created successfully, but cannot add images try again in Edit Wildlife");
+      }
       window.location.href = window.location.pathname;
+      
     } catch (error) {
       console.error("Error creating wildlife:", error);
       // Show specific error message from backend if available
       if (error.response && error.response.data && error.response.data.message) {
         alert(`Failed to create wildlife: ${error.response.data.message}`);
-      } else {
+      } 
+      else {
         alert("Failed to create wildlife");
       }
     }
@@ -127,7 +160,7 @@ export default function AddWildlife() {
             {selectedCategory &&
               displayedFields.length > 0 &&
               displayedFields.map((item) => (
-                <>
+                <div key={item.id}>
                   <label htmlFor={item.id}>
                     {item.name} ({item.type})
                   </label>
@@ -139,8 +172,46 @@ export default function AddWildlife() {
                     className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm
                              focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                   />
-                </>
+                </div>
               ))}
+              {selectedCategory  && 
+              <>
+              <div className="mb-4 border-2 border-gray-300 rounded-md p-4">
+                <label className="block mb-2 font-medium text-gray-700">
+                  Supplemental Images
+                </label>
+                {images.map((_, idx) => (
+                  <input
+                    key={idx}
+                    type="file"
+                    ref={el => imageRefs.current[idx] = el}
+                    className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm flex items-center justify-center h-10 hover:border-blue-400"
+                    style={{ background: "#f9fafb" }}
+                    accept="image/*"
+                    title="Add Image"
+                  />
+                ))}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    onClick={() => setImages([...images, ""])}
+                  >
+                    Add Image
+                  </button>
+                  <button
+                    type="button"
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    onClick={() => setImages(images.slice(0, -1))}
+                    disabled={images.length === 0}
+                  >
+                    Remove Image
+                  </button>
+                </div>
+              </div>
+              </>
+
+              }
           </div>
           <div className="self-center flex gap-8 my-4 items-center">
             <ActionButton
