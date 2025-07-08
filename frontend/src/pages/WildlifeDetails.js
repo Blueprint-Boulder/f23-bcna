@@ -42,6 +42,7 @@ export default function WildlifeDetails() {
     setImages(temp);
     if (temp.length >= 1) setHighlight(wildlifeData[temp[0]]);
     setFilteredData(displayFilter(wildlifeData, categoriesAndFields, temp));
+    console.log("images", images);
   };
 
   useEffect(() => {
