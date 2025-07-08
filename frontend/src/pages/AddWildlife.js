@@ -8,7 +8,8 @@ export default function AddWildlife() {
   const [fields, setFields] = useState({});
   const [displayedFields, setDisplayedFields] = useState([]);
   const [images, setImages] = useState([]);
-  const imageRefs = useRef([]);
+  const thumbnailImageRef = useRef(null);
+  const supplementalImageRefs = useRef([]);
 
   const fetchData = async () => {
     // gets all categories and fields from the database with an API route
@@ -56,18 +57,15 @@ export default function AddWildlife() {
           return;
         }
       }
-      const imagesFormData = new FormData();
-      imageRefs.current.forEach((ref, index) => {
-        if (ref && ref.files && ref.files[0]) {
-          imagesFormData.append(`image_${index}`, ref.files[0]);
-        }
-      });
-  
-      // Debugging logs
-      console.log("Main FormData:");
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+      // const imagesFormData = new FormData();
+      // if (thumbnailImageRef.current && thumbnailImageRef.current.files && thumbnailImageRef.current.files[0]) {
+      //   imagesFormData.append("thumbnail", thumbnailImageRef.current.files[0]);
+      // }
+      // imageRefs.current.forEach((ref, index) => {
+      //   if (ref && ref.files && ref.files[0]) {
+      //     imagesFormData.append(`image_${index}`, ref.files[0]);
+      //   }
+      // });
 
       // create wildlife
       const response = await apiService.createWildlife(formData);
@@ -75,21 +73,48 @@ export default function AddWildlife() {
       console.log(response.wildlife_id)
       if (response.wildlife_id) {
         const wildlifeId = response.wildlife_id;
-        imageRefs.current.forEach(async (ref, index) => {
-          if (ref && ref.files && ref.files[0]) {
-            const imageFormData = new FormData();
-            imageFormData.append("image_file", ref.files[0]);
-            imageFormData.append("wildlife_id", wildlifeId);
-            const imageResponse = await apiService.addImage(imageFormData);
+
+        // Upload thumbnail image if present
+        if (
+          thumbnailImageRef.current &&
+          thumbnailImageRef.current.files &&
+          thumbnailImageRef.current.files[0]
+        ) {
+          const thumbnailFormData = new FormData();
+          thumbnailFormData.append("image_file", thumbnailImageRef.current.files[0]);
+          thumbnailFormData.append("wildlife_id", wildlifeId);
+          thumbnailFormData.append("is_thumbnail", true);
+          try {
+            await apiService.addImage(thumbnailFormData);
+          } catch (err) {
+            console.error("Error uploading thumbnail:", err);
+            alert("Wildlife created, but failed to upload thumbnail image.");
           }
-        });
+        }
+
+        // Upload supplemental images if present
+        if (supplementalImageRefs.current && supplementalImageRefs.current.length > 0) {
+          for (const ref of supplementalImageRefs.current) {
+            if (ref && ref.files && ref.files[0]) {
+              const imageFormData = new FormData();
+              imageFormData.append("image_file", ref.files[0]);
+              imageFormData.append("wildlife_id", wildlifeId);
+              imageFormData.append("is_thumbnail", false);
+              try {
+                await apiService.addImage(imageFormData);
+              } catch (err) {
+                console.error("Error uploading supplemental image:", err);
+                alert("Wildlife created, but failed to upload one or more supplemental images.");
+              }
+            }
+          }
+        }
+
         alert("Wildlife created successfully and images added!");
+      } else {
+        alert("Wildlife created successfully, but cannot add images. Try again in Edit Wildlife.");
       }
-      else{
-        alert("Wildlife created successfully, but cannot add images try again in Edit Wildlife");
-      }
-      window.location.href = window.location.pathname;
-      
+      // window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error creating wildlife:", error);
       // Show specific error message from backend if available
@@ -174,44 +199,57 @@ export default function AddWildlife() {
                   />
                 </div>
               ))}
-              {selectedCategory  && 
-              <>
-              <div className="mb-4 border-2 border-gray-300 rounded-md p-4">
-                <label className="block mb-2 font-medium text-gray-700">
-                  Supplemental Images
-                </label>
-                {images.map((_, idx) => (
-                  <input
-                    key={idx}
-                    type="file"
-                    ref={el => imageRefs.current[idx] = el}
-                    className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm flex items-center justify-center h-10 hover:border-blue-400"
-                    style={{ background: "#f9fafb" }}
-                    accept="image/*"
-                    title="Add Image"
-                  />
-                ))}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => setImages([...images, ""])}
-                  >
-                    Add Image
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => setImages(images.slice(0, -1))}
-                    disabled={images.length === 0}
-                  >
-                    Remove Image
-                  </button>
-                </div>
-              </div>
-              </>
+              {selectedCategory && (
+                <>
+                  <div className="mb-4 border-2 border-gray-300 rounded-md p-4">
+                    <label className="block mb-2 font-medium text-gray-700">
+                      Thumbnail Image
+                    </label>
+                    <input
+                      type="file"
+                      ref={el => (thumbnailImageRef.current = el)}
+                      className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm flex items-center justify-center h-10 hover:border-blue-400"
+                      style={{ background: "#f9fafb" }}
+                      accept="image/*"
+                      title="Add Thumbnail"
+                    />
+                  </div>
+                  <div className="mb-4 border-2 border-gray-300 rounded-md p-4">
+                    <label className="block mb-2 font-medium text-gray-700">
+                      Supplemental Images
+                    </label>
+                    {images.map((_, idx) => (
+                      <input
+                        key={idx}
+                        type="file"
+                        ref={el => supplementalImageRefs.current[idx] = el}
+                        className="mt-1 mb-4 w-full rounded-md border-gray-300 shadow-sm flex items-center justify-center h-10 hover:border-blue-400"
+                        style={{ background: "#f9fafb" }}
+                        accept="image/*"
+                        title="Add Image"
+                      />
+                    ))}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        onClick={() => setImages([...images, ""])}
+                      >
+                        Add Image
+                      </button>
+                      <button
+                        type="button"
+                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                        onClick={() => setImages(images.slice(0, -1))}
+                        disabled={images.length === 0}
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
-              }
           </div>
           <div className="self-center flex gap-8 my-4 items-center">
             <ActionButton

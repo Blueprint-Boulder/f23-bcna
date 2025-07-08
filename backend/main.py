@@ -924,10 +924,9 @@ def create_wildlife():
     """
     name = request.form["name"]
     scientific_name = request.form["scientific_name"]
-
     wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
     if wildlife_with_name_exists:
-        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
+        return jsonify({"message": f"Wildlife with namne {name} already exists"}), 400
 
     wildlife_with_scientific_name_exists = db_helpers.select_multiple(
         "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name])
@@ -935,7 +934,7 @@ def create_wildlife():
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
     category_id = request.form["category_id"]
-    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id")}
+    provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id", "thumbnail")}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
     if not category_exists:
@@ -1020,11 +1019,10 @@ def create_wildlife():
 def add_image():
     """
     Add an image to a wildlife instance.
-    Requires wildlife_id and field_id.
+    Requires wildlife_id and is_thumbnail.
     """
-    print("HEEERREE")
-    print("add_image", request.form)
     wildlife_id = request.form["wildlife_id"]
+    is_thumbnail = request.form["is_thumbnail"]
     image_file = request.files["image_file"]
 
     file_length = image_file.seek(0, os.SEEK_END)
@@ -1034,12 +1032,22 @@ def add_image():
         return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
     if not image_file.mimetype.startswith("image/"):
         return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+
     saved_filename = save_file(image_file)
-    print("saved_filename", saved_filename)
-    db_helpers.insert("INSERT INTO Images (wildlife_id, image_path) VALUES (?, ?)",
-                      (wildlife_id, saved_filename))
-                
-    return jsonify({"message": "Image added successfully", "wildlife_id": wildlife_id}), 201
+    # Insert the image and get its ID
+    image_id = db_helpers.insert(
+        "INSERT INTO Images (wildlife_id, image_path) VALUES (?, ?)",
+        (wildlife_id, saved_filename)
+    )
+
+    # If this is the thumbnail, update the Wildlife table with the image ID
+    if is_thumbnail and saved_filename:
+        db_helpers.mutate(
+            "UPDATE Wildlife SET thumbnail_id = ? WHERE id = ?",
+            (image_id, wildlife_id)
+        )
+
+    return jsonify({"message": "Image added successfully", "wildlife_id": wildlife_id, "image_id": image_id}), 201
 
 
 @app.route("/api/get-images-by-wildlife-id/<int:wildlife_id>", methods=["GET"])
