@@ -317,7 +317,7 @@ export default function EditCategory() {
                     >
                       <option value="TEXT">TEXT</option>
                       <option value="INTEGER">INTEGER</option>
-                      <option value="IMAGE">IMAGE</option>
+                      {/* <option value="IMAGE">IMAGE</option> */}
                     </select>
                     <input
                       type="hidden"

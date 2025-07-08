@@ -5,12 +5,17 @@ CREATE TABLE IF NOT EXISTS Categories (
     FOREIGN KEY (parent_id) REFERENCES Categories(id)
 );
 
+-- It is better practice to store the image ID (a stable, unique integer) as a foreign key, rather than the image_path (which could change or be duplicated).
+-- This ensures referential integrity and more efficient joins.
+
 CREATE TABLE IF NOT EXISTS Wildlife (
     id INTEGER PRIMARY KEY,
     category_id INTEGER NOT NULL,
+    thumbnail_id INTEGER, 
     name TEXT NOT NULL UNIQUE,
     scientific_name TEXT NOT NULL UNIQUE,
-    FOREIGN KEY (category_id) REFERENCES Categories(id)
+    FOREIGN KEY (category_id) REFERENCES Categories(id),
+    FOREIGN KEY (thumbnail_id) REFERENCES Images(id)
 );
 
 CREATE TABLE IF NOT EXISTS Images (
