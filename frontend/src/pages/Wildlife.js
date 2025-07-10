@@ -30,37 +30,7 @@ export const Wildlife = () => {
           categoriesAndFields.categories
         );
         const fetchedFields = convertDataToArray(categoriesAndFields.fields);
-
-        // Fetch image URLs for each result
-        // const updatedData = await Promise.all(
-        //   fetchedWildlife.map(async (result) => {
-        //     if (result.field_values) {
-        //       const thumbnailField = fetchedFields.find(
-        //         (field) => field.name === "Thumbnail"
-        //       );
-        //       if (thumbnailField) {
-        //         console.log(`thumbnail field :`)
-        //         console.log(thumbnailField)
-        //         const thumbnailValue = result.field_values.find(
-        //           (field) => field.field_id === thumbnailField.id
-        //         );
-        //         if (thumbnailValue) {
-        //             console.log(`thubmnail value:`,thumbnailValue)
-        //           try {
-        //             // Fetch image using apiService
-        //             const response = await apiService.getImage(thumbnailValue.value);
-        //             console.log(`Response : `, response)
-
-        //             return { ...result, image: null };
-        //           } catch (error) {
-        //             console.error("Error fetching image:", error);
-        //           }
-        //         }
-        //       }
-        //     }
-        //     return result;
-        //   })
-        // );
+        
         setWildlifeData(fetchedWildlife); // Set the updated data with image URLs
         setCategories(fetchedCategories);
         setFields(fetchedFields);
