@@ -91,6 +91,14 @@ const apiService = {
     }
   },
 
+  getImagebyImageId: async (imageId) => {
+    try {
+      const response = await api.get(`/api/get-image-by-image-id/${imageId}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
   createCategory: async (form) => {
     try {
       const response = await api.post(`/api/create-category/`, form);

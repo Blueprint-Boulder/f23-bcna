@@ -6,12 +6,11 @@ const CardResult = ({ data }) => {
     "https://www.colorado.com/_next/image?url=https%3A%2F%2Fapi.colorado.com%2Fsites%2Fdefault%2Ffiles%2Flegacy_drupal_7_images%2FThe%2520Flatirons%2520in%2520Summertime_0.jpg&w=3840&q=75"
   );
   useEffect(() => {
-    const thumbnailField = data.field_values.find(
-      (field) => field.name === "thumbnail"
-    );
-    if (thumbnailField) {
+    console.log("this is data", data)
+    if (data.thumbnail_id) {
+      console.log("found thumbnail")
       setThumbnail(
-        `http://127.0.0.1:5000/api/get-image/${thumbnailField.value}`
+        `http://127.0.0.1:5000/api/get-image-by-image-id/${data.thumbnail_id}`
       );
     }
   }, [data]);

@@ -644,8 +644,45 @@ def delete_field():
 
     return jsonify({"message": "Field successfully deleted"}), 200
 
+@app.route("/api/delete_image/", methods=["DELETE"])
+def delete_image(): 
+    """
+    Deletes and Image, if that image is thumbnail sets thumbnail_id to null until new thumbnail is assigned
+
+    Example request: 
+    POST /api/delete0image/?id=2
 
 
+    """
+    image_id = request.ards["id"]
+    image = db_helpers.select_one("SELECT * FROM Images WHERE id = ?", [image_id])
+    if not image:
+        return jsonify({"error": f"Image with id {image_id} not found"}), 404
+
+    # Check if is a thumbnail
+    # No, this will not work as intended.
+    # db_helpers.select_one returns a row (likely a dict), not the thumbnail_id directly.
+    # Also, you need to compare the thumbnail_id value to image_id (which is a string from request.args).
+    # Here's a correct approach:
+    # Check if the image is the thumbnail for its wildlife
+    wildlife = db_helpers.select_one("SELECT id, thumbnail_id FROM Wildlife WHERE id = ?", [image["wildlife_id"]])
+    is_thumbnail = False
+    if wildlife and wildlife["thumbnail_id"] is not None:
+        is_thumbnail = str(wildlife["thumbnail_id"]) == str(image_id)
+
+    # Delete the image
+    db_helpers.delete("DELETE FROM Images WHERE id = ?", [image_id])
+
+    if is_thumbnail and wildlife:
+        db_helpers.mutate("UPDATE Wildlife SET thumbnail_id = NULL WHERE id = ?", [wildlife["id"]])
+        return jsonify({
+            "message": (
+                f"Image successfully deleted. Warning: this was the thumbnail for wildlife '{wildlife.get('name', '')}' "
+                f"(ID: {wildlife['id']}). Please set a new thumbnail."
+            )
+        }), 200
+    else: 
+        return jsonify({"message": "Image Succesffully deleted"}), 200
 
 
 
@@ -833,7 +870,7 @@ def edit_wildlife():
 
     # Fetch category id & all custom fields
     category_id = request.form["category_id"]
-    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id", "wildlife_id")}
+    other_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id", "wildlife_id", "thumbnail_id")}
 
     #checking if category exists
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
@@ -993,13 +1030,19 @@ def create_wildlife():
 
     # Insert the non-image field values
     for field_name, value in provided_nonimage_fields.items():
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        field_row = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])
+        if not field_row:
+            continue  # or handle error as appropriate
+        field_id = field_row["id"]
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, value))
 
     # Insert the image field values
     for field_name, image_file in request.files.items():
-        field_id = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])["id"]
+        field_row = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])
+        if not field_row:
+            continue  # or handle error as appropriate
+        field_id = field_row["id"]
         saved_filename = save_file(image_file)
         db_helpers.insert("INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
                           (wildlife_id, field_id, saved_filename))
@@ -1050,6 +1093,8 @@ def add_image():
     return jsonify({"message": "Image added successfully", "wildlife_id": wildlife_id, "image_id": image_id}), 201
 
 
+
+
 @app.route("/api/get-images-by-wildlife-id/<int:wildlife_id>", methods=["GET"])
 def get_images_by_wildlife_id(wildlife_id):
     """
@@ -1058,12 +1103,25 @@ def get_images_by_wildlife_id(wildlife_id):
     """
     print("get_images_by_wildlife_id", wildlife_id)
     try:
-        images = db_helpers.select_multiple("SELECT image_path FROM Images WHERE wildlife_id = ?", [wildlife_id])
-        print("images", images)
+        images = db_helpers.select_multiple("SELECT id, image_path FROM Images WHERE wildlife_id = ?", [wildlife_id])
         return jsonify(images), 200
     except Exception as e:
         print("Error in get_images_by_wildlife_id:", e)
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/get-image-by-image-id/<int:image_id>", methods=["GET"])
+def get_image_by_image_id(image_id):
+    """
+    Gets a user-uploaded image file by its image ID.
+    Example request:
+    GET /api/get-image-by-image-id/2
+    """
+    image = db_helpers.select_one("SELECT image_path FROM Images WHERE id = ?", [image_id])
+    if not image or "image_path" not in image:
+        return jsonify({"error": "Image not found"}), 404
+    filename = image["image_path"]
+    return send_from_directory(app.config["IMAGE_UPLOAD_FOLDER"], filename)
 
 if __name__ == "__main__":
     db_helpers.init_db()

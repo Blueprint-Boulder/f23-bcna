@@ -12,6 +12,9 @@ export default function EditWildlife() {
   const [selectedWildlife, setSelectedWildlife] = useState(null);
   const [selectedWildlifeInfo, setSelectedWildlifeInfo] = useState(null);
   const [images, setImages] = useState([]);
+  const [thumbnail, setThumbnail] = useState([]);
+  const [thumbnailIndex, setThumbnailIndex] = useState(null);
+
   const imageRefs = useRef([]);
 
   // Fetch all data needed for the form on page load
@@ -95,6 +98,11 @@ export default function EditWildlife() {
           const imgs = await apiService.getImagesByWildlifeId(selectedWildlife.id);
           console.log("imgs", imgs);
           setImages(imgs);
+          console.log(imgs);
+          console.log("thumbnail", selectedWildlife.thumbnail_id);
+          const thumbnailImg = imgs.find(img => img.id === selectedWildlife.thumbnail_id);
+          setThumbnail(thumbnailImg);
+          setThumbnailIndex(imgs.findIndex(img => img.id === selectedWildlife.thumbnail_id));
           imageRefs.current = new Array(imgs.length).fill(null);
         } catch (error) {
           setImages([]);
@@ -108,18 +116,22 @@ export default function EditWildlife() {
     fetchWildlifeById();
     fetchImages();
   }, [selectedWildlife]);
-
-  const addImages = async () => {
-    imageRefs.current.forEach(async (ref, idx) => {
-      if (ref && ref.files && ref.files[0]) {
-        const formData = new FormData();
-        formData.append("image_file", ref.files[0]);
-        formData.append("wildlife_id", selectedWildlife.id);
-        console.log("formData", formData);
-        await apiService.addImage(formData);
+    const addImages = async () => {
+      for (let idx = 0; idx < imageRefs.current.length; idx++) {
+        const ref = imageRefs.current[idx];
+        if (ref && ref.files && ref.files[0]) {
+          const formData = new FormData();
+          formData.append("image_file", ref.files[0]);
+          formData.append("wildlife_id", selectedWildlife.id);
+          if (idx === thumbnailIndex && response?.id) formData.append("is_thumbnail", true);
+          else formData.append("is_thumbnail", false);
+          const response = await apiService.addImage(formData);
+    
+          // If this was the thumbnail index, update wildlife info with new thumbnail ID
+        }
       }
-    });
-  }
+    };
+  
   // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -143,6 +155,10 @@ export default function EditWildlife() {
     }
   };
 
+  handleRemoveImage= async (image)  => {
+
+     }
+
   // Handle wildlife deletion
   const deleteWildlife = async () => {
     if (!selectedWildlife) return;
@@ -158,6 +174,14 @@ export default function EditWildlife() {
     } catch (error) {
       console.error("Error deleting wildlife", error);
     }
+  };
+
+  // Handler for removing an image (to be implemented)
+  const handleRemoveImage = (idx) => {
+    // Placeholder for your logic
+    // You can implement the actual removal logic here
+    // For now, just log the index
+    console.log("Remove image at index:", idx);
   };
 
   return (
@@ -260,20 +284,76 @@ export default function EditWildlife() {
                     {images && images.length > 0 && (
                       <div className="mb-2 flex flex-wrap gap-2">
                         {images.map((image, idx) => (
-                          <div key={idx} className="flex flex-col">
-                            {image && (
-                              <img
-                                src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
-                                alt={`Supplemental ${idx + 1}`}
-                                className="w-24 h-24 object-cover mb-1 rounded"
-                              />
+                          <div key={idx} className="flex flex-col items-center">
+                            {image ? (
+                              <>
+                                <img
+                                  src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
+                                  alt={`Supplemental ${idx + 1}`}
+                                  className="w-24 h-24 object-cover mb-1 rounded"
+                                />
+                                <label className="text-sm flex items-center gap-1 mb-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={thumbnailIndex === idx}
+                                    onChange={() => {
+                                      setThumbnail(image.id);
+                                      setThumbnailIndex(idx);
+                                      setSelectedWildlifeInfo((prev) => ({
+                                        ...prev,
+                                        thumbnail_id: image.id,
+                                      }));
+                                    }}
+                                  />
+                                  Thumbnail
+                                </label>
+                                <button
+                                  type="button"
+                                  className="bg-red-500 text-white rounded px-2 py-1 mb-1"
+                                  onClick={() => handleRemoveImage(idx)}
+                                >
+                                  Remove Image
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-500 mb-1 rounded">
+                                  New Image
+                                </div>
+                                <label className="text-sm flex items-center gap-1 mb-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={thumbnailIndex === idx}
+                                    onChange={() => {
+                                      setThumbnail(null);
+                                      setThumbnailIndex(idx);
+                                      setSelectedWildlifeInfo((prev) => ({
+                                        ...prev,
+                                        thumbnail_id: null, // No ID yet
+                                      }));
+                                    }}
+                                  />
+                                  Thumbnail
+                                </label>
+                                <button
+                                  type="button"
+                                  className="bg-red-500 text-white rounded px-2 py-1 mb-1"
+                                  onClick={() => handleRemoveImage(image)}
+                                >
+                                  Remove Image
+                                </button>
+                              </>
                             )}
-                            <input
-                              type="file"
-                              ref={el => (imageRefs.current[idx] = el)}
-                              className="mt-1 mb-2 w-full rounded-md border-gray-300 shadow-sm
-                             focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                            />
+                            <label className="block mt-1 mb-2 w-full">
+                              <span className="sr-only">Choose new file</span>
+                              <input
+                                type="file"
+                                placeholder="choose new file"
+                                ref={(el) => (imageRefs.current[idx] = el)}
+                                className="w-full rounded-md border-gray-300 shadow-sm
+                                  focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                              />
+                            </label>
                           </div>
                         ))}
                       </div>
@@ -288,6 +368,7 @@ export default function EditWildlife() {
                     >
                       Add Image
                     </button>
+
                     <div className="mb-4"></div>
                     <ActionButton color="red" size="lg" onClick={deleteWildlife}>
                       Delete Wildlife

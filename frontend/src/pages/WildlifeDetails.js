@@ -11,7 +11,7 @@ export default function WildlifeDetails() {
   const [images, setImages] = useState([]);
 
   const displayFilter = (wildData, catsAndFields, foundImages) => {
-    const { id, scientific_name, name, category_id, ...displayedData } =
+    const { id, scientific_name, name, category_id, thumbnail_id, ...displayedData } =
       wildData;
     const filtered = Object.keys(displayedData).reduce((acc, key) => {
       if (!foundImages.includes(key)) {
@@ -29,20 +29,10 @@ export default function WildlifeDetails() {
 
   const findImages = async (wildlifeData) => {
     const categoriesAndFields = await apiService.getCategoriesAndFields();
-    const temp = [];
-    const fieldArr =
-      categoriesAndFields["categories"][wildlifeData["category_id"]][
-        "field_ids"
-      ];
-    fieldArr.forEach((item) => {
-      if (categoriesAndFields["fields"][item]["type"] === "IMAGE") {
-        temp.push(categoriesAndFields["fields"][item]["name"]);
-      }
-    });
-    setImages(temp);
-    if (temp.length >= 1) setHighlight(wildlifeData[temp[0]]);
-    setFilteredData(displayFilter(wildlifeData, categoriesAndFields, temp));
-    console.log("images", images);
+    const wildlifeImages = await apiService.getImagesByWildlifeId(wildlifeData["id"]);
+    setImages(wildlifeImages);
+    if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
+    setFilteredData(displayFilter(wildlifeData, categoriesAndFields, []));
   };
 
   useEffect(() => {
@@ -87,30 +77,25 @@ export default function WildlifeDetails() {
                     className="mb-5 min-w-80 h-64 object-cover"
                   />
                 )}
-                <div className="flex gap-2 p-4 flex-wrap justify-center">
-                  {images.length >= 2 &&
-                    images.map(
-                      (image) =>
-                        wildlife[image] && (
-                          <button
-                            key={wildlife[image]}
-                            onClick={() => setHighlight(wildlife[image])}
-                          >
-                            <img
-                              draggable="false"
-                              className={
-                                "object-cover min-w-32 h-16 md:w-36 md:h-16 rounded-md " +
-                                (highlight === wildlife[image]
-                                  ? " border-sky-500 border-2"
-                                  : "hover:border-sky-300 hover:border-2")
-                              }
-                              src={`http://127.0.0.1:5000/api/get-image/${wildlife[image]}`}
-                              alt=""
-                            />
-                          </button>
-                        )
-                    )}
-                </div>
+                <div className="flex flex-wrap justify-center gap-3 p-4 bg-neutral-100 rounded-md shadow-inner">
+  {images.length >= 2 &&
+    images.map((image) => (
+      <button
+        key={image.id}
+        onClick={() => setHighlight(image.image_path)}
+        className={`transition-all duration-150 ease-in-out rounded-md focus:outline-none 
+          ${highlight === image.image_path ? "ring-2 ring-offset-2 ring-sky-500" : "hover:ring-2 hover:ring-sky-300"}`}
+      >
+        <img
+          draggable="false"
+          className="object-cover w-28 h-20 md:w-36 md:h-24 rounded-md"
+          src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
+          alt=""
+        />
+      </button>
+    ))}
+</div>
+
               </div>
             </div>
           </>
