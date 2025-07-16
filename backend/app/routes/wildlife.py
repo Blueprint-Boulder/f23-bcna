@@ -236,8 +236,16 @@ def create_wildlife():
         "wildlife_id": 3
     }
     """
+    # Check for required fields in the form data
+    required_fields = ["name", "scientific_name", "category_id"]
+    missing_required = [field for field in required_fields if field not in request.form or not request.form[field]]
+    if missing_required:
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_required)}"}), 400
+
     name = request.form["name"]
     scientific_name = request.form["scientific_name"]
+    category_id = request.form["category_id"]
+
     wildlife_with_name_exists = db_helpers.select_multiple("SELECT 1 FROM Wildlife WHERE name = ?", [name])
     if wildlife_with_name_exists:
         return jsonify({"message": f"Wildlife with namne {name} already exists"}), 400
@@ -247,7 +255,6 @@ def create_wildlife():
     if wildlife_with_scientific_name_exists:
         return jsonify({"message": f"Wildlife with scientific name {scientific_name} already exists"}), 400
 
-    category_id = request.form["category_id"]
     provided_nonimage_fields = {k: v for k, v in request.form.items() if k not in ("name", "scientific_name", "category_id", "thumbnail")}
 
     category_exists = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", (category_id,))
