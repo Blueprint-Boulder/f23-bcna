@@ -2,12 +2,12 @@ from flask import Blueprint, request, jsonify, current_app, send_from_directory
 import os
 from app import db_helpers
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
-from werkzeug.utils import secure_filename
-from app.utils import save_file, get_parent_ids  # Adjust import if needed
+from app.utils import save_file  # Adjust import if needed
+import sqlite3
 
 images_bp = Blueprint('images', __name__)
 
-@images_bp.route("/api/get-image/<string:filename>/", methods=["GET"])
+@images_bp.route("/api/get-image/<string:filename>/", strict_slashes = False, methods=["GET"])
 def get_image(filename):
     """
     Gets a user-uploaded image file by its filename. Used for getting images associated with wildlife.
@@ -18,8 +18,16 @@ def get_image(filename):
     Example output:
     (The image file)
     """
-    return send_from_directory(current_app.config["IMAGE_UPLOAD_FOLDER"], filename)
-
+    image_folder = current_app.config["IMAGE_UPLOAD_FOLDER"]
+    print(f"[DEBUG] Requested image filename: {filename}")
+    print(f"[DEBUG] Image folder: {image_folder}")
+    file_path = os.path.join(image_folder, filename)
+    print(f"[DEBUG] Full file path: {file_path}")
+    if not os.path.exists(file_path):
+        print(f"[DEBUG] File does not exist: {file_path}")
+    else:
+        print(f"[DEBUG] File exists: {file_path}")
+    return send_from_directory(image_folder, filename)
 
 
 
@@ -29,8 +37,10 @@ def add_image():
     Add an image to a wildlife instance.
     Requires wildlife_id and image_file
     """
-    wildlife_id = request.form["wildlife_id"]
-    image_file = request.files["image_file"]
+    wildlife_id = request.form.get("wildlife_id")
+    image_file = request.files.get("image_file")
+    if not wildlife_id or not image_file:
+        return jsonify({"error": "Both wildlife_id and image_file are required"}), 400
 
     file_length = image_file.seek(0, os.SEEK_END)
     image_file.seek(0, os.SEEK_SET)
@@ -48,7 +58,7 @@ def add_image():
     )
 
 
-    return jsonify({"message": "Image added successfully", "image_id": image_id}), 201
+    return jsonify({"message": "Image added successfully", "image_id": image_id, "image_path": saved_filename}), 201
 
 @images_bp.route("/api/set-thumbnail", methods=["PUT"])
 def set_thumbnail():
@@ -89,6 +99,7 @@ def get_images_by_wildlife_id(wildlife_id):
     print("get_images_by_wildlife_id", wildlife_id)
     try:
         images = db_helpers.select_multiple("SELECT id, image_path FROM Images WHERE wildlife_id = ?", [wildlife_id])
+        # print(images)
         return jsonify(images), 200
     except Exception as e:
         print("Error in get_images_by_wildlife_id:", e)
@@ -103,8 +114,17 @@ def get_image_by_image_id(image_id):
     GET /api/get-image-by-image-id/2
     """
     image = db_helpers.select_one("SELECT image_path FROM Images WHERE id = ?", [image_id])
-    if not image or "image_path" not in image:
+    if image is None:
         return jsonify({"error": "Image not found"}), 404
+
+    # Convert to dict if needed
+    if isinstance(image, sqlite3.Row):
+        print("heyyy")
+        image = dict(image)
+
+    if "image_path" not in image:
+        return jsonify({"error": "Image not found"}), 404
+
     filename = image["image_path"]
     return send_from_directory(current_app.config["IMAGE_UPLOAD_FOLDER"], filename)
 
@@ -128,9 +148,7 @@ def delete_image():
     # Delete the image file from uploaded_images
     image_path = image.get("image_path")
     if image_path:
-
-        # Assuming uploaded_images is in the same directory as this file or adjust as needed
-        upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploaded_images")
+        upload_dir = current_app.config["IMAGE_UPLOAD_FOLDER"]
         file_path = os.path.join(upload_dir, image_path)
         print("i am here")
         try:

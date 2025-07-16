@@ -78,23 +78,29 @@ export default function WildlifeDetails() {
                   />
                 )}
                 <div className="flex flex-wrap justify-center gap-3 p-4 bg-neutral-100 rounded-md shadow-inner">
-  {images.length >= 2 &&
-    images.map((image) => (
-      <button
-        key={image.id}
-        onClick={() => setHighlight(image.image_path)}
-        className={`transition-all duration-150 ease-in-out rounded-md focus:outline-none 
-          ${highlight === image.image_path ? "ring-2 ring-offset-2 ring-sky-500" : "hover:ring-2 hover:ring-sky-300"}`}
-      >
-        <img
-          draggable="false"
-          className="object-cover w-28 h-20 md:w-36 md:h-24 rounded-md"
-          src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
-          alt=""
-        />
-      </button>
-    ))}
-</div>
+                  {images.length >= 2 &&
+                    images.map((image) => (
+                      <button
+                        key={image.id}
+                        onClick={() => setHighlight(image.image_path)}
+                        className={`transition-all duration-150 ease-in-out rounded-md focus:outline-none 
+                          ${highlight === image.image_path ? "ring-2 ring-offset-2 ring-sky-500" : "hover:ring-2 hover:ring-sky-300"}`}
+                      >
+                        {/* Debugging: log the image path and src URL */}
+                        {console.debug("Rendering image with path:", image.image_path, "URL:", `http://127.0.0.1:5000/api/get-image/${image.image_path}`)}
+                        <img
+                          draggable="false"
+                          className="object-cover w-28 h-20 md:w-36 md:h-24 rounded-md"
+                          src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
+                          alt=""
+                          onError={(e) => {
+                            console.error("Error loading image:", image.image_path, e);
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      </button>
+                    ))}
+                </div>
 
               </div>
             </div>
