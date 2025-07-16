@@ -57,17 +57,6 @@ export default function AddWildlife() {
           return;
         }
       }
-      // const imagesFormData = new FormData();
-      // if (thumbnailImageRef.current && thumbnailImageRef.current.files && thumbnailImageRef.current.files[0]) {
-      //   imagesFormData.append("thumbnail", thumbnailImageRef.current.files[0]);
-      // }
-      // imageRefs.current.forEach((ref, index) => {
-      //   if (ref && ref.files && ref.files[0]) {
-      //     imagesFormData.append(`image_${index}`, ref.files[0]);
-      //   }
-      // });
-
-      // create wildlife
       const response = await apiService.createWildlife(formData);
 
       console.log(response.wildlife_id)
@@ -80,12 +69,18 @@ export default function AddWildlife() {
           thumbnailImageRef.current.files &&
           thumbnailImageRef.current.files[0]
         ) {
-          const thumbnailFormData = new FormData();
-          thumbnailFormData.append("image_file", thumbnailImageRef.current.files[0]);
-          thumbnailFormData.append("wildlife_id", wildlifeId);
-          thumbnailFormData.append("is_thumbnail", true);
+          const imageFormData = new FormData();
+          imageFormData.append("image_file", thumbnailImageRef.current.files[0]);
+          imageFormData.append("wildlife_id", wildlifeId);
           try {
-            await apiService.addImage(thumbnailFormData);
+            const image = await apiService.addImage(imageFormData);
+            if (image.image_id) {
+              const setThumbnailForm = new FormData();
+              setThumbnailForm.append("wildlife_id", wildlifeId);
+              setThumbnailForm.append("thumbnail_id", image.image_id);
+              await apiService.setThumbnail(setThumbnailForm);
+            }
+
           } catch (err) {
             console.error("Error uploading thumbnail:", err);
             alert("Wildlife created, but failed to upload thumbnail image.");
@@ -99,7 +94,6 @@ export default function AddWildlife() {
               const imageFormData = new FormData();
               imageFormData.append("image_file", ref.files[0]);
               imageFormData.append("wildlife_id", wildlifeId);
-              imageFormData.append("is_thumbnail", false);
               try {
                 await apiService.addImage(imageFormData);
               } catch (err) {

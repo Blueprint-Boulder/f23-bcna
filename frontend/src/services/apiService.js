@@ -146,6 +146,19 @@ const apiService = {
     }
   },
 
+  setThumbnail: async (form) => {
+    try {
+      const response = await api.put(`/api/set-thumbnail`, form, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   editWildlife: async (form) => {
     try {
       const response = await api.post(`/api/edit-wildlife`, form);
