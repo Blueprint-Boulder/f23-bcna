@@ -116,22 +116,30 @@ export default function EditWildlife() {
     fetchWildlifeById();
     fetchImages();
   }, [selectedWildlife]);
-    const addImages = async () => {
-      for (let idx = 0; idx < imageRefs.current.length; idx++) {
-        const ref = imageRefs.current[idx];
-        if (ref && ref.files && ref.files[0]) {
-          const formData = new FormData();
-          formData.append("image_file", ref.files[0]);
-          formData.append("wildlife_id", selectedWildlife.id);
-          if (idx === thumbnailIndex && response?.id) formData.append("is_thumbnail", true);
-          else formData.append("is_thumbnail", false);
-          const response = await apiService.addImage(formData);
-    
-          // If this was the thumbnail index, update wildlife info with new thumbnail ID
-        }
+
+const addImages = async () => {
+  let newImages = [...images];
+  console.log("preimages", images)
+  for (let idx = 0; idx < imageRefs.current.length; idx++) {
+    const ref = imageRefs.current[idx];
+    if (ref && ref.files && ref.files[0]) {
+      const formData = new FormData();
+      formData.append("image_file", ref.files[0]);
+      formData.append("wildlife_id", selectedWildlife.id);
+      const response = await apiService.addImage(formData);
+      if (response && response.image_id) {
+        // Replace the null at idx with the new image object
+        newImages[idx] = {
+          id: response.image_id,
+          image_path: "new_image" // or the actual path if you have it
+        };
       }
-    };
-  
+    }
+  }
+  // Remove any remaining nulls (if some slots were not filled)
+  setImages(newImages.filter(Boolean));
+  console.log("post", newImages.filter(Boolean));
+};
   // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -140,11 +148,29 @@ export default function EditWildlife() {
 
       await apiService.editWildlife(formData);
       if(images.length > 0) {
-        addImages();
+        await addImages();
+      }
+      // If the thumbnail selection has changed, update the thumbnail in the backend
+      console.log(images, thumbnailIndex);
+      if (
+        (images.length > 0 &&
+        selectedWildlife &&
+        images[thumbnailIndex] &&
+        selectedWildlife.thumbnail_id !== images[thumbnailIndex].id)
+        ||
+        (selectedWildlife.thumbnail_id !== null
+        && thumbnailIndex == null)
+      ) {
+        // Set the new thumbnail
+        const setThumbnailForm = new FormData();
+        setThumbnailForm.append("wildlife_id", selectedWildlife.id);
+        if (thumbnailIndex) setThumbnailForm.append("thumbnail_id", images[thumbnailIndex].id);
+        else  setThumbnailForm.append("thumbnail_id", null);
+        await apiService.setThumbnail(setThumbnailForm);
       }
 
       alert("Wildlife edited successfully!");
-      window.location.href = window.location.pathname;
+      // window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error editing wildlife:", error);
       if (error.response && error.response.data && error.response.data.message) {
@@ -154,10 +180,6 @@ export default function EditWildlife() {
       }
     }
   };
-
-  handleRemoveImage= async (image)  => {
-
-     }
 
   // Handle wildlife deletion
   const deleteWildlife = async () => {
@@ -176,12 +198,19 @@ export default function EditWildlife() {
     }
   };
 
-  // Handler for removing an image (to be implemented)
-  const handleRemoveImage = (idx) => {
-    // Placeholder for your logic
-    // You can implement the actual removal logic here
-    // For now, just log the index
-    console.log("Remove image at index:", idx);
+  // Handler for removing an image: filter it out of images
+  const handleRemoveImage = async (idx) => {
+    const imageToRemove = images[idx];
+    try {
+      if (imageToRemove && imageToRemove.id) {
+        // Directly send the request to /api/delete0image/?id=...
+        await fetch(`http://127.0.0.1:5000/api/delete_image/?id=${imageToRemove.id}`, { method: "DELETE" });
+      }
+      setImages((prevImages) => prevImages.filter((_, i) => i !== idx));
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      alert("Failed to delete image.");
+    }
   };
 
   return (
@@ -297,12 +326,11 @@ export default function EditWildlife() {
                                     type="checkbox"
                                     checked={thumbnailIndex === idx}
                                     onChange={() => {
-                                      setThumbnail(image.id);
-                                      setThumbnailIndex(idx);
-                                      setSelectedWildlifeInfo((prev) => ({
-                                        ...prev,
-                                        thumbnail_id: image.id,
-                                      }));
+                                      if (thumbnailIndex === idx) {
+                                        setThumbnailIndex(null);
+                                      } else {
+                                        setThumbnailIndex(idx);
+                                      }
                                     }}
                                   />
                                   Thumbnail
@@ -325,12 +353,11 @@ export default function EditWildlife() {
                                     type="checkbox"
                                     checked={thumbnailIndex === idx}
                                     onChange={() => {
-                                      setThumbnail(null);
-                                      setThumbnailIndex(idx);
-                                      setSelectedWildlifeInfo((prev) => ({
-                                        ...prev,
-                                        thumbnail_id: null, // No ID yet
-                                      }));
+                                      if (thumbnailIndex === idx) {
+                                        setThumbnailIndex(null);
+                                      } else {
+                                        setThumbnailIndex(idx);
+                                      }
                                     }}
                                   />
                                   Thumbnail
