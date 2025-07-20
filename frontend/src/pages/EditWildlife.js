@@ -370,7 +370,7 @@ const handleSubmit = async (event) => {
                                   <button
                                     type="button"
                                     className="bg-red-500 text-white rounded px-2 py-1 mb-2 hover:bg-red-600 transition"
-                                    onClick={() => handleRemoveImage(image)}
+                                    onClick={() => handleRemoveImage(idx)}
                                   >
                                     Remove Image
                                   </button>

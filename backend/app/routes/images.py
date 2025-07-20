@@ -119,7 +119,6 @@ def get_image_by_image_id(image_id):
 
     # Convert to dict if needed
     if isinstance(image, sqlite3.Row):
-        print("heyyy")
         image = dict(image)
 
     if "image_path" not in image:
@@ -129,18 +128,7 @@ def get_image_by_image_id(image_id):
     return send_from_directory(current_app.config["IMAGE_UPLOAD_FOLDER"], filename)
 
 
-@images_bp.route("/api/delete_image/", methods=["DELETE"])
-def delete_image(): 
-    """
-    Deletes an image. If that image is the thumbnail, sets thumbnail_id to null until a new thumbnail is assigned.
-    Also deletes the image file from uploaded_images.
-
-    Example request: 
-    DELETE /api/delete_image/?id=2
-    """
-    import os
-
-    image_id = request.args["id"]
+def delete_image_by_id(image_id):
     image = db_helpers.select_one("SELECT * FROM Images WHERE id = ?", [image_id])
     if not image:
         return jsonify({"error": f"Image with id {image_id} not found"}), 404
@@ -177,4 +165,19 @@ def delete_image():
         }), 200
     else: 
         return jsonify({"message": "Image successfully deleted"}), 200
+
+
+@images_bp.route("/api/delete_image/", methods=["DELETE"])
+def delete_image(): 
+    """
+    Deletes an image. If that image is the thumbnail, sets thumbnail_id to null until a new thumbnail is assigned.
+    Also deletes the image file from uploaded_images.
+
+    Example request: 
+    DELETE /api/delete_image/?id=2
+    """
+    import os
+
+    image_id = request.args["id"]
+    return delete_image_by_id(image_id)
 
