@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 import os
 from app import db_helpers
+from app.routes.images import delete_image_by_id
 
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
 from werkzeug.utils import secure_filename
@@ -28,11 +29,16 @@ def delete_wildlife():
     if n_rows_deleted == 0:
         return jsonify({"error": "Wildlife not found"}), 404
 
-    image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
-    for image_filename in image_field_values:
-        image_path = os.path.join(current_app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
-        if os.path.exists(image_path):
-            os.remove(image_path)
+    # image_field_values = [fv["value"] for fv in db_helpers.select_multiple("SELECT value FROM FieldValues WHERE wildlife_id = ? AND field_id IN (SELECT id FROM Fields WHERE type = 'IMAGE')", [wildlife_id])]
+    # for image_filename in image_field_values:
+    #     image_path = os.path.join(current_app.config["IMAGE_UPLOAD_FOLDER"], image_filename)
+    #     if os.path.exists(image_path):
+    #         os.remove(image_path)
+
+    wildlife_images = db_helpers.select_multiple("SELECT id FROM Images WHERE wildlife_id = ?", [wildlife_id])
+    for image in wildlife_images:
+        delete_image_by_id(image["id"])
+
     db_helpers.delete("DELETE FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
     db_helpers.delete("DELETE FROM EnumeratedFieldValues WHERE wildlife_id = ?", [wildlife_id])
     return jsonify({"message": "Wildlife successfully deleted"}), 200

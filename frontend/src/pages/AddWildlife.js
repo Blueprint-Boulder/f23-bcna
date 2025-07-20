@@ -108,7 +108,7 @@ export default function AddWildlife() {
       } else {
         alert("Wildlife created successfully, but cannot add images. Try again in Edit Wildlife.");
       }
-      // window.location.href = window.location.pathname;
+      window.location.href = window.location.pathname;
     } catch (error) {
       console.error("Error creating wildlife:", error);
       // Show specific error message from backend if available
