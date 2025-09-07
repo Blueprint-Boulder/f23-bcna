@@ -2,3 +2,4 @@
 .fleet/
 .vscode/
 .idea/
+node_modules/
