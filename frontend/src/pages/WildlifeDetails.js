@@ -22,7 +22,7 @@ export default function WildlifeDetails() {
     return {
       Name: name,
       "Scientific Name": scientific_name,
-      Category: catsAndFields["categories"][category_id]["name"],
+      Category: catsAndFields?.categories?.[category_id]?.name || "Unknown",
       ...filtered,
     };
   };
@@ -65,7 +65,9 @@ export default function WildlifeDetails() {
                 {Object.entries(filteredData).map(([key, value]) => (
                   <div key={key} className="mb-5">
                     <h3 className="inline text-xl font-bold">{key}: </h3>
-                    <span className="text-lg">{value}</span>
+                    <span className="text-lg">
+                      {key === "Scientific Name" ? <em>{value}</em> : value}
+                    </span>
                   </div>
                 ))}
               </div>

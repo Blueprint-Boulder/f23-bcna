@@ -29,7 +29,9 @@ const CardResult = ({ data }) => {
         </Link>
 
         {/* Subcategory */}
-        <p className="text-sm">{data.scientific_name}</p>
+        <p className="text-sm">
+          <em>{data.scientific_name}</em>
+        </p>
       </div>
     </div>
   );
