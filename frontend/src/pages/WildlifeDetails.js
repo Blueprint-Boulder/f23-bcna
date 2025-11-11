@@ -9,6 +9,7 @@ export default function WildlifeDetails() {
   const [filteredData, setFilteredData] = useState({});
   const [highlight, setHighlight] = useState(null);
   const [images, setImages] = useState([]);
+  const [imageClicked, setImageClicked] = useState(null)
 
   const displayFilter = (wildData, catsAndFields, foundImages) => {
     const { id, scientific_name, name, category_id, thumbnail_id, ...displayedData } =
@@ -22,20 +23,20 @@ export default function WildlifeDetails() {
     return {
       Name: name,
       "Scientific Name": scientific_name,
-      Category: catsAndFields["categories"][category_id]["name"],
+      Category: catsAndFields?.categories?.[category_id]?.name || "Unknown",
       ...filtered,
     };
   };
 
-  const findImages = async (wildlifeData) => {
-    const categoriesAndFields = await apiService.getCategoriesAndFields();
-    const wildlifeImages = await apiService.getImagesByWildlifeId(wildlifeData["id"]);
-    setImages(wildlifeImages);
-    if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
-    setFilteredData(displayFilter(wildlifeData, categoriesAndFields, []));
-  };
-
   useEffect(() => {
+    const findImages = async (wildlifeData) => {
+      const categoriesAndFields = await apiService.getCategoriesAndFields();
+      const wildlifeImages = await apiService.getImagesByWildlifeId(wildlifeData["id"]);
+      setImages(wildlifeImages);
+      if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
+      setFilteredData(displayFilter(wildlifeData, categoriesAndFields, []));
+    };
+
     const fetchWildlifeById = async () => {
       try {
         // Fetch wildlife data by ID
@@ -65,7 +66,9 @@ export default function WildlifeDetails() {
                 {Object.entries(filteredData).map(([key, value]) => (
                   <div key={key} className="mb-5">
                     <h3 className="inline text-xl font-bold">{key}: </h3>
-                    <span className="text-lg">{value}</span>
+                    <span className="text-lg">
+                      {key === "Scientific Name" ? <em>{value}</em> : value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -75,6 +78,8 @@ export default function WildlifeDetails() {
                     src={`http://127.0.0.1:5000/api/get-image/${highlight}`}
                     alt=""
                     className="mb-5 min-w-80 h-64 object-cover"
+                    onClick={() => setImageClicked(images[0].image_path)}
+
                   />
                 )}
                 <div className="flex flex-wrap justify-center gap-3 p-4 bg-neutral-100 rounded-md shadow-inner">
@@ -107,6 +112,26 @@ export default function WildlifeDetails() {
           </>
         )}
       </div>
+
+    {/* Fullscreen Image */}
+    {imageClicked && (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50"
+        onClick={() => setImageClicked(null)} // click anywhere to close
+      >
+        <img
+          src={`http://127.0.0.1:5000/api/get-image/${highlight}`}
+          alt="Fullscreen butterfly"
+          className="max-h-[90%] max-w-[90%] shadow-lg"
+          onClick={(e) => e.stopPropagation()} // don't close when image clicked
+        />
+        <button
+          className="absolute top-6 right-6 text-white text-2xl"
+          onClick={() => setImageClicked(null)}>
+            ✕
+          </button>
+        </div>
+    )}
     </div>
   );
 }
