@@ -33,7 +33,9 @@ const ListResult = ({ data }) => {
         </Link>
 
         {/* Subcategory under the name */}
-        <p className="text-sm">{data.scientific_name}</p>
+        <p className="text-sm">
+          <em>{data.scientific_name}</em>
+        </p>
       </div>
     </div>
   );
