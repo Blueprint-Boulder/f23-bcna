@@ -2,6 +2,7 @@ import React from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Wildlife } from './pages/Wildlife';
+import Home from './pages/Home';
 import WildlifeDetails from './pages/WildlifeDetails';
 import Admin from './pages/Admin';
 import AddCategory from './pages/AddCategory';
@@ -16,7 +17,7 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" exact element={<h1 className="text-3xl font-bold underline">Home</h1>} />
+            <Route path="/" exact element={<Home/>} />
             <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
             <Route path="/wildlife" element={<Wildlife/>} />
             <Route path="/wildlife/:wildlifeId" element={<WildlifeDetails/>} /> 
