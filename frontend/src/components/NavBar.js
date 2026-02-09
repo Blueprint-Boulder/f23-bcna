@@ -1,92 +1,36 @@
-import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import search_icon from './icons/search_icon.png';
 
 export const NavBar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 0);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
   return (
-    <div className={`navbar p-6`}>
-      <nav>
-        <div className="flex flex-col items-center">
+    <nav className={`navbar font-roboto py-4`}>
+        <ul className="flex items-center">
+
           {/* Logo Image */}
-          <div
-            className={`logo ${
-              isScrolled ? "h-18" : "h-28"
-            } transition-all duration-300`}
-          >
-            <img src="/logo.png" alt="Logo" className="max-h-full" />
-          </div>
-          <ul className="flex items-center space-x-4">
-            {/* Existing navigation links */}
-            <li>
-              <NavLink
-                exact="true"
-                to="/"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Home
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/about"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                About
-              </NavLink>
-            </li>
+          <li className="ml-32 mr-[91px]">
+            <NavLink to="/">
+              <img src="/logo.png" alt="Logo" className="h-[76px] w-[307px]"/>
+            </NavLink>
+          </li>
 
-            <li>
-              <NavLink
-                to="/contact"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Contact
-              </NavLink>
-            </li>
+          {/* Navigation links */}
+          <li className="text-xl text-gray-500 space-x-[49px]">
+            <NavLink to="/" className={`hover:text-light-blue transition-all duration-300`}>Home</NavLink>
+            <NavLink to="/about" className={`hover:text-light-blue transition-all duration-300`}>About</NavLink>
+            <NavLink to="/contact" className={`hover:text-light-blue transition-all duration-300`}>Contact</NavLink>
+            <NavLink to="/resources" className={`hover:text-light-blue transition-all duration-300`}>Resources</NavLink>
+            <NavLink to="/wildlife" className={`hover:text-light-blue transition-all duration-300`}>Wildlife</NavLink>
+            <NavLink to="/admin" className={`hover:text-light-blue transition-all duration-300`}>Admin</NavLink>
+          </li>
 
-            <li>
-              <NavLink
-                to="/resources"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Resources
-              </NavLink>
-            </li>
-
-            <li>
-              <NavLink
-                to="/wildlife"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Wildlife
-              </NavLink>
-            </li>
-
-            <li>
-              <NavLink
-                to="/admin"
-                className={`hover:text-light-blue transition-all duration-300`}
-              >
-                Admin
-              </NavLink>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
+          {/* Search icon */}
+          <li className="ml-[94px]">
+            <img 
+              src={search_icon}
+              alt="search icon" 
+              className="h-[16px] opacity-60"/>
+          </li> 
+        </ul>
+    </nav>
   );
 };
