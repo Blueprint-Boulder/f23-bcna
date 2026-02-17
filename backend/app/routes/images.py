@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory
 import os
 from app import db_helpers
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
@@ -18,7 +18,9 @@ def get_image(filename):
     Example output:
     (The image file)
     """
-    image_folder = current_app.config["IMAGE_UPLOAD_FOLDER"]
+    image_folder = db_helpers.find_existing_image_folder(filename)
+    if image_folder is None:
+        return jsonify({"error": f"Image '{filename}' not found in any dataset"}), 404
     print(f"[DEBUG] Requested image filename: {filename}")
     print(f"[DEBUG] Image folder: {image_folder}")
     file_path = os.path.join(image_folder, filename)
@@ -50,7 +52,7 @@ def add_image():
     if not image_file.mimetype.startswith("image/"):
         return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
 
-    saved_filename = save_file(image_file, current_app.config["IMAGE_UPLOAD_FOLDER"])
+    saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
     # Insert the image and get its ID
     image_id = db_helpers.insert(
         "INSERT INTO Images (wildlife_id, image_path) VALUES (?, ?)",
@@ -125,7 +127,10 @@ def get_image_by_image_id(image_id):
         return jsonify({"error": "Image not found"}), 404
 
     filename = image["image_path"]
-    return send_from_directory(current_app.config["IMAGE_UPLOAD_FOLDER"], filename)
+    image_folder = db_helpers.find_existing_image_folder(filename)
+    if image_folder is None:
+        return jsonify({"error": f"Image file '{filename}' not found"}), 404
+    return send_from_directory(image_folder, filename)
 
 
 def delete_image_by_id(image_id):
@@ -136,7 +141,7 @@ def delete_image_by_id(image_id):
     # Delete the image file from uploaded_images
     image_path = image.get("image_path")
     if image_path:
-        upload_dir = current_app.config["IMAGE_UPLOAD_FOLDER"]
+        upload_dir = db_helpers.get_active_image_upload_folder()
         file_path = os.path.join(upload_dir, image_path)
         print("i am here")
         try:
@@ -176,8 +181,5 @@ def delete_image():
     Example request: 
     DELETE /api/delete_image/?id=2
     """
-    import os
-
     image_id = request.args["id"]
     return delete_image_by_id(image_id)
-
