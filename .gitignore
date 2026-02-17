@@ -2,4 +2,5 @@
 .fleet/
 .vscode/
 .idea/
-node_modules/*.db
+node_modules/
+uploaded_images/
