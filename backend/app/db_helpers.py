@@ -1,14 +1,91 @@
 import os
 import sqlite3
 from typing import Sequence, Any
+from flask import current_app, has_app_context, has_request_context, request
 
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+BACKEND_FOLDER = os.path.dirname(THIS_FOLDER)
+DEFAULT_DB_PATH = os.path.join(BACKEND_FOLDER, "database.db")
+DEFAULT_IMAGE_UPLOAD_FOLDER = os.path.join(BACKEND_FOLDER, "uploaded_images")
+
+
+def _normalize_dataset_name(name: str) -> str:
+    return name.strip().lower().replace(" ", "_")
+
+
+def _get_selected_dataset_key() -> str | None:
+    if not has_request_context():
+        return None
+
+    dataset_raw = request.args.get("dataset")
+    if not dataset_raw:
+        return None
+    return _normalize_dataset_name(dataset_raw)
+
+
+def _get_dataset_config() -> dict[str, str] | None:
+    if not has_app_context():
+        return None
+
+    dataset_configs = current_app.config.get("DATASET_CONFIGS", {})
+    if not dataset_configs:
+        return None
+
+    selected_dataset = _get_selected_dataset_key()
+    if selected_dataset and selected_dataset in dataset_configs:
+        return dataset_configs[selected_dataset]
+
+    default_dataset = current_app.config.get("DEFAULT_DATASET")
+    if default_dataset and default_dataset in dataset_configs:
+        return dataset_configs[default_dataset]
+
+    return None
+
+
+def get_active_database_path() -> str:
+    dataset_config = _get_dataset_config()
+    if dataset_config:
+        return dataset_config["db_path"]
+
+    if has_app_context():
+        return current_app.config.get("DATABASE", DEFAULT_DB_PATH)
+    return DEFAULT_DB_PATH
+
+
+def get_active_image_upload_folder() -> str:
+    dataset_config = _get_dataset_config()
+    if dataset_config:
+        return dataset_config["image_upload_folder"]
+
+    if has_app_context():
+        return current_app.config.get("IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER)
+    return DEFAULT_IMAGE_UPLOAD_FOLDER
+
+
+def find_existing_image_folder(filename: str) -> str | None:
+    preferred_folder = get_active_image_upload_folder()
+    preferred_path = os.path.join(preferred_folder, filename)
+    if os.path.exists(preferred_path):
+        return preferred_folder
+
+    if has_app_context():
+        for dataset in current_app.config.get("DATASET_CONFIGS", {}).values():
+            folder = dataset["image_upload_folder"]
+            if os.path.exists(os.path.join(folder, filename)):
+                return folder
+
+        fallback_folder = current_app.config.get("IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER)
+        if os.path.exists(os.path.join(fallback_folder, filename)):
+            return fallback_folder
+
+    return None
 
 
 def get_connection():
-    print("[DB DEBUG] Attempting to connect to database...")  # Debug
+    db_path = get_active_database_path()
+    print(f"[DB DEBUG] Attempting to connect to database: {db_path}")  # Debug
     try:
-        conn = sqlite3.connect("database.db")
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row 
         print("[DB DEBUG] Database connection established.")
         return conn
