@@ -1,38 +1,97 @@
-import React from 'react';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { Wildlife } from './pages/Wildlife';
-import Home from './pages/Home';
+import { 
+  createBrowserRouter,
+  RouterProvider,
+  Navigate 
+} from 'react-router-dom';
+
+// Pages importing
+import { Layout, WildlifeLayout } from './components/Layouts';
+import { ButterflyDB  } from './pages/WildlifeDBs/ButterflyDB';
+import { DragonflyDB  } from './pages/WildlifeDBs/DragonflyDB';
+import { WildflowerDB  } from './pages/WildlifeDBs/WildflowerDB';
+
 import WildlifeDetails from './pages/WildlifeDetails';
-import Admin from './pages/Admin';
-import AddCategory from './pages/AddCategory';
-import AddWildlife from './pages/AddWildlife';
-import EditCategory from './pages/EditCategory';
-import EditWildlife from './pages/EditWildlife';
+import { About } from './pages/About';
+import { Resources } from './pages/Resources';
+import { Contact } from './pages/Contact';
+import { Glossary } from './pages/Glossary';
 
-function App() {
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />, // Layout wraps all children below
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/butterflies" replace />
+      },
+      {
+        path: "butterflies",
+        element: <WildlifeLayout />,
+        children: [
+          {
+            index: true,
+            element: <ButterflyDB />
+          },
+          {
+            path: ":wildlifeId",
+            element: <WildlifeDetails />
+          }
+        ]
+      },
+      {
+        path: "dragonflies",
+        element: <WildlifeLayout />,
+        children: [
+          {
+            index: true,
+            element: <DragonflyDB />
+          },
+          {
+            path: ":wildlifeId",
+            element: <WildlifeDetails />
+          }
+        ]
+      },
+      {
+        path: "wildflowers",
+        element: <WildlifeLayout />,
+        children: [
+          {
+            index: true,
+            element: <WildflowerDB />
+          },
+          {
+            path: ":wildlifeId",
+            element: <WildlifeDetails />
+          }
+        ]
+      },
+      {
+        path: "about",
+        element: <About />
+      },
+      {
+        path: "resources",
+        element: <Resources />
+      },
+      {
+        path: "contact",
+        element: <Contact />
+      },
+      {
+        path: "glossary",
+        element: <Glossary />
+      },
+    ],
+  },
+]);
 
+export const App = () => {
   return (
     <div className="App">
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" exact element={<Home/>} />
-            <Route path="/about" element={<h1 className="text-3xl font-bold underline">About</h1>} />
-            <Route path="/wildlife" element={<Wildlife/>} />
-            <Route path="/wildlife/:wildlifeId" element={<WildlifeDetails/>} /> 
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/add-category" element={<AddCategory />} />
-            <Route path="/add-wildlife" element={<AddWildlife />} />
-            <Route path="/edit-category" element={<EditCategory />} />
-            <Route path="/edit-wildlife" element={<EditWildlife />} />
-            <Route path="/resources" element={<h1 className="text-3xl font-bold underline">Resources</h1>} />
-            <Route path="/contact" element={<h1 className="text-3xl font-bold underline">Contact Us</h1>} />
-          </Routes>
-        </Layout>
-      </Router>
+      <RouterProvider router={router} />
     </div>
-  );
+  )
 }
 
-export default App;
