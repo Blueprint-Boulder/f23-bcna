@@ -1,20 +1,16 @@
-import { 
-  createBrowserRouter,
-  RouterProvider,
-  Navigate 
-} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 // Pages importing
-import { Layout, WildlifeLayout } from './components/Layouts';
-import { ButterflyDB  } from './pages/WildlifeDBs/ButterflyDB';
-import { DragonflyDB  } from './pages/WildlifeDBs/DragonflyDB';
-import { WildflowerDB  } from './pages/WildlifeDBs/WildflowerDB';
+import { Layout, WildlifeLayout } from "./components/Layouts";
+import { ButterflyDB } from "./pages/WildlifeDBs/ButterflyDB";
+import { DragonflyDB } from "./pages/WildlifeDBs/DragonflyDB";
+import { WildflowerDB } from "./pages/WildlifeDBs/WildflowerDB";
 
-import WildlifeDetails from './pages/WildlifeDetails';
-import { About } from './pages/About';
-import { Resources } from './pages/Resources';
-import { Contact } from './pages/Contact';
-import { Glossary } from './pages/Glossary';
+import WildlifeDetails from "./pages/WildlifeDetails";
+import { About } from "./pages/About";
+import { Resources } from "./pages/Resources";
+import { Contact } from "./pages/Contact";
+import { Glossary } from "./pages/Glossary";
 
 const router = createBrowserRouter([
   {
@@ -82,16 +78,15 @@ const router = createBrowserRouter([
       {
         path: "glossary",
         element: <Glossary />
-      },
-    ],
-  },
+      }
+    ]
+  }
 ]);
 
 export const App = () => {
   return (
-    <div className="App">
+    <div className="App bg-sand-50">
       <RouterProvider router={router} />
     </div>
-  )
-}
-
+  );
+};
