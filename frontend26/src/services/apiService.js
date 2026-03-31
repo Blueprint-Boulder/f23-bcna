@@ -63,9 +63,9 @@ const apiService = {
     }
   },
 
-  getAllWildlife: async () => {
+  getAllWildlife: async dataset => {
     try {
-      const response = await api.get(`/api/get-wildlife`);
+      const response = await api.get(dataset ? `/api/get-wildlife?dataset=${dataset}` : "/api/get-wildlife");
       return response.data;
     } catch (error) {
       handleError(error);

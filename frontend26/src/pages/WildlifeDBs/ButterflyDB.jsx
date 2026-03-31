@@ -20,8 +20,8 @@ function Result({ id, name, sub, image }) {
         )}
       </div>
       <div className="p-3">
-        <p className="font-['Playfair_Display'] font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
-        <p className="font-['Playfair_Display'] italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
+        <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
+        <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
     </div>
   );
@@ -45,7 +45,7 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies }) {
         onClick={toggle}
       >
         <input type="checkbox" className="accent-sand-400 w-3.5 h-3.5 shrink-0" onClick={e => e.stopPropagation()} />
-        <span className="font-['Playfair_Display'] text-sm">{family}</span>
+        <span className="font-serif text-sm">{family}</span>
         <svg
           className={`ml-auto w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
           viewBox="0 0 16 16"
@@ -68,7 +68,7 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies }) {
           {[...genera].map(genus => (
             <label
               key={genus}
-              className="flex items-center gap-2 cursor-pointer text-sand-400 italic font-['Playfair_Display'] text-sm hover:bg-sand-200 rounded px-1 py-0.5 transition-colors select-none"
+              className="flex items-center gap-2 cursor-pointer text-sand-400 italic font-serif text-sm hover:bg-sand-200 rounded px-1 py-0.5 transition-colors select-none"
             >
               <input type="checkbox" className="accent-sand-400 w-3.5 h-3.5 shrink-0 not-italic" />
               {genus}
@@ -117,10 +117,8 @@ export function ButterflyDB() {
     <div className="p-5">
       <div className="flex max-w-[1500px] mx-auto gap-5">
         {/* ── Sidebar filters ── */}
-        <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
-          <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
-            Filters
-          </h5>
+        <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-serif">
+          <h5 className="mb-5 ml-2 text-xs font-semibold tracking-widest uppercase text-sand-300">Filters</h5>
 
           {/* {[...families].map(([family, genera]) => (
             <FamilyFilter
@@ -140,7 +138,7 @@ export function ButterflyDB() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={`Search ${butterflies.length.toLocaleString()} butterflies…`}
-            className="w-full font-['Playfair_Display'] bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+            className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
           />
 
           <div className="flex flex-wrap gap-5 mt-5">
@@ -156,9 +154,7 @@ export function ButterflyDB() {
           </div>
 
           {filtered.length === 0 && (
-            <p className="font-['Playfair_Display'] italic text-sand-400 mt-10 text-center">
-              No butterflies found for "{search}"
-            </p>
+            <p className="mt-10 font-serif italic text-center text-sand-400">No butterflies found for "{search}"</p>
           )}
         </main>
       </div>
