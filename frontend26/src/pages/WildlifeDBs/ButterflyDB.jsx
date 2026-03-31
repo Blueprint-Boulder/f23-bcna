@@ -115,6 +115,8 @@ export function ButterflyDB() {
 
   return (
     <div className="p-5">
+      {/* -- Hero -- */}
+      
       <div className="flex max-w-[1500px] mx-auto gap-5">
         {/* ── Sidebar filters ── */}
         <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
