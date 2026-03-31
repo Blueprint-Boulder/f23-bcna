@@ -114,56 +114,81 @@ export function ButterflyDB() {
   const filtered = butterflies.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-5">
+    <>
       {/* -- Hero -- */}
-      
-      <div className="flex max-w-[1500px] mx-auto gap-5">
-        {/* ── Sidebar filters ── */}
-        <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
-          <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
-            Filters
-          </h5>
-
-          {/* {[...families].map(([family, genera]) => (
-            <FamilyFilter
-              key={family}
-              family={family}
-              genera={genera}
-              openFamilies={openFamilies}
-              setOpenFamilies={setOpenFamilies}
-            />
-          ))} */}
-        </aside>
-
-        {/* ── Main content ── */}
-        <main className="w-full min-w-0">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${butterflies.length.toLocaleString()} butterflies…`}
-            className="w-full font-['Playfair_Display'] bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
-          />
-
-          <div className="flex flex-wrap gap-5 mt-5">
-            {filtered.slice(0, 20).map((butterfly, i) => (
-              <Result
-                key={i}
-                id={i}
-                name={butterfly.name}
-                sub={butterfly.scientific_name}
-                image={butterfly.thumbnail_id}
-              />
-            ))}
-          </div>
-
-          {filtered.length === 0 && (
-            <p className="font-['Playfair_Display'] italic text-sand-400 mt-10 text-center">
-              No butterflies found for "{search}"
+      <section className="relative h-130 w-full overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-position-[25%_65%] bg-no-repeat"
+          style={{ 
+            backgroundImage: `url('/butterfly-hero.png')`,
+          }}
+        >
+          {/* dark overlay */}
+          <div className="absolute inset-0 bg-black/10"></div>
+        </div>
+        <div className="relative z-10 flex h-full items-center px-[8%]">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl lg:text-6xl font-bold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
+              Explore the <br /> 
+              Butterflies of <br /> 
+              Colorado's <br /> 
+              Front Range
+            </h2>
+            <p className="font-[playfair-display] ml-20 lg:ml-50 mt-2 italic text-gray-200">
+              by BCNA nature photo display
             </p>
-          )}
-        </main>
+          </div>
+        </div>
+      </section>
+      <div className="p-5">
+        <div className="flex max-w-[1500px] mx-auto gap-5">
+          {/* ── Sidebar filters ── */}
+          <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
+            <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
+              Filters
+            </h5>
+
+            {/* {[...families].map(([family, genera]) => (
+              <FamilyFilter
+                key={family}
+                family={family}
+                genera={genera}
+                openFamilies={openFamilies}
+                setOpenFamilies={setOpenFamilies}
+              />
+            ))} */}
+          </aside>
+
+          {/* ── Main content ── */}
+          <main className="w-full min-w-0">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search ${butterflies.length.toLocaleString()} butterflies…`}
+              className="w-full font-['Playfair_Display'] bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+            />
+
+            <div className="flex flex-wrap gap-5 mt-5">
+              {filtered.slice(0, 20).map((butterfly, i) => (
+                <Result
+                  key={i}
+                  id={i}
+                  name={butterfly.name}
+                  sub={butterfly.scientific_name}
+                  image={butterfly.thumbnail_id}
+                />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <p className="font-['Playfair_Display'] italic text-sand-400 mt-10 text-center">
+                No butterflies found for "{search}"
+              </p>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
