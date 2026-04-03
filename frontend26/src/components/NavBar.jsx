@@ -1,4 +1,4 @@
-import { useLocation, Link, NavLink } from "react-router-dom";
+import { useParams, Link, NavLink } from "react-router-dom";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -20,10 +20,9 @@ const navLinks = [
 
 export const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const currentPath = location.pathname === "/" ? "/" : location.pathname.replace(/\/$/, "");
-  const currentSite = sites.find(s => s.path === currentPath) || sites[0];
-  const otherSites = sites.filter(s => s.path !== currentSite.path);
+  const { category, wildlifeId } = useParams();
+  const currentSite = sites.find(s => s.id === category) || sites[0];
+  const otherSites = sites.filter(s => s.id !== category);
 
   return (
     <nav className={`flex items-center justify-between px-[17px] py-[6px] h-[110px] bg-sand-50`}>

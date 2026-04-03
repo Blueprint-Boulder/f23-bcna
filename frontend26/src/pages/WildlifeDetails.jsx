@@ -1,137 +1,126 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import apiService from "../services/apiService";
 
 export default function WildlifeDetails() {
-  const { wildlifeId } = useParams(); // Extracting the 'name' parameter from the URL
-
+  const { category, wildlifeId } = useParams();
   const [wildlife, setWildlife] = useState(null);
   const [filteredData, setFilteredData] = useState({});
+  const [thumbnail, setThumbnail] = useState(null);
   const [highlight, setHighlight] = useState(null);
   const [images, setImages] = useState([]);
-  const [imageClicked, setImageClicked] = useState(null)
+  const [imageClicked, setImageClicked] = useState(null);
 
-  const displayFilter = (wildData, catsAndFields, foundImages) => {
-    const { id, scientific_name, name, category_id, thumbnail_id, ...displayedData } =
-      wildData;
-    const filtered = Object.keys(displayedData).reduce((acc, key) => {
-      if (!foundImages.includes(key)) {
-        acc[key] = displayedData[key];
-      }
-      return acc;
-    }, {});
-    return {
-      Name: name,
-      "Scientific Name": scientific_name,
-      Category: catsAndFields?.categories?.[category_id]?.name || "Unknown",
-      ...filtered,
-    };
-  };
+  const BASE_IMG_URL = "http://127.0.0.1:5000/api/get-image/";
 
   useEffect(() => {
-    const findImages = async (wildlifeData) => {
-      const categoriesAndFields = await apiService.getCategoriesAndFields();
-      const wildlifeImages = await apiService.getImagesByWildlifeId(wildlifeData["id"]);
-      setImages(wildlifeImages);
-      if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
-      setFilteredData(displayFilter(wildlifeData, categoriesAndFields, []));
-    };
-
-    const fetchWildlifeById = async () => {
+    const fetchData = async () => {
       try {
-        // Fetch wildlife data by ID
-        const data = await apiService.getWildlifeById(wildlifeId);
-        setWildlife(data); // Set the wildlife state with the fetched data
-        findImages(data);
-        // Set the initial highlight image to the first image in the images array
+        const data = await apiService.getWildlifeById(wildlifeId, category);
+        const categoriesAndFields = await apiService.getCategoriesAndFields(category);
+        const wildlifeImages = await apiService.getImagesByWildlifeId(data.id, category);
+
+        setWildlife(data);
+        setImages(wildlifeImages);
+        if (wildlifeImages.length > 0) setThumbnail(wildlifeImages[0].image_path);
+        if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
+
+        // Filter logic to exclude technical IDs from the display
+        const { id, scientific_name, name, category_id, thumbnail_id, ...rest } = data;
+        setFilteredData(rest);
       } catch (error) {
-        console.error("Error fetching wildlife details:", error);
+        console.error("Error fetching details:", error);
       }
     };
+    fetchData();
+  }, [wildlifeId, category]);
 
-    fetchWildlifeById(); // Call the function to fetch wildlife data when component mounts
-  }, [wildlifeId]); // Re-run the effect when wildlifeId changes
+  if (!wildlife) return <div className="p-10 text-center">Loading...</div>;
 
   return (
-    <div className="bg-[url('https://images.squarespace-cdn.com/content/v1/5373ca62e4b0875c414542a1/1405111543624-681EMTDC5LLPE19MEUXH/image-asset.jpeg')] bg-cover w-screen h-[120vh]">
-      <div className="h-8"></div>
-      <div className="bg-neutral-50 rounded-lg w-11/12 mx-auto shadow-lg overflow-auto h-[90%]">
-        {wildlife && (
-          <>
-            <h2 className="text-center text-2xl md:text-3xl pt-4 font-bold text-green-900 mb-8">
-              {wildlife.name}
-            </h2>
-            <div className="md:flex md:justify-around md:flex-wrap pb-10">
-              <div className="pl-10 w-11/12 lg:pl-0 lg:w-2/5">
-                {Object.entries(filteredData).map(([key, value]) => (
-                  <div key={key} className="mb-5">
-                    <h3 className="inline text-xl font-bold">{key}: </h3>
-                    <span className="text-lg">
-                      {key === "Scientific Name" ? <em>{value}</em> : value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col items-center">
-                {images.length >= 1 && (
-                  <img
-                    src={`http://127.0.0.1:5000/api/get-image/${highlight}`}
-                    alt=""
-                    className="mb-5 min-w-80 h-64 object-cover"
-                    onClick={() => setImageClicked(images[0].image_path)}
-
-                  />
-                )}
-                <div className="flex flex-wrap justify-center gap-3 p-4 bg-neutral-100 rounded-md shadow-inner">
-                  {images.length >= 2 &&
-                    images.map((image) => (
-                      <button
-                        key={image.id}
-                        onClick={() => setHighlight(image.image_path)}
-                        className={`transition-all duration-150 ease-in-out rounded-md focus:outline-none 
-                          ${highlight === image.image_path ? "ring-2 ring-offset-2 ring-sky-500" : "hover:ring-2 hover:ring-sky-300"}`}
-                      >
-                        {/* Debugging: log the image path and src URL */}
-                        {console.debug("Rendering image with path:", image.image_path, "URL:", `http://127.0.0.1:5000/api/get-image/${image.image_path}`)}
-                        <img
-                          draggable="false"
-                          className="object-cover w-28 h-20 md:w-36 md:h-24 rounded-md"
-                          src={`http://127.0.0.1:5000/api/get-image/${image.image_path}`}
-                          alt=""
-                          onError={(e) => {
-                            console.error("Error loading image:", image.image_path, e);
-                            e.target.style.display = "none";
-                          }}
-                        />
-                      </button>
-                    ))}
-                </div>
-
-              </div>
-            </div>
-          </>
-        )}
+    <div className="min-h-screen bg-sand-50/30 pb-20">
+      {/* 1. Blurred Header Section */}
+      <div className="relative h-64 md:h-80 overflow-hidden">
+        <img
+          src={`${BASE_IMG_URL}${thumbnail}`}
+          className="absolute inset-0 w-full h-full object-cover blur-md scale-110"
+          alt="background"
+        />
+        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-sand-50">
+          <Link to={`/${category}`} className="absolute top-4 left-4 text-sm md:text-base hover:underline">
+            ← Back to Database
+          </Link>
+          <h1 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-center">
+            {wildlife.name}
+          </h1>
+          <p className="text-xl md:text-2xl font-['Playfair_Display'] italic mt-2 opacity-90">{wildlife.scientific_name}</p>
+        </div>
       </div>
 
-    {/* Fullscreen Image */}
-    {imageClicked && (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50"
-        onClick={() => setImageClicked(null)} // click anywhere to close
-      >
-        <img
-          src={`http://127.0.0.1:5000/api/get-image/${highlight}`}
-          alt="Fullscreen butterfly"
-          className="max-h-[90%] max-w-[90%] shadow-lg"
-          onClick={(e) => e.stopPropagation()} // don't close when image clicked
-        />
-        <button
-          className="absolute top-6 right-6 text-white text-2xl"
-          onClick={() => setImageClicked(null)}>
-            ✕
-          </button>
+      {/* 2. Main Content Container */}
+      <div className="max-w-6xl mx-auto -mt-10 relative z-10 px-4">
+        <div className="bg-sand-50 rounded-xl shadow-2xl overflow-hidden flex flex-col lg:flex-row p-6 gap-8">
+          
+          {/* Left Column: Info Card */}
+          <div className="lg:w-5/12 bg-sand-100/70 p-8 rounded-2xl border border-sand-200/50">
+            {Object.entries(filteredData).map(([key, value]) => (
+              <div key={key} className="mb-6">
+                <h3 className="text-sand-600 font-bold text-xl capitalize mb-1">
+                  {key.replace("_", " ")}
+                </h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {value || "No information available."}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Right Column: Image Display */}
+          <div className="lg:w-7/12 flex flex-col">
+            <div className="relative group cursor-zoom-in">
+              <img
+                src={`${BASE_IMG_URL}${highlight}`}
+                alt={wildlife.name}
+                className="w-full h-[400px] object-cover rounded-2xl shadow-md transition-transform"
+                onClick={() => setImageClicked(highlight)}
+              />
+            </div>
+
+            {/* Thumbnail Carousel */}
+            <div className="flex items-center justify-center mt-6 gap-4 overflow-x-auto p-2 scrollbar-hide">
+              <div className="flex gap-3">
+                {images.map((img) => (
+                  <img
+                    key={img.id}
+                    src={`${BASE_IMG_URL}${img.image_path}`}
+                    className={`w-24 h-20 object-cover rounded-lg cursor-pointer transition-all ${
+                      highlight === img.image_path 
+                      ? "ring-4 ring-sand-500 scale-105" 
+                      : "opacity-70 hover:opacity-100"
+                    }`}
+                    onClick={() => setHighlight(img.image_path)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-    )}
+      </div>
+
+      {/* Fullscreen Modal */}
+      {imageClicked && (
+        <div 
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+          onClick={() => setImageClicked(null)}
+        >
+          <img
+            src={`${BASE_IMG_URL}${imageClicked}`}
+            className="max-h-full max-w-full rounded-lg"
+          />
+          <button className="absolute top-5 right-5 text-white text-3xl">&times;</button>
+        </div>
+      )}
     </div>
   );
 }
