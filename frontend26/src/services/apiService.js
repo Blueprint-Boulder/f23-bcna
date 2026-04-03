@@ -26,9 +26,9 @@ const apiService = {
     }
   },
 
-  getCategoriesAndFields: async () => {
+  getCategoriesAndFields: async (dataset = 'butterflies') => {
     try {
-      const response = await api.get("/api/get-categories-and-fields");
+      const response = await api.get(`/api/get-categories-and-fields?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -63,9 +63,9 @@ const apiService = {
     }
   },
 
-  getAllWildlife: async () => {
+  getAllWildlife: async (dataset = 'butterflies') => {
     try {
-      const response = await api.get(`/api/get-wildlife`);
+      const response = await api.get(`/api/get-wildlife?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -91,9 +91,9 @@ const apiService = {
     }
   },
 
-  getImagebyImageId: async imageId => {
+  getImagebyImageId: async (imageId, dataset = 'butterflies') => {
     try {
-      const response = await api.get(`/api/get-image-by-image-id/${imageId}`);
+      const response = await api.get(`/api/get-image-by-image-id/${imageId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);

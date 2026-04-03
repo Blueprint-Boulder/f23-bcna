@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect } from "react";
+import { NavLink } from "react-router-dom"
 import apiService from "../../services/apiService";
 
-function Result({ id, name, sub, image }) {
+function Result({ wildlifeType, id, name, sub, image }) {
   return (
-    <div className="group flex flex-col w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200">
+    <NavLink 
+      className="group flex flex-col w-full sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200"
+      to={`/${wildlifeType}/${id + 1}`}
+    >
       <div className="overflow-hidden aspect-square bg-sand-100">
         {image ? (
           <img
-            src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}`}
+            src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
@@ -23,7 +27,7 @@ function Result({ id, name, sub, image }) {
         <p className="font-['Playfair_Display'] font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
         <p className="font-['Playfair_Display'] italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
-    </div>
+    </NavLink>
   );
 }
 
@@ -89,18 +93,21 @@ export function ButterflyDB() {
   const [openFamilies, setOpenFamilies] = useState(new Set());
   // const [families, setFamilies] = useState([]);
   const [butterflies, setButterflies] = useState([]);
+  const [wildlifeType, setWildlifeType] = useState("")
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const categoriesAndFields = await apiService.getCategoriesAndFields();
-        const data = await apiService.getAllWildlife();
+        const type = "butterflies"; 
+        setWildlifeType(type);
+
+        const categoriesAndFields = await apiService.getCategoriesAndFields(type);
+        const data = await apiService.getAllWildlife(type);
 
         const fetchedWildlife = convertDataToArray(data);
-        const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
-
-        setButterflies(fetchedWildlife); // Set the updated data with image URLs
-        // setFamilies(fetchedCategories);
+        // const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
+        
+        setButterflies(fetchedWildlife);
       } catch (error) {
         console.error("Error fetching wildlife data:", error);
       }
@@ -172,6 +179,7 @@ export function ButterflyDB() {
             <div className="flex flex-wrap gap-5 mt-5">
               {filtered.slice(0, 20).map((butterfly, i) => (
                 <Result
+                  wildlifeType={wildlifeType}
                   key={i}
                   id={i}
                   name={butterfly.name}
