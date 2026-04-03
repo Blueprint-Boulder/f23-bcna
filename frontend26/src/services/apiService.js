@@ -72,19 +72,19 @@ const apiService = {
     }
   },
 
-  getWildlifeById: async wildlifeId => {
+  getWildlifeById: async (wildlifeId, dataset = 'butterflies') => {
     try {
-      const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}`);
+      const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
-  getImagesByWildlifeId: async wildlifeId => {
+  getImagesByWildlifeId: async (wildlifeId, dataset = 'butterflies') => {
     console.log("getImagesByWildlifeId", wildlifeId);
     try {
-      const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}`);
+      const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);

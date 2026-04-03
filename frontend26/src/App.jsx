@@ -1,10 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 // Pages importing
-import { Layout, WildlifeLayout } from "./components/Layouts";
-import { ButterflyDB } from "./pages/WildlifeDBs/ButterflyDB";
-import { DragonflyDB } from "./pages/WildlifeDBs/DragonflyDB";
-import { WildflowerDB } from "./pages/WildlifeDBs/WildflowerDB";
+import { Layout, WildlifeLayout, DynamicDBRouter } from "./components/Layouts";
 
 import WildlifeDetails from "./pages/WildlifeDetails";
 import { About } from "./pages/About";
@@ -22,40 +19,12 @@ const router = createBrowserRouter([
         element: <Navigate to="/butterflies" replace />
       },
       {
-        path: "butterflies",
+        path: ":category", // This will match 'butterflies', 'dragonflies', or 'wildflowers'
         element: <WildlifeLayout />,
         children: [
           {
             index: true,
-            element: <ButterflyDB />
-          },
-          {
-            path: ":wildlifeId",
-            element: <WildlifeDetails />
-          }
-        ]
-      },
-      {
-        path: "dragonflies",
-        element: <WildlifeLayout />,
-        children: [
-          {
-            index: true,
-            element: <DragonflyDB />
-          },
-          {
-            path: ":wildlifeId",
-            element: <WildlifeDetails />
-          }
-        ]
-      },
-      {
-        path: "wildflowers",
-        element: <WildlifeLayout />,
-        children: [
-          {
-            index: true,
-            element: <WildflowerDB />
+            element: <DynamicDBRouter /> // A simple wrapper to show the right DB component
           },
           {
             path: ":wildlifeId",
