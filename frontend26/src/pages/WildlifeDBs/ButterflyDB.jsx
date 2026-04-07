@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import apiService from "../../services/apiService";
+import { NavLink } from "react-router-dom";
 
 function Result({ id, name, sub, image }) {
   return (
-    <div className="group flex flex-col w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200">
+    <NavLink
+      to={`/butterflies/${id + 1}`}
+      className="group flex flex-col w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200"
+    >
       <div className="overflow-hidden aspect-square bg-sand-100">
         {image ? (
           <img
@@ -23,7 +27,7 @@ function Result({ id, name, sub, image }) {
         <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
         <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
-    </div>
+    </NavLink>
   );
 }
 
@@ -108,8 +112,6 @@ export function ButterflyDB() {
 
     fetchData();
   }, []);
-
-  console.log({ butterflies });
 
   const filtered = butterflies.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
 

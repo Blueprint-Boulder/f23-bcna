@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-export const adminContext = createContext({
+export const AdminContext = createContext({
   admin: false,
   setAdmin: () => {}
 });
