@@ -26,9 +26,9 @@ const apiService = {
     }
   },
 
-  getCategoriesAndFields: async () => {
+  getCategoriesAndFields: async (dataset = 'butterflies') => {
     try {
-      const response = await api.get("/api/get-categories-and-fields");
+      const response = await api.get(`/api/get-categories-and-fields?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -63,37 +63,37 @@ const apiService = {
     }
   },
 
-  getAllWildlife: async dataset => {
+  getAllWildlife: async (dataset = 'butterflies') => {
     try {
-      const response = await api.get(dataset ? `/api/get-wildlife?dataset=${dataset}` : "/api/get-wildlife");
+      const response = await api.get(`/api/get-wildlife?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
-  getWildlifeById: async wildlifeId => {
+  getWildlifeById: async (wildlifeId, dataset = 'butterflies') => {
     try {
-      const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}`);
+      const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
-  getImagesByWildlifeId: async wildlifeId => {
+  getImagesByWildlifeId: async (wildlifeId, dataset = 'butterflies') => {
     console.log("getImagesByWildlifeId", wildlifeId);
     try {
-      const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}`);
+      const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
-  getImagebyImageId: async imageId => {
+  getImagebyImageId: async (imageId, dataset = 'butterflies') => {
     try {
-      const response = await api.get(`/api/get-image-by-image-id/${imageId}`);
+      const response = await api.get(`/api/get-image-by-image-id/${imageId}?dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);

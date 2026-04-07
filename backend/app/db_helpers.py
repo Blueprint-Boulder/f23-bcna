@@ -4,9 +4,11 @@ from typing import Sequence, Any
 from flask import current_app, has_app_context, has_request_context, request
 
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
-BACKEND_FOLDER = os.path.dirname(THIS_FOLDER)
-DEFAULT_DB_PATH = os.path.join(BACKEND_FOLDER, "database.db")
-DEFAULT_IMAGE_UPLOAD_FOLDER = os.path.join(BACKEND_FOLDER, "uploaded_images")
+PROJECT_ROOT = os.path.dirname(THIS_FOLDER)
+DATA_FOLDER = os.path.join(PROJECT_ROOT, "data")
+
+DEFAULT_DB_PATH = os.path.join(DATA_FOLDER, "butterflies", "database.db")
+DEFAULT_IMAGE_UPLOAD_FOLDER = os.path.join(DATA_FOLDER, "butterflies", "uploaded_images")
 
 
 def _normalize_dataset_name(name: str) -> str:
@@ -51,6 +53,12 @@ def get_active_database_path() -> str:
         return current_app.config.get("DATABASE", DEFAULT_DB_PATH)
     return DEFAULT_DB_PATH
 
+def ensure_upload_folder_exists():
+    folder = get_active_image_upload_folder()
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+        print(f"[DB DEBUG] Created missing folder: {folder}")
+    return folder
 
 def get_active_image_upload_folder() -> str:
     dataset_config = _get_dataset_config()

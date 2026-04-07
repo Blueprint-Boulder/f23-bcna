@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from "react";
+import { NavLink } from "react-router-dom"
 import apiService from "../../services/apiService";
-import { NavLink } from "react-router-dom";
 
-function Result({ id, name, sub, image }) {
+function Result({ wildlifeType, id, name, sub, image }) {
   return (
-    <NavLink
-      to={`/butterflies/${id + 1}`}
-      className="group flex flex-col w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200"
+    <NavLink 
+      className="group flex flex-col w-full sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border border-sand-200 bg-white hover:shadow-lg transition-shadow duration-200"
+      to={`/${wildlifeType}/${id + 1}`}
     >
       <div className="overflow-hidden aspect-square bg-sand-100">
         {image ? (
           <img
-            src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}`}
+            src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
@@ -93,18 +93,21 @@ export function ButterflyDB() {
   const [openFamilies, setOpenFamilies] = useState(new Set());
   // const [families, setFamilies] = useState([]);
   const [butterflies, setButterflies] = useState([]);
+  const [wildlifeType, setWildlifeType] = useState("")
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const categoriesAndFields = await apiService.getCategoriesAndFields();
-        const data = await apiService.getAllWildlife();
+        const type = "butterflies"; 
+        setWildlifeType(type);
+
+        const categoriesAndFields = await apiService.getCategoriesAndFields(type);
+        const data = await apiService.getAllWildlife(type);
 
         const fetchedWildlife = convertDataToArray(data);
-        const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
-
-        setButterflies(fetchedWildlife); // Set the updated data with image URLs
-        // setFamilies(fetchedCategories);
+        // const fetchedCategories = convertDataToArray(categoriesAndFields.categories);
+        
+        setButterflies(fetchedWildlife);
       } catch (error) {
         console.error("Error fetching wildlife data:", error);
       }
@@ -116,50 +119,82 @@ export function ButterflyDB() {
   const filtered = butterflies.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-5">
-      <div className="flex max-w-[1500px] mx-auto gap-5">
-        {/* ── Sidebar filters ── */}
-        <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-serif">
-          <h5 className="mb-5 ml-2 text-xs font-semibold tracking-widest uppercase text-sand-300">Filters</h5>
-
-          {/* {[...families].map(([family, genera]) => (
-            <FamilyFilter
-              key={family}
-              family={family}
-              genera={genera}
-              openFamilies={openFamilies}
-              setOpenFamilies={setOpenFamilies}
-            />
-          ))} */}
-        </aside>
-
-        {/* ── Main content ── */}
-        <main className="w-full min-w-0">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${butterflies.length.toLocaleString()} butterflies…`}
-            className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
-          />
-
-          <div className="flex flex-wrap gap-5 mt-5">
-            {filtered.slice(0, 20).map((butterfly, i) => (
-              <Result
-                key={i}
-                id={i}
-                name={butterfly.name}
-                sub={butterfly.scientific_name}
-                image={butterfly.thumbnail_id}
-              />
-            ))}
+    <>
+      {/* -- Hero -- */}
+      <section className="relative h-130 w-full overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-position-[25%_65%] bg-no-repeat"
+          style={{ 
+            backgroundImage: `url('/butterfly-hero.png')`,
+          }}
+        >
+          {/* dark overlay */}
+          <div className="absolute inset-0 bg-black/10"></div>
+        </div>
+        <div className="relative z-10 flex h-full items-center px-[8%]">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl lg:text-6xl font-bold tracking-wide leading-none text-shadow-[2px_2px_8px_rgba(0,0,0,1)] text-sand-50">
+              Explore the <br /> 
+              Butterflies of <br /> 
+              Colorado's <br /> 
+              Front Range
+            </h2>
+            <p className="font-[playfair-display] ml-20 lg:ml-50 mt-2 italic text-gray-200">
+              by BCNA nature photo display
+            </p>
           </div>
+        </div>
+      </section>
+      <div className="p-5">
+        <div className="flex max-w-[1500px] mx-auto gap-5">
+          {/* ── Sidebar filters ── */}
+          <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
+            <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
+              Filters
+            </h5>
 
-          {filtered.length === 0 && (
-            <p className="mt-10 font-serif italic text-center text-sand-400">No butterflies found for "{search}"</p>
-          )}
-        </main>
+            {/* {[...families].map(([family, genera]) => (
+              <FamilyFilter
+                key={family}
+                family={family}
+                genera={genera}
+                openFamilies={openFamilies}
+                setOpenFamilies={setOpenFamilies}
+              />
+            ))} */}
+          </aside>
+
+          {/* ── Main content ── */}
+          <main className="w-full min-w-0">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search ${butterflies.length.toLocaleString()} butterflies…`}
+              className="w-full font-['Playfair_Display'] bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+            />
+
+            <div className="flex flex-wrap gap-5 mt-5">
+              {filtered.slice(0, 20).map((butterfly, i) => (
+                <Result
+                  wildlifeType={wildlifeType}
+                  key={i}
+                  id={i}
+                  name={butterfly.name}
+                  sub={butterfly.scientific_name}
+                  image={butterfly.thumbnail_id}
+                />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <p className="font-['Playfair_Display'] italic text-sand-400 mt-10 text-center">
+                No butterflies found for "{search}"
+              </p>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

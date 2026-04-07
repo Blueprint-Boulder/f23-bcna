@@ -1,9 +1,14 @@
-# Python virtual environment
+# Python environment & bytecode
 venv/
-# Python bytecode
+.venv/
 __pycache__/
-# The database
-database.db
-# User-uploaded images
-uploaded_images/*
-!uploaded_images/.gitkeep
+*.py[cod]
+
+# Data
+data/**/*.db
+data/**/uploaded_images/*
+!data/**/uploaded_images/.gitkeep
+data/database.db
+
+# Environment secrets
+.env

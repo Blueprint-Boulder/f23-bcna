@@ -1,6 +1,3 @@
-import BCNA_Icon from "./icons/BCNA_Icon.png";
-import Blueprint_Icon from "./icons/blueprint_icon.png";
-import Butterfly_Icon from "./icons/butterfly_icon.png";
 import { Link } from "react-router-dom";
 
 export const Footer = () => {
@@ -9,7 +6,7 @@ export const Footer = () => {
       <div className="rounded p-5 max-w-[1000px] mx-auto">
         <div className="flex justify-between">
           <div>
-            <img src="/bcna_wordmark.png" height="100" />
+            <img src="/bcna-logo.png" alt="BCNA Logo" className="h-[86px] w-auto mb-2" />
             <h3 className="font-bold">BOULDER COUNTY NATURE ASSOCIATION</h3>
             <p className="text-sand-400">P.O. Box 493, Boulder, CO 80306</p>
           </div>
