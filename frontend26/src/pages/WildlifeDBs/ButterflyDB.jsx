@@ -24,8 +24,8 @@ function Result({ wildlifeType, id, name, sub, image }) {
         )}
       </div>
       <div className="p-3">
-        <p className="font-['Playfair_Display'] font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
-        <p className="font-['Playfair_Display'] italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
+        <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
+        <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
     </NavLink>
   );
@@ -49,7 +49,7 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies }) {
         onClick={toggle}
       >
         <input type="checkbox" className="accent-sand-400 w-3.5 h-3.5 shrink-0" onClick={e => e.stopPropagation()} />
-        <span className="font-['Playfair_Display'] text-sm">{family}</span>
+        <span className="font-serif text-sm">{family}</span>
         <svg
           className={`ml-auto w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
           viewBox="0 0 16 16"
@@ -72,7 +72,7 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies }) {
           {[...genera].map(genus => (
             <label
               key={genus}
-              className="flex items-center gap-2 cursor-pointer text-sand-400 italic font-['Playfair_Display'] text-sm hover:bg-sand-200 rounded px-1 py-0.5 transition-colors select-none"
+              className="flex items-center gap-2 cursor-pointer text-sand-400 italic font-serif text-sm hover:bg-sand-200 rounded px-1 py-0.5 transition-colors select-none"
             >
               <input type="checkbox" className="accent-sand-400 w-3.5 h-3.5 shrink-0 not-italic" />
               {genus}
@@ -115,8 +115,6 @@ export function ButterflyDB() {
 
     fetchData();
   }, []);
-
-  console.log({ butterflies });
 
   const filtered = butterflies.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
 

@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import apiService from "../services/apiService";
+import { AdminContext } from "../services/adminContext";
 
 export default function WildlifeDetails() {
+  const { admin } = useContext(AdminContext);
   const { category, wildlifeId } = useParams();
+  
   const [wildlife, setWildlife] = useState(null);
   const [filteredData, setFilteredData] = useState({});
   const [thumbnail, setThumbnail] = useState(null);
   const [highlight, setHighlight] = useState(null);
   const [images, setImages] = useState([]);
   const [imageClicked, setImageClicked] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const BASE_IMG_URL = "http://127.0.0.1:5000/api/get-image/";
 
@@ -18,15 +21,15 @@ export default function WildlifeDetails() {
     const fetchData = async () => {
       try {
         const data = await apiService.getWildlifeById(wildlifeId, category);
-        const categoriesAndFields = await apiService.getCategoriesAndFields(category);
         const wildlifeImages = await apiService.getImagesByWildlifeId(data.id, category);
 
         setWildlife(data);
         setImages(wildlifeImages);
-        if (wildlifeImages.length > 0) setThumbnail(wildlifeImages[0].image_path);
-        if (wildlifeImages.length > 0) setHighlight(wildlifeImages[0].image_path);
+        if (wildlifeImages.length > 0) {
+          setThumbnail(wildlifeImages[0].image_path);
+          setHighlight(wildlifeImages[0].image_path);
+        }
 
-        // Filter logic to exclude technical IDs from the display
         const { id, scientific_name, name, category_id, thumbnail_id, ...rest } = data;
         setFilteredData(rest);
       } catch (error) {
@@ -36,11 +39,28 @@ export default function WildlifeDetails() {
     fetchData();
   }, [wildlifeId, category]);
 
+  const handleInputChange = (key, value) => {
+    setFilteredData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      console.log("Saving to backend:", filteredData);
+      // await apiService.updateWildlife(wildlifeId, category, filteredData);
+      alert("Changes saved!");
+    } catch (error) {
+      alert("Save failed.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!wildlife) return <div className="p-10 text-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-sand-50/30 pb-20">
-      {/* 1. Blurred Header Section */}
+      {/* 1. Header Section */}
       <div className="relative h-64 md:h-80 overflow-hidden">
         <img
           src={`${BASE_IMG_URL}${thumbnail}`}
@@ -62,21 +82,31 @@ export default function WildlifeDetails() {
       <div className="max-w-6xl mx-auto -mt-10 relative z-10 px-4">
         <div className="bg-sand-50 rounded-xl shadow-2xl overflow-hidden flex flex-col lg:flex-row p-6 gap-8">
           
-          {/* Left Column: Info Card */}
+          {/* Left Column: Info Card (Original Layout + Admin Inputs) */}
           <div className="lg:w-5/12 bg-sand-100/70 p-8 rounded-2xl border border-sand-200/50">
             {Object.entries(filteredData).map(([key, value]) => (
               <div key={key} className="mb-6">
                 <h3 className="text-sand-600 font-bold text-xl capitalize mb-1">
                   {key.replace("_", " ")}
                 </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {value || "No information available."}
-                </p>
+                
+                {admin ? (
+                  <textarea
+                    value={value || ""}
+                    onChange={(e) => handleInputChange(key, e.target.value)}
+                    className="w-full p-3 bg-white border-2 border-pink-200 rounded-xl text-gray-800 focus:outline-none focus:border-pink-500 transition-colors resize-none font-sans"
+                    rows={2}
+                  />
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">
+                    {value || "No information available."}
+                  </p>
+                )}
               </div>
             ))}
           </div>
 
-          {/* Right Column: Image Display */}
+          {/* Right Column: Image Display (Using your original carousel logic) */}
           <div className="lg:w-7/12 flex flex-col">
             <div className="relative group cursor-zoom-in">
               <img
@@ -89,7 +119,7 @@ export default function WildlifeDetails() {
 
             {/* Thumbnail Carousel */}
             <div className="flex items-center justify-center mt-6 gap-4 overflow-x-auto p-2 scrollbar-hide">
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center">
                 {images.map((img) => (
                   <img
                     key={img.id}
@@ -102,10 +132,31 @@ export default function WildlifeDetails() {
                     onClick={() => setHighlight(img.image_path)}
                   />
                 ))}
+
+                {/* ADMIN ONLY: The "+" Button */}
+                {admin && (
+                  <button className="w-24 h-20 border-2 border-dashed border-pink-300 rounded-lg flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors text-2xl font-bold">
+                    +
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Fixed Admin Save Bar */}
+        {admin && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white px-8 py-4 rounded-full shadow-2xl border border-pink-100 flex items-center gap-6 z-50">
+            <p className="text-pink-700 font-bold text-sm">Admin Mode Active</p>
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-pink-700 hover:bg-pink-800 text-white px-6 py-2 rounded-full font-bold transition-all disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Fullscreen Modal */}

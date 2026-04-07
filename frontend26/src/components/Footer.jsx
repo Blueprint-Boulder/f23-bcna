@@ -11,23 +11,23 @@ export const Footer = () => {
             <p className="text-sand-400">P.O. Box 493, Boulder, CO 80306</p>
           </div>
           <div className="flex flex-col">
-            <h5 className="text-sand-300 font-['Montserrat',sans-serif] m-0 mb-2.5 font-bold">PAGES</h5>
-            <a href="" className="text-sand-700 no-underline text-lg font-['Playfair_Display',serif]">
+            <h5 className="text-sand-300 font-sans m-0 mb-2.5 font-bold">PAGES</h5>
+            <a href="" className="font-serif text-lg no-underline text-sand-700">
               fireflies
             </a>
-            <a href="" className="text-sand-700 no-underline text-lg font-['Playfair_Display',serif]">
+            <a href="" className="font-serif text-lg no-underline text-sand-700">
               wildlife
             </a>
-            <a href="" className="text-sand-700 no-underline text-lg font-['Playfair_Display',serif]">
+            <a href="" className="font-serif text-lg no-underline text-sand-700">
               glossary
             </a>
-            <a href="" className="text-sand-700 no-underline text-lg font-['Playfair_Display',serif]">
+            <a href="" className="font-serif text-lg no-underline text-sand-700">
               admin
             </a>
           </div>
           <div className="flex flex-col">
-            <h5 className="text-sand-300 font-['Montserrat',sans-serif] m-0 mb-2.5 font-bold">RELATED WEBSITES</h5>
-            <a href="" className="text-sand-700 no-underline text-lg font-['Playfair_Display',serif]">
+            <h5 className="text-sand-300 font-sans m-0 mb-2.5 font-bold">RELATED WEBSITES</h5>
+            <a href="" className="font-serif text-lg no-underline text-sand-700">
               main website
             </a>
           </div>

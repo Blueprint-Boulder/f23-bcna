@@ -10,6 +10,9 @@
   --color-sand-600: #5a4535;
   --color-sand-700: #3d2e1e;
   --color-sand-800: #2a1f14;
+
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Monserrat", sans-serif;
 }
 
 html,
