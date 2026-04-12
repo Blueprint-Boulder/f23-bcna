@@ -62,6 +62,51 @@ def add_image():
 
     return jsonify({"message": "Image added successfully", "image_id": image_id, "image_path": saved_filename}), 201
 
+@images_bp.route("/api/replace-image/<int:image_id>", methods=["PUT"])
+def replace_image(image_id):
+    """
+    Replaces an existing image file while keeping the same DB row/ID.
+    Requires image_file in form data.
+    """
+    image = db_helpers.select_one("SELECT * FROM Images WHERE id = ?", [image_id])
+    if not image:
+        return jsonify({"error": "Image not found"}), 404
+
+    image_file = request.files.get("image_file")
+    if not image_file:
+        return jsonify({"error": "image_file is required"}), 400
+
+    file_length = image_file.seek(0, os.SEEK_END)
+    image_file.seek(0, os.SEEK_SET)
+    if file_length > 10 * 1024 * 1024:
+        return jsonify({"error": "Image too large (max 10MB)"}), 400
+    if not image_file.mimetype.startswith("image/"):
+        return jsonify({"error": "File is not an image"}), 400
+
+    # Delete old file
+    old_path = image.get("image_path")
+    if old_path:
+        upload_dir = db_helpers.get_active_image_upload_folder()
+        old_file_path = os.path.join(upload_dir, old_path)
+        try:
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+        except Exception as e:
+            print(f"Error deleting old image file: {e}")
+
+    # Save new file
+    saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
+    db_helpers.update(
+        "UPDATE Images SET image_path = ? WHERE id = ?",
+        (saved_filename, image_id)
+    )
+
+    return jsonify({
+        "message": "Image replaced successfully",
+        "image_id": image_id,
+        "image_path": saved_filename
+    }), 200
+
 @images_bp.route("/api/set-thumbnail", methods=["PUT"])
 def set_thumbnail():
     # Ensure both wildlife and image exist in the database

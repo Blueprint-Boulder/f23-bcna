@@ -194,6 +194,15 @@ def edit_wildlife():
     #---------------------------UPDATING INFORMATION-------------------------------------#
     #modify remaining fields
 
+    name = request.form.get("name")
+    scientific_name = request.form.get("scientific_name")
+
+    if name or scientific_name:
+        db_helpers.update(
+            "UPDATE Wildlife SET name = ?, scientific_name = ? WHERE id = ?",
+            (name, scientific_name, wildlife_id)
+        )
+
     for field_name, value in other_fields.items():
         print(field_name, value)
         field = db_helpers.select_one("SELECT id FROM Fields WHERE name = ?", [field_name])

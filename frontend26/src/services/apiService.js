@@ -126,9 +126,72 @@ const apiService = {
     }
   },
 
-  createWildlife: async form => {
+  createWildlife: async (category, wildlifeData, imageFile = null) => {
     try {
+      const form = new FormData();
+      form.append("name", wildlifeData.name || "");
+      form.append("scientific_name", wildlifeData.scientific_name || "");
+      form.append("category_id", wildlifeData.category_id);
+      Object.entries(wildlifeData).forEach(([key, value]) => {
+        if (!["name", "scientific_name", "category_id"].includes(key)) {
+          form.append(key, value);
+        }
+      });
+      if (imageFile) form.append("image_file", imageFile);
       const response = await api.post(`/api/create-wildlife/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  updateWildlife: async (wildlifeId, categoryId, wildlifeData) => {
+  try {
+    const form = new FormData();
+    form.append("wildlife_id", wildlifeId);
+    form.append("category_id", categoryId);  // ← direct param, not from wildlifeData
+    form.append("name", wildlifeData.name || "");
+    form.append("scientific_name", wildlifeData.scientific_name || "");
+    Object.entries(wildlifeData).forEach(([key, value]) => {
+      if (!["name", "scientific_name", "category_id"].includes(key)) {
+        form.append(key, value);
+      }
+    });
+    const response = await api.post(`/api/edit-wildlife/`, form);
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+},
+
+  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null) => {
+    try {
+      const form = new FormData();
+      form.append("wildlife_id", wildlifeId);
+      form.append("image_file", imageFile);
+      if (dateTaken) form.append("date_taken", dateTaken);
+      if (locationTaken) form.append("location_taken", locationTaken);
+      const response = await api.post(`/api/add-image/`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  replaceImage: async (imageId, imageFile) => {
+    try {
+      const form = new FormData();
+      form.append("image_file", imageFile);
+      const response = await api.put(`/api/replace-image/${imageId}`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  deleteImage: async (imageId) => {
+    try {
+      const response = await api.delete(`/api/delete_image/?id=${imageId}`);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -145,18 +208,18 @@ const apiService = {
     }
   },
 
-  setThumbnail: async form => {
+  setThumbnail: async ({ wildlife_id, thumbnail_id }) => {
     try {
-      const response = await api.put(`/api/set-thumbnail`, form, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      const form = new FormData();
+      form.append("wildlife_id", wildlife_id);
+      form.append("thumbnail_id", thumbnail_id);
+      const response = await api.put(`/api/set-thumbnail`, form);
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
+
 
   editWildlife: async form => {
     try {
