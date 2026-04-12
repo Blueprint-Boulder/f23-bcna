@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { glossaryTerms } from "../data/glossaryTerms";
+import { useState, useEffect, useRef } from "react";
+import glossaryTerms from "../data/glossaryTerms.json";
 
 function termToId(term) {
   return term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -8,14 +8,25 @@ function termToId(term) {
 export const Glossary = () => {
   const [glossaryVisible, setGlossaryVisible] = useState(false);
   const [pendingScroll, setPendingScroll] = useState(null);
+  const [highlightedTerm, setHighlightedTerm] = useState(null);
+  const highlightTimeout = useRef(null);
+
+  const flashHighlight = (id) => {
+    clearTimeout(highlightTimeout.current);
+    setHighlightedTerm(id);
+    highlightTimeout.current = setTimeout(() => setHighlightedTerm(null), 1500);
+  };
 
   useEffect(() => {
     if (glossaryVisible && pendingScroll) {
       const el = document.getElementById(pendingScroll);
       if (el) el.scrollIntoView({ behavior: "smooth" });
+      flashHighlight(pendingScroll);
       setPendingScroll(null);
     }
   }, [glossaryVisible, pendingScroll]);
+
+  useEffect(() => () => clearTimeout(highlightTimeout.current), []);
 
   const handleTermClick = (e, term) => {
     e.preventDefault();
@@ -26,6 +37,7 @@ export const Glossary = () => {
     } else {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: "smooth" });
+      flashHighlight(id);
     }
   };
 
@@ -65,14 +77,23 @@ export const Glossary = () => {
       {/* Glossary of Terms */}
       {glossaryVisible && (
         <div className="max-w-4xl mx-auto px-8 mt-8 mb-20">
-          <h2 className="font-serif text-xl font-bold text-sand-700 mb-6">Glossary of Terms</h2>
+          <h2 className="font-serif text-3xl font-bold text-sand-700 mb-6">Glossary of Terms</h2>
           <dl className="space-y-4">
-            {glossaryTerms.map(({ term, description }) => (
-              <div key={term} id={termToId(term)} className="glossary-term scroll-mt-[25vh] px-1 -mx-1">
-                <dt className="inline font-sans font-semibold text-sand-700">{term}: </dt>
-                <dd className="inline font-sans text-sand-600 leading-relaxed">{description}</dd>
-              </div>
-            ))}
+            {glossaryTerms.map(({ term, description }) => {
+              const id = termToId(term);
+              const isHighlighted = highlightedTerm === id;
+              return (
+                <div
+                  key={term}
+                  id={id}
+                  className="glossary-term scroll-mt-[25vh] px-2 py-1 -mx-2 rounded transition-colors duration-[1200ms]"
+                  style={{ backgroundColor: isHighlighted ? "#f0e8d0" : "transparent" }}
+                >
+                  <dt className="inline font-sans font-semibold text-sand-700">{term}: </dt>
+                  <dd className="inline font-sans text-sand-600 leading-relaxed">{description}</dd>
+                </div>
+              );
+            })}
           </dl>
         </div>
       )}
