@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 
+const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
 export const Footer = () => {
   return (
     <footer className="p-5 border-t text-sand-600 bg-sand-100 border-sand-200">
@@ -12,22 +14,28 @@ export const Footer = () => {
           </div>
           <div className="flex flex-col">
             <h5 className="text-sand-300 font-sans m-0 mb-2.5 font-bold">PAGES</h5>
-            <a href="" className="font-serif text-lg no-underline text-sand-700">
+            <a href="https://www.youtube.com/watch?v=50GVPFj66CY" target="_blank" rel="noopener noreferrer" className="font-serif text-lg no-underline text-sand-700">
               fireflies
             </a>
-            <a href="" className="font-serif text-lg no-underline text-sand-700">
+            <Link to="/butterflies" onClick={scrollToTop} className="font-serif text-lg no-underline text-sand-700">
               wildlife
-            </a>
-            <a href="" className="font-serif text-lg no-underline text-sand-700">
+            </Link>
+            <Link to="/glossary" onClick={scrollToTop} className="font-serif text-lg no-underline text-sand-700">
               glossary
-            </a>
-            <a href="" className="font-serif text-lg no-underline text-sand-700">
-              admin
-            </a>
+            </Link>
+            <Link to="/about" onClick={scrollToTop} className="font-serif text-lg no-underline text-sand-700">
+              about
+            </Link>
+            <Link to="/resources" onClick={scrollToTop} className="font-serif text-lg no-underline text-sand-700">
+              resources
+            </Link>
+            <Link to="/contact" onClick={scrollToTop} className="font-serif text-lg no-underline text-sand-700">
+              contact
+            </Link>
           </div>
           <div className="flex flex-col">
             <h5 className="text-sand-300 font-sans m-0 mb-2.5 font-bold">RELATED WEBSITES</h5>
-            <a href="" className="font-serif text-lg no-underline text-sand-700">
+            <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="font-serif text-lg no-underline text-sand-700">
               main website
             </a>
           </div>
