@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useContext } from "react";
 import { AdminContext } from "../services/adminContext";
+import { AdminLogin } from "./AdminLogin";
 
 //Sites
 const sites = [
@@ -25,7 +26,9 @@ export const NavBar = () => {
   const currentSite = sites.find(s => s.id === category) || sites[0];
   const otherSites = sites.filter(s => s.id !== category);
 
-  const { admin, setAdmin } = useContext(AdminContext);
+  const { admin, logout } = useContext(AdminContext);
+  const [showLogin, setShowLogin] = useState(false);
+
 
   return (
     <>
@@ -34,7 +37,7 @@ export const NavBar = () => {
           className="p-2 font-bold text-center text-white bg-pink-700 cursor-pointer"
           onClick={() => setAdmin(false)}
         >
-          You are currently in admin mode. Click here to exit.
+          You are currently in admin mode.
         </div>
       )}
       <nav className={`flex items-center justify-between px-[17px] py-[6px] h-[110px] bg-sand-50`}>
@@ -90,9 +93,12 @@ export const NavBar = () => {
       
         {/* Right side */}
         <div className="flex items-center gap-[36px] px-3">
-          <button className={`font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`} onClick={() => setAdmin(!admin)}>
-            Admin
-          </button>
+          {admin ? (
+            <button onClick={logout} className={`font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`}>Log out</button>
+          ) : (
+            <button onClick={() => setShowLogin(true)} className={`font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`}>Admin</button>
+          )}
+          {showLogin && <AdminLogin onClose={() => setShowLogin(false)} />}
           {navLinks.map((link) => (
             <NavLink
               key={link.name}

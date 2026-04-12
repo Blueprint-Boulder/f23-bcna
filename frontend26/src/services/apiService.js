@@ -231,7 +231,39 @@ const apiService = {
     } catch (error) {
       handleError(error);
     }
+  },
+
+  adminLogin: async (password) => {
+    try {
+      console.log("Calling /api/admin-login with password:", password);
+      const response = await api.post("/api/admin-login", { password });
+      console.log("Response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  adminVerify: async (token) => {
+    try {
+      const response = await api.post("/api/admin-verify", { token });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  adminLogout: async () => {
+    try {
+      const token = localStorage.getItem("admin_token");
+      const response = await api.post("/api/admin-logout", { token });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
   }
+
 };
 
 export default apiService;

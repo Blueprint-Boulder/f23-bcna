@@ -1,26 +1,19 @@
 import { Outlet, useParams } from "react-router-dom";
 import { Footer } from "./Footer";
 import { NavBar } from "./NavBar";
-import { useState } from "react";
-import { AdminContext } from "../services/adminContext";
 import { ButterflyDB } from "../pages/WildlifeDBs/ButterflyDB";
 import { DragonflyDB } from "../pages/WildlifeDBs/DragonflyDB";
 import { WildflowerDB } from "../pages/WildlifeDBs/WildflowerDB";
 
 export const Layout = () => {
-  const [admin, setAdmin] = useState(false);
-  console.log("provider");
-
   return (
-    <AdminContext.Provider value={{ admin, setAdmin }}>
-      <div className="flex flex-col min-h-screen">
-        <NavBar />
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
-    </AdminContext.Provider>
+    <div className="flex flex-col min-h-screen">
+      <NavBar />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
   );
 };
 
