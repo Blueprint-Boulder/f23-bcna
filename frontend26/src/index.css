@@ -20,6 +20,21 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes highlight-fade {
+  0%   { background-color: var(--color-sand-100); }
+  60%  { background-color: var(--color-sand-100); }
+  100% { background-color: transparent; }
+}
+
+.glossary-term:target {
+  animation: highlight-fade 1.8s ease forwards;
+  border-radius: 4px;
+}
+
 body {
   margin: 0;
   font-family:

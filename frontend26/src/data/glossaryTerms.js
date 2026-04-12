@@ -1,0 +1,293 @@
+export const glossaryTerms = [
+  {
+    term: "Abdomen",
+    description: "The terminal (third) body segment of an adult insect."
+  },
+  {
+    term: "Above",
+    description: "The top side of the wings as seen from above."
+  },
+  {
+    term: "Alba form",
+    description: "Wings are mostly white."
+  },
+  {
+    term: "Alpine",
+    description:
+      "The Rocky Mountain life zone that lies above treeline and is dominated by tundra vegetation."
+  },
+  {
+    term: "Band",
+    description:
+      "An elongated surface or section with parallel or roughly parallel sides. Wider than a line."
+  },
+  {
+    term: "Bar",
+    description: "A short, often dark, rectangular mark on the wings."
+  },
+  {
+    term: "Base (of wing)",
+    description:
+      "The portion of the wing that is attached to the butterfly's thorax."
+  },
+  {
+    term: "Basking",
+    description: "Resting in sunlight to warm flight muscles."
+  },
+  {
+    term: "Below",
+    description: "The underside of the wing, often facing the ground."
+  },
+  {
+    term: "Borders (of wings)",
+    description: "Outer edges."
+  },
+  {
+    term: "Brood",
+    description:
+      "A generation of butterflies hatched from the eggs laid by females of the previous generation; members of a brood fly during the same general time period."
+  },
+  {
+    term: "Cell",
+    description:
+      "A large area of each wing, near the forward edge, that is entirely enclosed by veins."
+  },
+  {
+    term: "Cell Spot",
+    description: "A spot within a wing cell."
+  },
+  {
+    term: "Checkered or Checkering",
+    description: "A chessboard-like pattern of usually dark markings."
+  },
+  {
+    term: "Chevron",
+    description: "V-shaped spot or band, usually white or silvery."
+  },
+  {
+    term: "Chrysalis (plural: chrysalises)",
+    description:
+      "The hard case surrounding a butterfly pupa as it transforms from a caterpillar to an adult. See also cocoon."
+  },
+  {
+    term: "Cocoon",
+    description:
+      "The soft protective case of silk or similar fibrous material that moth larvae and some butterfly larvae spin. See also chrysalis."
+  },
+  {
+    term: "Costa",
+    description:
+      "The forward (anterior) edge of both the forewing and the hindwing."
+  },
+  {
+    term: "Diapause",
+    description:
+      "A period of inactivity and reduced physiological function induced by environmental factors; more commonly occurs in a caterpillar or chrysalis than in adults."
+  },
+  {
+    term: "Diffuse",
+    description: "Not concentrated or localized."
+  },
+  {
+    term: "Disk",
+    description:
+      "The central portion of a butterfly wing touching the costal and trailing margins."
+  },
+  {
+    term: "Dispersal",
+    description:
+      "Moving outward from a single location. Differs from a migration in that individuals don't return to their point of origin."
+  },
+  {
+    term: "Dorsal",
+    description: 'The upper surface of the wings. In this guide we use the term "upper."'
+  },
+  {
+    term: "Estivate",
+    description:
+      "To spend the summer or part of the summer in an inactive state."
+  },
+  {
+    term: "Exoskeleton",
+    description: "The hard protective outer covering of an insect's body."
+  },
+  {
+    term: "Eyespot",
+    description:
+      "A scale pattern on a wing resembling an eye with a rim and pupil of contrasting colors. See also tail spot."
+  },
+  {
+    term: "Flight (of adult butterflies)",
+    description:
+      "The time when a single generation of butterflies has emerged from chrysalises and is visible flying."
+  },
+  {
+    term: "Foothills",
+    description:
+      "The geographic area intermediate between the plains and the high mountains and dominated by open conifer woodlands, grasslands and shrublands."
+  },
+  {
+    term: "Forewings",
+    description: "Forward wings."
+  },
+  {
+    term: "Fringe",
+    description: "The extreme outer edge of the wing."
+  },
+  {
+    term: "Hibernate",
+    description: "To enter a period of dormancy or torpor during extreme cold."
+  },
+  {
+    term: "Hindwing",
+    description: "The rear (posterior) wing of each pair."
+  },
+  {
+    term: "Host",
+    description:
+      "The larval food plant. The female lays her eggs on this type of plant; after the caterpillars hatch, they eat these plants."
+  },
+  {
+    term: "Inner margin",
+    description: "The edge of the wing closest to the butterfly's body."
+  },
+  {
+    term: "Instar",
+    description:
+      "The stage between each of the three or four molts during the growth of a caterpillar."
+  },
+  {
+    term: "Larva",
+    description:
+      "The eating and growth stage of butterflies, that is, the caterpillar. (Plural: larvae.)"
+  },
+  {
+    term: "Leading edge",
+    description: "The front part of the wing."
+  },
+  {
+    term: "Marbling",
+    description: "Darker scales over yellow on a wing in a marble pattern."
+  },
+  {
+    term: "Margin",
+    description: "Edge, as in wing margin."
+  },
+  {
+    term: "Median",
+    description: "The middle part of the wing."
+  },
+  {
+    term: "Migration",
+    description:
+      "A seasonal moving back and forth between breeding and wintering areas."
+  },
+  {
+    term: "Montane",
+    description:
+      "The area of the high mountains below treeline and dominated by conifer forests and aspen."
+  },
+  {
+    term: "Molt",
+    description:
+      "The shedding of the exoskeleton by the caterpillar, which permits growth."
+  },
+  {
+    term: "Open (bands or spots)",
+    description: "Uninterrupted by veins or other lines."
+  },
+  {
+    term: "Outer margin",
+    description: "The edge of the wings farthest from the butterfly's body."
+  },
+  {
+    term: "Overwinter",
+    description: "Pass the winter (in a particular life stage or place)."
+  },
+  {
+    term: "Pheromones",
+    description: "Sex-attractant scent molecules produced by scent scales."
+  },
+  {
+    term: "Postmedian",
+    description:
+      "Between the outer margin of the wing and the middle of the wing."
+  },
+  {
+    term: "Pupa",
+    description:
+      "The transition stage during which a caterpillar transforms into an adult. (Plural: pupae.)"
+  },
+  {
+    term: "Pupate",
+    description: "Transform from caterpillar to chrysalis."
+  },
+  {
+    term: "Scale",
+    description: "A small, flattened plate forming part of the wing surface."
+  },
+  {
+    term: "Scintillation",
+    description: "Sparkling caused by reflective scales."
+  },
+  {
+    term: "Spermatophore",
+    description: "A case or capsule containing a number of sperm."
+  },
+  {
+    term: "Spot band",
+    description:
+      "A band made up of multiple connected or nearly connected spots."
+  },
+  {
+    term: "Stigma or stigma scale",
+    description:
+      "A bold, sharply defined patch of scent scales on the forewings of many male skippers and hairstreaks."
+  },
+  {
+    term: "Submargin",
+    description: "Just inside the outer margin of the wing."
+  },
+  {
+    term: "Submedian",
+    description: "Occurring toward the body from the middle of the wing."
+  },
+  {
+    term: "Taxonomic order",
+    description:
+      "A systematic arrangement that considers genetic, anatomical and other characteristics to understand the interrelationship of living organisms. Taxonomic order attempts to place families in an evolutionary sequence, with older families leading the list. As advances in gene sequencing of butterflies reveal new data, scientific names and taxonomic order will inevitably shift in the future."
+  },
+  {
+    term: "Thorax",
+    description:
+      "The central portion of an insect's body to which legs and wings are attached."
+  },
+  {
+    term: "Tail",
+    description: "Posterior extension on the hindwing."
+  },
+  {
+    term: "Tail spot",
+    description:
+      "Spot located on the hindwing near a tail, which could be an eyespot."
+  },
+  {
+    term: "Talus",
+    description:
+      "A formation of rock debris at the base of a cliff, usually the result of a rockslide."
+  },
+  {
+    term: "Veins",
+    description:
+      "Stiffened tubes that support the membranes of the wing, like kite struts."
+  },
+  {
+    term: "Ventral",
+    description:
+      'The lower side of the wings. This side is seen when a butterfly perches with its wings closed. In this guide we use the term "below."'
+  },
+  {
+    term: "Wingspan",
+    description: "The measurement of open forewings."
+  }
+];
