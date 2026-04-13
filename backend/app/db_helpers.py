@@ -166,3 +166,62 @@ def init_db():
     conn.commit()
     conn.close()
     print("[DB DEBUG] Database initialized!")
+
+
+def _seed_family_field(conn):
+    """Ensure a 'family' TEXT field exists and is associated with all root categories."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM Fields WHERE name = 'family'")
+    row = cursor.fetchone()
+    if row is None:
+        cursor.execute("INSERT INTO Fields (name, type) VALUES ('family', 'TEXT')")
+        family_field_id = cursor.lastrowid
+    else:
+        family_field_id = row[0] if isinstance(row, tuple) else row["id"]
+
+    # Associate with all root categories that aren't already linked
+    cursor.execute("SELECT id FROM Categories WHERE parent_id IS NULL")
+    root_categories = cursor.fetchall()
+    for cat in root_categories:
+        cat_id = cat[0] if isinstance(cat, tuple) else cat["id"]
+        cursor.execute(
+            "SELECT 1 FROM FieldsToCategories WHERE field_id = ? AND category_id = ?",
+            (family_field_id, cat_id),
+        )
+        if cursor.fetchone() is None:
+            cursor.execute(
+                "INSERT INTO FieldsToCategories (field_id, category_id) VALUES (?, ?)",
+                (family_field_id, cat_id),
+            )
+    conn.commit()
+
+
+EXPECTED_DATASETS = ["butterflies", "dragonflies", "wildflowers"]
+
+
+def init_all_dbs():
+    """Initialize schema and seed the 'family' field for every dataset database."""
+    sql_path = os.path.join(THIS_FOLDER, "create.sql")
+    with open(sql_path, "r") as sql_file:
+        sql_script = sql_file.read()
+
+    # Ensure the data folder and expected dataset directories exist
+    os.makedirs(DATA_FOLDER, exist_ok=True)
+    for dataset in EXPECTED_DATASETS:
+        dataset_dir = os.path.join(DATA_FOLDER, dataset)
+        os.makedirs(dataset_dir, exist_ok=True)
+        os.makedirs(os.path.join(dataset_dir, "uploaded_images"), exist_ok=True)
+
+    for entry in os.scandir(DATA_FOLDER):
+        if not entry.is_dir():
+            continue
+        db_path = os.path.join(entry.path, "database.db")
+        print(f"[DB DEBUG] Initializing database for dataset '{entry.name}': {db_path}")
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.executescript(sql_script)
+        conn.commit()
+        _seed_family_field(conn)
+        conn.close()
+        print(f"[DB DEBUG] Dataset '{entry.name}' initialized with 'family' field.")
