@@ -8,7 +8,9 @@ export const Footer = () => {
       <div className="rounded p-5 max-w-[1000px] mx-auto">
         <div className="flex justify-between">
           <div>
-            <img src="/bcna-logo.png" alt="BCNA Logo" className="h-[86px] w-auto mb-2" />
+            <a href="https://bcna.org/" target="_blank" rel="noopener noreferrer" className="inline-block leading-[0]">
+              <img src="/bcna-logo.png" alt="BCNA Logo" className="h-[86px] w-auto" />
+            </a>
             <h3 className="font-bold">BOULDER COUNTY NATURE ASSOCIATION</h3>
             <p className="text-sand-400">P.O. Box 493, Boulder, CO 80306</p>
           </div>
