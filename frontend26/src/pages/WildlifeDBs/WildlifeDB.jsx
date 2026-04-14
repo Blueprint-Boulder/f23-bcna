@@ -49,9 +49,8 @@ function Result({ wildlifeType, id, name, sub, image }) {
   );
 }
 
-function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, selectedFamilies, toggleFamily, selectedGenera, toggleGenus }) {
+function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, familyChecked, toggleFamily, selectedGenera, toggleGenus }) {
   const isOpen = openFamilies.has(family);
-  const isFamilyChecked = selectedFamilies.has(family);
 
   const toggle = () =>
     setOpenFamilies(prev => {
@@ -70,7 +69,8 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, selectedF
         <input
           type="checkbox"
           className="accent-sand-400 w-3.5 h-3.5 shrink-0"
-          checked={isFamilyChecked}
+          ref={el => { if (el) el.indeterminate = familyChecked === "indeterminate"; }}
+          checked={familyChecked === "checked"}
           onChange={() => toggleFamily(family)}
           onClick={e => e.stopPropagation()}
         />
@@ -118,7 +118,6 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   const [search, setSearch] = useState("");
   const [wildlife, setWildlife] = useState([]);
   const [openFamilies, setOpenFamilies] = useState(new Set());
-  const [selectedFamilies, setSelectedFamilies] = useState(new Set());
   const [selectedGenera, setSelectedGenera] = useState(new Set());
   const { admin } = useContext(AdminContext);
 
@@ -148,12 +147,16 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
   }, [wildlife]);
 
-  const toggleFamily = (family) =>
-    setSelectedFamilies(prev => {
+  const toggleFamily = (family) => {
+    const genera = familyMap.get(family) || new Set();
+    setSelectedGenera(prev => {
       const next = new Set(prev);
-      next.has(family) ? next.delete(family) : next.add(family);
+      const allChecked = genera.size > 0 && [...genera].every(g => next.has(g));
+      if (allChecked) genera.forEach(g => next.delete(g));
+      else genera.forEach(g => next.add(g));
       return next;
     });
+  };
 
   const toggleGenus = (genus) =>
     setSelectedGenera(prev => {
@@ -162,17 +165,23 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       return next;
     });
 
-  const hasFilters = selectedFamilies.size > 0 || selectedGenera.size > 0;
+  const familyState = (family) => {
+    const genera = familyMap.get(family) || new Set();
+    if (genera.size === 0) return "unchecked";
+    let count = 0;
+    for (const g of genera) if (selectedGenera.has(g)) count++;
+    if (count === 0) return "unchecked";
+    if (count === genera.size) return "checked";
+    return "indeterminate";
+  };
+
+  const hasFilters = selectedGenera.size > 0;
 
   const filtered = wildlife.filter(w => {
     if (!w.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (!hasFilters) return true;
-    const familyField = (w.field_values || []).find(fv => fv.name.toLowerCase() === "family");
-    const familyName = familyField ? familyField.value : null;
     const genus = w.scientific_name ? w.scientific_name.split(" ")[0] : null;
-    if (selectedGenera.size > 0 && genus && selectedGenera.has(genus)) return true;
-    if (selectedFamilies.size > 0 && familyName && selectedFamilies.has(familyName)) return true;
-    return false;
+    return !!genus && selectedGenera.has(genus);
   });
 
   return (
@@ -214,7 +223,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
                 genera={genera}
                 openFamilies={openFamilies}
                 setOpenFamilies={setOpenFamilies}
-                selectedFamilies={selectedFamilies}
+                familyChecked={familyState(family)}
                 toggleFamily={toggleFamily}
                 selectedGenera={selectedGenera}
                 toggleGenus={toggleGenus}
