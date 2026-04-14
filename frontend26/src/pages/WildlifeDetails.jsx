@@ -267,7 +267,12 @@ export default function WildlifeDetails() {
           }
 
           const { id, scientific_name, name, category_id, thumbnail_id, ...rest } = data;
-          setFilteredData(rest);
+          const allFieldData = {};
+          (categoryEntry?.field_ids || []).forEach(fid => {
+            const fname = fieldsResponse.fields[fid]?.name;
+            if (fname) allFieldData[fname] = rest[fname] ?? "";
+          });
+          setFilteredData(allFieldData);
           const nameToId = {};
           Object.values(fieldsResponse.fields).forEach(f => { nameToId[f.name] = f.id; });
           setFieldsNameToId(nameToId);
@@ -275,8 +280,9 @@ export default function WildlifeDetails() {
           // and the backend already applies saved field_order to it
           const orderedNames = (categoryEntry?.field_ids || [])
             .map(id => fieldsResponse.fields[id]?.name)
-            .filter(n => n != null && n in rest);
+            .filter(n => n != null);
           setFieldOrder(orderedNames);
+
       }
       } catch (error) {
         console.error("Error fetching details:", error);
