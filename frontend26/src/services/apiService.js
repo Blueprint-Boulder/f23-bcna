@@ -171,14 +171,14 @@ const apiService = {
 },
 
   // saveImage uploads a new image for a wildlife entry, including optional metadata.
-  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null) => {
+  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null, dataset = 'butterflies') => {
     try {
       const form = new FormData();
       form.append("wildlife_id", wildlifeId);
       form.append("image_file", imageFile);
       if (dateTaken) form.append("date_taken", dateTaken);
       if (locationTaken) form.append("location_taken", locationTaken);
-      const response = await api.post(`/api/add-image/`, form);
+      const response = await api.post(`/api/add-image/?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -186,11 +186,11 @@ const apiService = {
   },
 
   // replaceImage swaps the file for an existing image record.
-  replaceImage: async (imageId, imageFile) => {
+  replaceImage: async (imageId, imageFile, dataset = 'butterflies') => {
     try {
       const form = new FormData();
       form.append("image_file", imageFile);
-      const response = await api.put(`/api/replace-image/${imageId}`, form);
+      const response = await api.put(`/api/replace-image/${imageId}?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -198,9 +198,9 @@ const apiService = {
   },
 
   // deleteImage removes an image from the backend by image ID.
-  deleteImage: async (imageId) => {
+  deleteImage: async (imageId, dataset = 'butterflies') => {
     try {
-      const response = await api.delete(`/api/delete_image/?id=${imageId}`);
+      const response = await api.delete(`/api/delete_image/?id=${imageId}&dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -218,12 +218,12 @@ const apiService = {
   },
 
   // setThumbnail marks a specific image as the featured thumbnail for a wildlife entry.
-  setThumbnail: async ({ wildlife_id, thumbnail_id }) => {
+  setThumbnail: async ({ wildlife_id, thumbnail_id, dataset = 'butterflies' }) => {
     try {
       const form = new FormData();
       form.append("wildlife_id", wildlife_id);
       form.append("thumbnail_id", thumbnail_id);
-      const response = await api.put(`/api/set-thumbnail`, form);
+      const response = await api.put(`/api/set-thumbnail?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -243,9 +243,9 @@ const apiService = {
   },
 
   // deleteWildlife removes an entire wildlife record from the dataset.
-  deleteWildlife: async (wildlifeId) => {
+  deleteWildlife: async (wildlifeId, dataset = 'butterflies') => {
     try {
-      const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}`);
+      const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}&dataset=${dataset}`);
       return response.data;
     } catch (error) {
       handleError(error);
