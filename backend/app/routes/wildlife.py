@@ -1,3 +1,5 @@
+#wildlife.py
+
 from flask import Blueprint, request, jsonify, current_app
 import os
 from app import db_helpers
@@ -6,7 +8,7 @@ from app.routes.images import delete_image_by_id
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
 from werkzeug.utils import secure_filename
 from app.utils import save_file, get_parent_ids, get_subcategory_ids  # Adjust import if needed
-
+import json
 
 wildlife_bp = Blueprint('wildlife', __name__)
 
@@ -577,17 +579,35 @@ def get_wildlife_by_id(wildlife_id):
 
     # Retrieve custom field values
     field_values = db_helpers.select_multiple("SELECT * FROM FieldValues WHERE wildlife_id = ?", [wildlife_id])
-    custom_fields = {fv["field_id"]: fv["value"] for fv in field_values}
 
     # Retrieve field names
     field_names = db_helpers.select_multiple("SELECT id, name FROM Fields")
     field_names_dict = {field["id"]: field["name"] for field in field_names}
 
-    # Add custom field names and values to wildlife data
-    for field_id, value in custom_fields.items():
+    # Build a field_id -> value map
+    fv_by_id = {fv["field_id"]: fv["value"] for fv in field_values}
+
+    # Determine display order from saved field_order on the category
+    try:
+        category_row = db_helpers.select_one("SELECT field_order FROM Categories WHERE id = ?", [wildlife["category_id"]])
+        saved_order_json = category_row["field_order"] if category_row else None
+    except Exception:
+        saved_order_json = None
+
+
+    if saved_order_json:
+        saved_order = json.loads(saved_order_json)
+        ordered_ids = [fid for fid in saved_order if fid in fv_by_id]
+        remaining_ids = [fid for fid in fv_by_id if fid not in ordered_ids]
+        ordered_field_ids = ordered_ids + remaining_ids
+    else:
+        ordered_field_ids = list(fv_by_id.keys())
+
+    # Add custom fields to wildlife in display order
+    for field_id in ordered_field_ids:
         field_name = field_names_dict.get(field_id)
         if field_name:
-            wildlife[field_name] = value
+            wildlife[field_name] = fv_by_id[field_id]
 
     return jsonify(wildlife), 200
 

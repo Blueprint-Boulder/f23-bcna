@@ -1,8 +1,8 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
-import { X, Camera, Trash } from "lucide-react"
+import { X, Camera, Trash, GripVertical } from "lucide-react"
 
 function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThumbnailId }) {
   const [preview, setPreview] = useState(image?.image_path ? `${baseUrl}${image.image_path}` : null);
@@ -106,6 +106,96 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
   );
 }
 
+// Add this helper function near the top of WildlifeDetails (outside the component)
+function buildWatermarkedCanvas(imageSrc, metadata) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+
+      // Draw the image
+      ctx.drawImage(img, 0, 0);
+
+      // Build metadata lines
+      const lines = [
+        metadata.name,
+        metadata.scientific_name && `(${metadata.scientific_name})`,
+        metadata.dateTaken && `📅 ${metadata.dateTaken}`,
+        metadata.locationTaken && `📍 ${metadata.locationTaken}`,
+        `© ${new Date().getFullYear()} Boulder County Nature Association`,
+      ].filter(Boolean);
+
+      const padding = Math.round(img.naturalWidth * 0.018);
+      const fontSize = Math.round(img.naturalWidth * 0.022);
+      const lineHeight = fontSize * 1.5;
+      const blockHeight = lines.length * lineHeight + padding * 2;
+
+      // Semi-transparent dark bar at bottom
+      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.fillRect(0, img.naturalHeight - blockHeight, img.naturalWidth, blockHeight);
+
+      // Text
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.textBaseline = "top";
+
+      lines.forEach((line, i) => {
+        const y = img.naturalHeight - blockHeight + padding + i * lineHeight;
+        ctx.fillText(line, padding, y);
+      });
+
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    img.src = imageSrc;
+  });
+}
+
+function FullscreenModal({ src, wildlife, images, highlight, BASE_IMG_URL, onClose }) {
+  const [watermarkedSrc, setWatermarkedSrc] = useState(null);
+
+  const matchedImage = images.find(
+    img => img.image_path === highlight || img.previewUrl === highlight
+  );
+
+  useEffect(() => {
+    const metadata = {
+      name: wildlife?.name || "",
+      scientific_name: wildlife?.scientific_name || "",
+      dateTaken: matchedImage?.date_taken || "",
+      locationTaken: matchedImage?.location_taken || "",
+    };
+    buildWatermarkedCanvas(src, metadata).then(setWatermarkedSrc);
+  }, [src]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      {watermarkedSrc ? (
+        <img
+          src={watermarkedSrc}
+          alt={wildlife?.name}
+          className="max-h-full max-w-full object-contain rounded-xl shadow-md"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <img
+          src={src}
+          alt={wildlife?.name}
+          className="max-h-full max-w-full object-contain rounded-xl opacity-50"
+        />
+      )}
+      <p className="text-white/40 text-xs mt-3">Metadata is embedded in saved images</p>
+      <button className="absolute top-5 right-5 text-white text-3xl" onClick={onClose}>&times;</button>
+    </div>
+  );
+}
+
 export default function WildlifeDetails() {
   const { admin } = useContext(AdminContext);
   const { category, wildlifeId } = useParams();
@@ -122,6 +212,12 @@ export default function WildlifeDetails() {
   const [editingImage, setEditingImage] = useState(null)
   const [pendingThumbnail, setPendingThumbnail] = useState(null);
   const [pendingImages, setPendingImages] = useState([]); 
+
+  const [fieldOrder, setFieldOrder] = useState([]);      // array of field name strings
+  const [fieldsNameToId, setFieldsNameToId] = useState({}); // { fieldName: fieldId }
+  const [orderDirty, setOrderDirty] = useState(false);
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
 
   const BASE_IMG_URL = "http://127.0.0.1:5000/api/get-image/";
 
@@ -148,6 +244,10 @@ export default function WildlifeDetails() {
           });
           setWildlife({ name: "", scientific_name: "" });
           setFilteredData(blankData);
+          const nameToId = {};
+          fieldNames.forEach(f => { nameToId[f.name] = f.id; });
+          setFieldsNameToId(nameToId);
+          setFieldOrder(fieldNames.map(f => f.name));
           setImages([]);
         } else {
           const data = await apiService.getWildlifeById(wildlifeId, category);
@@ -168,6 +268,15 @@ export default function WildlifeDetails() {
 
           const { id, scientific_name, name, category_id, thumbnail_id, ...rest } = data;
           setFilteredData(rest);
+          const nameToId = {};
+          Object.values(fieldsResponse.fields).forEach(f => { nameToId[f.name] = f.id; });
+          setFieldsNameToId(nameToId);
+          // Use field_ids from categoryEntry — it's a JSON array so order is guaranteed,
+          // and the backend already applies saved field_order to it
+          const orderedNames = (categoryEntry?.field_ids || [])
+            .map(id => fieldsResponse.fields[id]?.name)
+            .filter(n => n != null && n in rest);
+          setFieldOrder(orderedNames);
       }
       } catch (error) {
         console.error("Error fetching details:", error);
@@ -198,7 +307,7 @@ export default function WildlifeDetails() {
         const result = await apiService.createWildlife(categoryId, payload, null, category);
         savedWildlifeId = result.wildlife_id;
       } else {
-        await apiService.updateWildlife(wildlifeId, categoryId, payload);  // ← categoryId, not category
+        await apiService.updateWildlife(wildlifeId, categoryId, payload, category);  // ← categoryId, not category
       }
 
       for (const pending of pendingImages) {
@@ -245,6 +354,13 @@ export default function WildlifeDetails() {
       }
 
       setPendingThumbnail(null);
+      if (orderDirty) {
+        const orderedFieldIds = fieldOrder
+          .map(name => fieldsNameToId[name])
+          .filter(Boolean);
+        await apiService.reorderFields(categoryId, orderedFieldIds, category);
+        setOrderDirty(false);
+      }
       setPendingImages([]);
       alert("Changes saved!");
     } catch (error) {
@@ -276,6 +392,19 @@ export default function WildlifeDetails() {
   };
 
   if (!wildlife) return <div className="p-10 text-center">Loading...</div>;
+
+  const handleDragStart = (index) => { dragItem.current = index; };
+  const handleDragEnter = (index) => { dragOverItem.current = index; };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    const newOrder = [...fieldOrder];
+    const [dragged] = newOrder.splice(dragItem.current, 1);
+    newOrder.splice(dragOverItem.current, 0, dragged);
+    setFieldOrder(newOrder);
+    setOrderDirty(true);
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
 
   return (
     <div className="min-h-screen bg-sand-50/30 pb-20">
@@ -326,22 +455,35 @@ export default function WildlifeDetails() {
           
           {/* Left Column: Info Card (Original Layout + Admin Inputs) */}
           <div className="lg:w-5/12 bg-sand-100/70 p-8 rounded-2xl border border-sand-200/50">
-            {Object.entries(filteredData).map(([key, value]) => (
-              <div key={key} className="mb-6">
-                <h3 className="text-sand-600 font-bold text-xl capitalize mb-1">
-                  {key.replace("_", " ")}
-                </h3>
-                
+            {fieldOrder.map((key, index) => (
+              <div
+                key={key}
+                className={`mb-6 ${admin ? "cursor-grab active:cursor-grabbing" : ""}`}
+                draggable={admin}
+                onDragStart={() => handleDragStart(index)}
+                onDragEnter={() => handleDragEnter(index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+              >
+                <div className="flex items-center gap-2">
+                  {admin && (
+                    <GripVertical className="text-pink-300 hover:text-pink-500 flex-shrink-0 w-4 h-4 -ml-1" />
+                  )}
+                  <h3 className="text-sand-600 font-bold text-xl capitalize mb-1">
+                    {key.replace("_", " ")}
+                  </h3>
+                </div>
+
                 {admin ? (
                   <textarea
-                    value={value || ""}
+                    value={filteredData[key] || ""}
                     onChange={(e) => handleInputChange(key, e.target.value)}
                     className="w-full p-3 bg-white border-2 border-pink-200 rounded-xl text-gray-800 focus:outline-none focus:border-pink-500 transition-colors resize-none font-sans"
                     rows={2}
                   />
                 ) : (
                   <p className="text-gray-700 leading-relaxed">
-                    {value || "No information available."}
+                    {filteredData[key] || "No information available."}
                   </p>
                 )}
               </div>
@@ -425,18 +567,14 @@ export default function WildlifeDetails() {
         )}
         {/* Fullscreen Modal */}
         {imageClicked && (
-          <div
-            className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
-            onClick={() => setImageClicked(null)}
-          >
-            <img
-              src={highlight?.startsWith("blob:") ? highlight : `${BASE_IMG_URL}${highlight}`}
-              alt={wildlife.name}
-              className="max-h-full max-w-full object-cover rounded-2xl shadow-md transition-transform"
-              onClick={() => !admin && setImageClicked(highlight)}
-            />
-            <button className="absolute top-5 right-5 text-white text-3xl">&times;</button>
-          </div>
+          <FullscreenModal
+            src={highlight?.startsWith("blob:") ? highlight : `${BASE_IMG_URL}${highlight}`}
+            wildlife={wildlife}
+            images={images}
+            highlight={highlight}
+            BASE_IMG_URL={BASE_IMG_URL}
+            onClose={() => setImageClicked(null)}
+          />
         )}
         {editingImage !== null && (
           <ImageEditModal

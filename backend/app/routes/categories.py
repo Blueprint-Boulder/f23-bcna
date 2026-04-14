@@ -1,3 +1,5 @@
+# categories.py
+
 from flask import Blueprint, request, jsonify, current_app
 import os
 from app import db_helpers
@@ -5,9 +7,14 @@ from app import db_helpers
 from werkzeug.utils import secure_filename
 from app.utils import save_file, get_parent_ids, get_subcategory_ids  # Adjust import if needed
 from app.routes.images import delete_image_by_id
+import json
 
 categories_bp = Blueprint('category', __name__)
 
+try:
+    db_helpers.update("ALTER TABLE Categories ADD COLUMN field_order TEXT", [])
+except Exception:
+    pass  # Column already exists
 
 @categories_bp.route("/api/create-category/", methods=["POST"])
 def create_category():
@@ -169,7 +176,21 @@ def get_categories_and_fields():
     for category in category_data:
         if category["parent_id"]:
             category_dict[category["parent_id"]]["subcategories"].append(category["id"])
-        category_dict[category["id"]]["field_ids"] = get_field_ids(category["id"])
+        raw_ids = get_field_ids(category["id"])
+
+        # Sort by saved field_order if present
+        try:
+            saved_order_json = category["field_order"]
+        except (KeyError, IndexError):
+            saved_order_json = None
+
+        if saved_order_json:
+            saved_order = json.loads(saved_order_json)
+            ordered = [fid for fid in saved_order if fid in raw_ids]
+            remaining = [fid for fid in raw_ids if fid not in ordered]
+            category_dict[category["id"]]["field_ids"] = ordered + remaining
+        else:
+            category_dict[category["id"]]["field_ids"] = raw_ids
 
     # Make fields
     fields_dict = {}
@@ -179,8 +200,6 @@ def get_categories_and_fields():
 
     output = {"categories": category_dict, "fields": fields_dict}
     return jsonify(output), 200
-
-
 
 
 
@@ -247,3 +266,22 @@ def delete_category():
             category_ids
         )
         return jsonify({"message": "Category members and category successfully deleted"}), 200
+
+@categories_bp.route("/api/reorder-fields/", methods=["POST"])
+def reorder_fields():
+    """
+    Saves the display order for fields in a category.
+    Requires 'category_id' and repeated 'field_ids[]' in the desired order.
+    """
+    category_id = request.form["category_id"]
+    field_ids = request.form.getlist("field_ids[]", type=int)
+
+    category = db_helpers.select_one("SELECT 1 FROM Categories WHERE id = ?", [category_id])
+    if not category:
+        return jsonify({"error": "Category not found"}), 404
+
+    db_helpers.update(
+        "UPDATE Categories SET field_order = ? WHERE id = ?",
+        [json.dumps(field_ids), category_id]
+    )
+    return jsonify({"message": "Field order updated successfully"}), 200

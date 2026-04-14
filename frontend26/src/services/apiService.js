@@ -145,8 +145,9 @@ const apiService = {
     }
   },
 
-  updateWildlife: async (wildlifeId, categoryId, wildlifeData) => {
+  updateWildlife: async (wildlifeId, categoryId, wildlifeData, dataset = 'butterflies') => {
   try {
+
     const form = new FormData();
     form.append("wildlife_id", wildlifeId);
     form.append("category_id", categoryId);  // ← direct param, not from wildlifeData
@@ -157,7 +158,7 @@ const apiService = {
         form.append(key, value);
       }
     });
-    const response = await api.post(`/api/edit-wildlife/`, form);
+    const response = await api.post(`/api/edit-wildlife/?dataset=${dataset}`, form);
     return response.data;
   } catch (error) {
     handleError(error);
@@ -236,6 +237,18 @@ const apiService = {
   deleteWildlife: async (wildlifeId) => {
     try {
       const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  reorderFields: async (categoryId, fieldIds, dataset = 'butterflies') => {
+    try {
+      const form = new FormData();
+      form.append("category_id", categoryId);
+      fieldIds.forEach(id => form.append("field_ids[]", id));
+      const response = await api.post(`/api/reorder-fields/?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
       handleError(error);
