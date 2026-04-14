@@ -407,7 +407,7 @@ export default function WildlifeDetails() {
             {!isNew && (
               <button
                 onClick={handleDelete}
-                style={{ marginLeft: "auto", color: "red" }} // or use your existing CSS classes
+                className="border border-red-300 text-red-600 hover:bg-red-50 px-6 py-2 rounded-full font-bold transition-all"
               >
                 Delete Butterfly
               </button>
