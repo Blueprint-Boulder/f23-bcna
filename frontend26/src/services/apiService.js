@@ -126,19 +126,19 @@ const apiService = {
     }
   },
 
-  createWildlife: async (category, wildlifeData, imageFile = null) => {
+  createWildlife: async (categoryId, wildlifeData, imageFile = null, dataset = 'butterflies') => {
     try {
       const form = new FormData();
       form.append("name", wildlifeData.name || "");
       form.append("scientific_name", wildlifeData.scientific_name || "");
-      form.append("category_id", wildlifeData.category_id);
+      form.append("category_id", categoryId);
       Object.entries(wildlifeData).forEach(([key, value]) => {
         if (!["name", "scientific_name", "category_id"].includes(key)) {
           form.append(key, value);
         }
       });
       if (imageFile) form.append("image_file", imageFile);
-      const response = await api.post(`/api/create-wildlife/`, form);
+      const response = await api.post(`/api/create-wildlife/?dataset=${dataset}`, form);
       return response.data;
     } catch (error) {
       handleError(error);
@@ -227,6 +227,15 @@ const apiService = {
       for (const pair of form.entries()) {
         console.log(`${pair[0]}:`, pair[1]);
       }
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  deleteWildlife: async (wildlifeId) => {
+    try {
+      const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}`);
       return response.data;
     } catch (error) {
       handleError(error);
