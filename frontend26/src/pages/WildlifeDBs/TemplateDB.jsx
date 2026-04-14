@@ -1,3 +1,7 @@
+/**
+ * TemplateDB renders a generic WildlifeDB page for the template dataset.
+ * This page uses the shared WildlifeDB component to avoid duplication.
+ */
 import { WildlifeDB } from "./WildlifeDB";
 
 export function TemplateDB() {

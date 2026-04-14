@@ -1,8 +1,14 @@
+/**
+ * WildlifeDB renders a searchable catalog of wildlife items for a given dataset.
+ * It includes a filter sidebar, searchable results, and an admin-only add card.
+ */
 import { useState, useEffect, useContext, useMemo } from "react";
 import { AdminContext } from "../../services/adminContext";
 import { NavLink } from "react-router-dom";
 import apiService from "../../services/apiService";
 
+// AddCard renders the admin-only card that links to the new wildlife entry form.
+// It is only shown when the user is in admin mode.
 function AddCard({ wildlifeType, label }) {
   return (
     <NavLink
@@ -20,6 +26,8 @@ function AddCard({ wildlifeType, label }) {
   );
 }
 
+// Result renders a single wildlife card in the database grid.
+// It includes an image fallback when no thumbnail is available.
 function Result({ wildlifeType, id, name, sub, image }) {
   return (
     <NavLink
@@ -50,6 +58,8 @@ function Result({ wildlifeType, id, name, sub, image }) {
   );
 }
 
+// FamilyFilter renders a collapsible filter section for one taxonomic family.
+// It includes a tri-state checkbox for the family and nested genus checkboxes.
 function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, familyChecked, toggleFamily, selectedGenera, toggleGenus }) {
   const isOpen = openFamilies.has(family);
 
@@ -122,6 +132,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   const [selectedGenera, setSelectedGenera] = useState(new Set());
   const { admin } = useContext(AdminContext);
 
+  // Fetch all wildlife entries for the selected dataset each time `type` changes.
+  // The backend returns an object, so we normalize it into an array for rendering.
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -134,7 +146,8 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     fetchData();
   }, [type]);
 
-  // Build a map of family -> Set of genera from field_values
+  // Build a map of family -> Set of genera from field_values.
+  // This is memoized so it only recomputes when wildlife data changes.
   const familyMap = useMemo(() => {
     const map = new Map();
     for (const w of wildlife) {
@@ -148,6 +161,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
   }, [wildlife]);
 
+  // Toggle all genera within a family: select all if any are unchecked, otherwise clear them.
   const toggleFamily = (family) => {
     const genera = familyMap.get(family) || new Set();
     setSelectedGenera(prev => {
@@ -178,6 +192,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
 
   const hasFilters = selectedGenera.size > 0;
 
+  // Apply search and genus filters to the wildlife list.
   const filtered = wildlife.filter(w => {
     if (!w.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (!hasFilters) return true;

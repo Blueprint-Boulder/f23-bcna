@@ -1,9 +1,15 @@
+/**
+ * WildlifeDetails displays a single wildlife record, including editable fields and gallery management.
+ * Admin users can update fields, reorder metadata, upload images, and manage thumbnails.
+ */
 import { useState, useEffect, useContext, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
 import { X, Camera, Trash, GripVertical } from "lucide-react"
 
+// ImageEditModal shows the image upload/edit form in a modal.
+// It handles previewing a file, editing metadata, and optionally deleting the image.
 function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThumbnailId }) {
   const [preview, setPreview] = useState(image?.image_path ? `${baseUrl}${image.image_path}` : null);
   const [file, setFile] = useState(null);
@@ -14,12 +20,13 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
   );
 
 
+  // handleFileChange stores the selected image file and generates a local preview URL.
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (selected) {
       setFile(selected);
       setPreview(URL.createObjectURL(selected));
-    }``
+    }
   };
 
   return (
@@ -106,7 +113,8 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
   );
 }
 
-// Add this helper function near the top of WildlifeDetails (outside the component)
+// buildWatermarkedCanvas draws a watermark and metadata overlay onto an image.
+// It is used by the fullscreen modal to present a richer preview for saved images.
 function buildWatermarkedCanvas(imageSrc, metadata) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -154,7 +162,9 @@ function buildWatermarkedCanvas(imageSrc, metadata) {
   });
 }
 
-function FullscreenModal({ src, wildlife, images, highlight, BASE_IMG_URL, onClose }) {
+// FullscreenModal displays a large image preview and optionally renders
+// a watermarked version of the selected wildlife photo.
+function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
   const [watermarkedSrc, setWatermarkedSrc] = useState(null);
 
   const matchedImage = images.find(
@@ -169,7 +179,7 @@ function FullscreenModal({ src, wildlife, images, highlight, BASE_IMG_URL, onClo
       locationTaken: matchedImage?.location_taken || "",
     };
     buildWatermarkedCanvas(src, metadata).then(setWatermarkedSrc);
-  }, [src]);
+  }, [src, matchedImage, wildlife]);
 
   return (
     <div
@@ -196,6 +206,8 @@ function FullscreenModal({ src, wildlife, images, highlight, BASE_IMG_URL, onClo
   );
 }
 
+// WildlifeDetails is the main detail page for a single wildlife entity.
+// It supports viewing, editing, image management, and metadata ordering.
 export default function WildlifeDetails() {
   const { admin } = useContext(AdminContext);
   const { category, wildlifeId } = useParams();
@@ -221,6 +233,9 @@ export default function WildlifeDetails() {
 
   const BASE_IMG_URL = "http://127.0.0.1:5000/api/get-image/";
 
+  // Load category metadata and wildlife record data whenever the route changes.
+  // When creating a new wildlife item, initialize blank fields. Otherwise load
+  // the existing entry and its images.
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -228,73 +243,64 @@ export default function WildlifeDetails() {
         const categoryEntry = Object.values(fieldsResponse.categories).find(
           (c) => c.name.toLowerCase() === category.toLowerCase()
         );
-        console.log("categoryEntry:", categoryEntry);  // ← add this
-        console.log("categoryId being set:", categoryEntry?.id);  // ← and this
 
-        const fieldNames = (categoryEntry?.field_ids || []).map(
-          (id) => fieldsResponse.fields[id]
-        );
+      const fieldNames = (categoryEntry?.field_ids || [])
+        .map((id) => fieldsResponse.fields[id])
+        .filter(Boolean);
 
+      if (isNew) {
+        setCategoryId(categoryEntry?.id);
+        const blankData = {};
+        fieldNames.forEach(field => {
+          blankData[field.name] = "";
+        });
+        setWildlife({ name: "", scientific_name: "" });
+        setFilteredData(blankData);
+        const nameToId = {};
+        fieldNames.forEach(f => { nameToId[f.name] = f.id; });
+        setFieldsNameToId(nameToId);
+        setFieldOrder(fieldNames.map(f => f.name));
+        setImages([]);
+      } else {
+        const data = await apiService.getWildlifeById(wildlifeId, category);
+        const wildlifeImages = await apiService.getImagesByWildlifeId(data.id, category);
 
-        if (isNew) {
-          setCategoryId(categoryEntry?.id);  // ← add this
-          const blankData = {};
-          fieldNames.forEach(field => {
-            blankData[field.name] = "";
-          });
-          setWildlife({ name: "", scientific_name: "" });
-          setFilteredData(blankData);
-          const nameToId = {};
-          fieldNames.forEach(f => { nameToId[f.name] = f.id; });
-          setFieldsNameToId(nameToId);
-          setFieldOrder(fieldNames.map(f => f.name));
-          setImages([]);
-        } else {
-          const data = await apiService.getWildlifeById(wildlifeId, category);
-          console.log("wildlife data:", data);  
-          const wildlifeImages = await apiService.getImagesByWildlifeId(data.id, category);
+        setWildlife(data);
+        setCategoryId(data.category_id);
+        setImages(wildlifeImages);
 
-          setWildlife(data);
-          setCategoryId(data.category_id);
-          setImages(wildlifeImages);
+        const thumbnailImg = wildlifeImages.find(img => img.id == data.thumbnail_id)
+          || wildlifeImages[0];
+        if (thumbnailImg) {
+          setThumbnail(thumbnailImg.image_path);
+          setHighlight(thumbnailImg.image_path);
+        }
 
-          // Use thumbnail_id to find the right image, fall back to first
-          const thumbnailImg = wildlifeImages.find(img => img.id == data.thumbnail_id) 
-            || wildlifeImages[0];
-          if (thumbnailImg) {
-            setThumbnail(thumbnailImg.image_path);
-            setHighlight(thumbnailImg.image_path);
-          }
-
-          const { id, scientific_name, name, category_id, thumbnail_id, ...rest } = data;
-          const allFieldData = {};
-          (categoryEntry?.field_ids || []).forEach(fid => {
-            const fname = fieldsResponse.fields[fid]?.name;
-            if (fname) allFieldData[fname] = rest[fname] ?? "";
-          });
-          setFilteredData(allFieldData);
-          const nameToId = {};
-          Object.values(fieldsResponse.fields).forEach(f => { nameToId[f.name] = f.id; });
-          setFieldsNameToId(nameToId);
-          // Use field_ids from categoryEntry — it's a JSON array so order is guaranteed,
-          // and the backend already applies saved field_order to it
-          const orderedNames = (categoryEntry?.field_ids || [])
-            .map(id => fieldsResponse.fields[id]?.name)
-            .filter(n => n != null);
-          setFieldOrder(orderedNames);
-
+        const { id: _id, scientific_name: _scientific_name, name: _name, category_id: _category_id, thumbnail_id: _thumbnail_id, ...rest } = data;
+        const allFieldData = {};
+        fieldNames.forEach(field => {
+          allFieldData[field.name] = rest[field.name] ?? "";
+        });
+        setFilteredData(allFieldData);
+        const nameToId = {};
+        fieldNames.forEach(f => { nameToId[f.name] = f.id; });
+        setFieldsNameToId(nameToId);
+        const orderedNames = fieldNames.map(f => f.name).filter(Boolean);
+        setFieldOrder(orderedNames);
       }
-      } catch (error) {
-        console.error("Error fetching details:", error);
-      }
-    };
-    fetchData();
-  }, [wildlifeId, category, isNew]);
+    } catch (error) {
+      console.error("Error fetching details:", error);
+    }
+  };
+  fetchData();
+}, [wildlifeId, category, isNew]);
 
   const handleInputChange = (key, value) => {
     setFilteredData(prev => ({ ...prev, [key]: value }));
   };
 
+  // handleSave persists either a new or existing wildlife entry,
+  // then uploads any pending image changes and applies thumbnail selection.
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -307,13 +313,11 @@ export default function WildlifeDetails() {
         // remove category_id from here entirely — pass it separately below
       };
 
-      console.log("categoryId:", categoryId);
-      console.log("payload:", payload);
       if (isNew) {
         const result = await apiService.createWildlife(categoryId, payload, null, category);
         savedWildlifeId = result.wildlife_id;
       } else {
-        await apiService.updateWildlife(wildlifeId, categoryId, payload, category);  // ← categoryId, not category
+        await apiService.updateWildlife(wildlifeId, categoryId, payload, category);
       }
 
       for (const pending of pendingImages) {
@@ -326,7 +330,7 @@ export default function WildlifeDetails() {
 
         if (isReplacement) {
           // Edit of existing image — replace in place
-          const result = await apiService.replaceImage(pending.tempId, pending.file);
+          await apiService.replaceImage(pending.tempId, pending.file);
           savedImageId = pending.tempId; // ID stays the same
         } else {
           // Brand new image
@@ -602,7 +606,7 @@ export default function WildlifeDetails() {
                   setHighlight(remaining[0]?.image_path || null);
                 }
                 setEditingImage(null);
-              } catch (err) {
+              } catch {
                 alert("Failed to delete image.");
               }
             }}

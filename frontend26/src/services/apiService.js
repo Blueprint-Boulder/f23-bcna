@@ -1,6 +1,7 @@
-// currently not using this but preserving it in case we want to restructure later
-
-// src/services/api.js
+/**
+ * apiService contains reusable HTTP helpers for the BCNA frontend.
+ * It centralizes data fetching and mutation requests for wildlife, images, categories, and admin authentication.
+ */
 import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:5000";
@@ -15,8 +16,7 @@ const handleError = error => {
 };
 
 const apiService = {
-  // ... other methods
-
+  // getTest is a simple ping endpoint for verifying backend connectivity.
   getTest: async () => {
     try {
       const response = await api.get("/api");
@@ -26,6 +26,7 @@ const apiService = {
     }
   },
 
+  // getCategoriesAndFields returns category metadata and field definitions for a dataset.
   getCategoriesAndFields: async (dataset = 'butterflies') => {
     try {
       const response = await api.get(`/api/get-categories-and-fields?dataset=${dataset}`);
@@ -35,6 +36,7 @@ const apiService = {
     }
   },
 
+  // getCategories returns all available categories across datasets.
   getCategories: async () => {
     try {
       const response = await api.get("/api/get-categories");
@@ -44,25 +46,21 @@ const apiService = {
     }
   },
 
+  // searchWildlifeNames performs a backend search for wildlife names.
+  // Optionally filters by one or more category IDs.
   searchWildlifeNames: async (query, categoryIds = []) => {
     try {
-      // Construct the parameters object
-      let params = new URLSearchParams();
+      const params = new URLSearchParams();
       params.append("query", query);
-
-      // If categoryIds are provided, append each one to the params
       categoryIds.forEach(id => params.append("category_id", id));
-
-      // Make the GET request with axios, including the parameters
-      const response = await axios.get(`/api/search-wildlife-names/`, {
-        params: params
-      });
-      return response.data; // Return the data from the response
+      const response = await api.get(`/api/search-wildlife-names/`, { params });
+      return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
+  // getAllWildlife returns all wildlife entries for the specified dataset.
   getAllWildlife: async (dataset = 'butterflies') => {
     try {
       const response = await api.get(`/api/get-wildlife?dataset=${dataset}`);
@@ -72,6 +70,7 @@ const apiService = {
     }
   },
 
+  // getWildlifeById fetches a single wildlife record by its ID within the dataset.
   getWildlifeById: async (wildlifeId, dataset = 'butterflies') => {
     try {
       const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}?dataset=${dataset}`);
@@ -81,8 +80,8 @@ const apiService = {
     }
   },
 
+  // getImagesByWildlifeId returns all photos associated with a particular wildlife entry.
   getImagesByWildlifeId: async (wildlifeId, dataset = 'butterflies') => {
-    console.log("getImagesByWildlifeId", wildlifeId);
     try {
       const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
@@ -91,7 +90,8 @@ const apiService = {
     }
   },
 
-  getImagebyImageId: async (imageId, dataset = 'butterflies') => {
+  // getImageByImageId fetches a single image asset by its image ID.
+  getImageByImageId: async (imageId, dataset = 'butterflies') => {
     try {
       const response = await api.get(`/api/get-image-by-image-id/${imageId}?dataset=${dataset}`);
       return response.data;
@@ -99,6 +99,7 @@ const apiService = {
       handleError(error);
     }
   },
+  // createCategory creates a new category using a FormData payload.
   createCategory: async form => {
     try {
       const response = await api.post(`/api/create-category/`, form);
@@ -108,6 +109,7 @@ const apiService = {
     }
   },
 
+  // createField creates a new field definition tied to a category.
   createField: async form => {
     try {
       const response = await api.post(`/api/create-field/`, form);
@@ -117,6 +119,7 @@ const apiService = {
     }
   },
 
+  // editField updates an existing field descriptor.
   editField: async form => {
     try {
       const response = await api.post(`/api/edit-field/`, form);
@@ -126,6 +129,7 @@ const apiService = {
     }
   },
 
+  // createWildlife sends a new wildlife record and optional thumbnail image to the backend.
   createWildlife: async (categoryId, wildlifeData, imageFile = null, dataset = 'butterflies') => {
     try {
       const form = new FormData();
@@ -145,6 +149,7 @@ const apiService = {
     }
   },
 
+  // updateWildlife edits an existing wildlife record and sends updated values to the backend.
   updateWildlife: async (wildlifeId, categoryId, wildlifeData, dataset = 'butterflies') => {
   try {
 
@@ -165,6 +170,7 @@ const apiService = {
   }
 },
 
+  // saveImage uploads a new image for a wildlife entry, including optional metadata.
   saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null) => {
     try {
       const form = new FormData();
@@ -179,6 +185,7 @@ const apiService = {
     }
   },
 
+  // replaceImage swaps the file for an existing image record.
   replaceImage: async (imageId, imageFile) => {
     try {
       const form = new FormData();
@@ -190,6 +197,7 @@ const apiService = {
     }
   },
 
+  // deleteImage removes an image from the backend by image ID.
   deleteImage: async (imageId) => {
     try {
       const response = await api.delete(`/api/delete_image/?id=${imageId}`);
@@ -199,8 +207,8 @@ const apiService = {
     }
   },
 
+  // addImage is a generic image upload helper for form-based image submission.
   addImage: async form => {
-    console.log("addImage", form);
     try {
       const response = await api.post(`/api/add-image/`, form);
       return response.data;
@@ -209,6 +217,7 @@ const apiService = {
     }
   },
 
+  // setThumbnail marks a specific image as the featured thumbnail for a wildlife entry.
   setThumbnail: async ({ wildlife_id, thumbnail_id }) => {
     try {
       const form = new FormData();
@@ -222,18 +231,18 @@ const apiService = {
   },
 
 
+  // editWildlife is an alternate backend endpoint for editing wildlife records.
+  // It is kept for compatibility with multiple edit flows.
   editWildlife: async form => {
     try {
       const response = await api.post(`/api/edit-wildlife`, form);
-      for (const pair of form.entries()) {
-        console.log(`${pair[0]}:`, pair[1]);
-      }
       return response.data;
     } catch (error) {
       handleError(error);
     }
   },
 
+  // deleteWildlife removes an entire wildlife record from the dataset.
   deleteWildlife: async (wildlifeId) => {
     try {
       const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}`);
@@ -243,6 +252,7 @@ const apiService = {
     }
   },
 
+  // reorderFields updates the field display order for a category.
   reorderFields: async (categoryId, fieldIds, dataset = 'butterflies') => {
     try {
       const form = new FormData();
@@ -255,18 +265,17 @@ const apiService = {
     }
   },
 
+  // adminLogin authenticates an admin user and returns a session token.
   adminLogin: async (password) => {
     try {
-      console.log("Calling /api/admin-login with password:", password);
       const response = await api.post("/api/admin-login", { password });
-      console.log("Response:", response.data);
       return response.data;
     } catch (error) {
-      console.error("API Error:", error);
-      throw error;
+      handleError(error);
     }
   },
 
+  // adminVerify checks a stored token for validity with the backend.
   adminVerify: async (token) => {
     try {
       const response = await api.post("/api/admin-verify", { token });
@@ -276,6 +285,7 @@ const apiService = {
     }
   },
 
+  // adminLogout informs the backend that the current admin session is ending.
   adminLogout: async () => {
     try {
       const token = localStorage.getItem("admin_token");
