@@ -222,6 +222,14 @@ def init_all_dbs():
         cursor = conn.cursor()
         cursor.executescript(sql_script)
         conn.commit()
+
+        # Migrate: add field_order column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE Categories ADD COLUMN field_order TEXT")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
         _seed_family_field(conn)
         conn.close()
         print(f"[DB DEBUG] Dataset '{entry.name}' initialized with 'family' field.")
