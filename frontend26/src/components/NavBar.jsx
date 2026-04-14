@@ -98,19 +98,14 @@ export const NavBar = () => {
       
         {/* Right side */}
         <div className="flex items-center gap-[36px] px-3">
-          {admin ? (
-            <button onClick={logout} className={`font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`}>Log out</button>
-          ) : (
-            <button onClick={() => setShowLogin(true)} className={`font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`}>Admin</button>
-          )}
-          {showLogin && <AdminLogin onClose={() => setShowLogin(false)} />}
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
               to={link.path}
-              className="font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1"
+              className="relative font-sans text-xl font-regular text-sand-400 transition-colors duration-300 hover:text-sand-500 group"
             >
               {link.name}
+              <span className="absolute left-1/2 bottom-0 w-0 h-[1.5px] bg-sand-500 transition-all duration-300 group-hover:w-full group-hover:left-0" />
             </NavLink>
           ))}
         </div>
