@@ -1,6 +1,11 @@
+/**
+ * Glossary page displays an alphabetical index of terms and the glossary definitions.
+ * Users can click a term to jump to it and briefly highlight the matching entry.
+ */
 import { useState, useEffect, useRef } from "react";
 import glossaryTerms from "../data/glossaryTerms.json";
 
+// termToId converts a display term into a safe DOM id for anchor links.
 function termToId(term) {
   return term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -19,15 +24,20 @@ export const Glossary = () => {
 
   useEffect(() => {
     if (glossaryVisible && pendingScroll) {
-      const el = document.getElementById(pendingScroll);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-      flashHighlight(pendingScroll);
-      setPendingScroll(null);
+      const scrollId = pendingScroll;
+      window.requestAnimationFrame(() => {
+        const el = document.getElementById(scrollId);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+        flashHighlight(scrollId);
+        setPendingScroll(null);
+      });
     }
   }, [glossaryVisible, pendingScroll]);
 
   useEffect(() => () => clearTimeout(highlightTimeout.current), []);
 
+  // handleTermClick navigates to a glossary term and highlights it.
+  // When the glossary content is hidden, it opens the section first.
   const handleTermClick = (e, term) => {
     e.preventDefault();
     const id = termToId(term);

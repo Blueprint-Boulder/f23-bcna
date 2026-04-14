@@ -1,3 +1,7 @@
+/**
+ * AdminLogin displays a password prompt for admin authentication.
+ * It delegates login state management to AdminContext.
+ */
 import { useState, useContext } from "react";
 import { AdminContext } from "../services/adminContext";
 
@@ -7,8 +11,9 @@ export function AdminLogin({ onClose }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // handleSubmit attempts to authenticate the admin password,
+  // toggles loading UI, and reports an error message if authentication fails.
   const handleSubmit = async () => {
-    console.log("handleSubmit called with password:", password);
     setLoading(true);
     setError("");
     try {

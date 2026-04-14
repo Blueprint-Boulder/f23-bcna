@@ -1,13 +1,16 @@
+/**
+ * Navigation bar for the BCNA wildlife site.
+ * Displays the current dataset link, site switching menu, admin controls, and page navigation links.
+ */
 import { useParams, Link, NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useContext } from "react";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
 
-//Sites
+// Sites defines the dataset home pages shown in the dropdown menu.
+// Each entry includes a slug, route path, logo, and hover background styling.
 const sites = [
-  //UPDATE COLORS
   { id: 'butterflies', path: '/', logo: '/butterfly-logo.png', label: 'Butterflies', hoverBg: 'hover:bg-[#e2f2e7]'},
   { id: 'dragonflies', path: '/dragonflies', logo: '/dragonfly-logo.png', label: 'Dragonflies', hoverBg: 'hover:bg-blue-50' },
   { id: 'wildflowers', path: '/wildflowers', logo: '/wildflower-logo.png', label: 'Wildflowers', hoverBg: 'hover:bg-orange-50' },
@@ -22,8 +25,10 @@ const navLinks = [
 
 export const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { category, wildlifeId } = useParams();
+  const { category } = useParams();
+  // currentSite is the dataset currently selected via the URL param.
   const currentSite = sites.find(s => s.id === category) || sites[0];
+  // otherSites are shown in the hover dropdown to switch between datasets.
   const otherSites = sites.filter(s => s.id !== category);
 
   const { admin, logout } = useContext(AdminContext);
@@ -35,7 +40,7 @@ export const NavBar = () => {
       {admin && (
         <div
           className="p-2 font-bold text-center text-white bg-pink-700 cursor-pointer"
-          onClick={() => setAdmin(false)}
+          onClick={logout}
         >
           You are currently in admin mode.
         </div>
@@ -103,9 +108,7 @@ export const NavBar = () => {
             <NavLink
               key={link.name}
               to={link.path}
-              className={({ isActive }) =>
-                `font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1`
-              }
+              className="font-sans text-xl font-regular transition-colors duration-200 text-sand-400 hover:underline hover: decoration-1"
             >
               {link.name}
             </NavLink>
