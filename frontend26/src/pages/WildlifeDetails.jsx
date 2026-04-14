@@ -19,7 +19,7 @@ function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThum
     if (selected) {
       setFile(selected);
       setPreview(URL.createObjectURL(selected));
-    }
+    }``
   };
 
   return (
@@ -132,18 +132,20 @@ export default function WildlifeDetails() {
         const categoryEntry = Object.values(fieldsResponse.categories).find(
           (c) => c.name.toLowerCase() === category.toLowerCase()
         );
+        console.log("categoryEntry:", categoryEntry);  // ← add this
+        console.log("categoryId being set:", categoryEntry?.id);  // ← and this
+
         const fieldNames = (categoryEntry?.field_ids || []).map(
           (id) => fieldsResponse.fields[id]
         );
 
 
         if (isNew) {
+          setCategoryId(categoryEntry?.id);  // ← add this
           const blankData = {};
           fieldNames.forEach(field => {
             blankData[field.name] = "";
           });
-
-
           setWildlife({ name: "", scientific_name: "" });
           setFilteredData(blankData);
           setImages([]);
@@ -190,8 +192,10 @@ export default function WildlifeDetails() {
         // remove category_id from here entirely — pass it separately below
       };
 
+      console.log("categoryId:", categoryId);
+      console.log("payload:", payload);
       if (isNew) {
-        const result = await apiService.createWildlife(categoryId, payload);
+        const result = await apiService.createWildlife(categoryId, payload, null, category);
         savedWildlifeId = result.wildlife_id;
       } else {
         await apiService.updateWildlife(wildlifeId, categoryId, payload);  // ← categoryId, not category
@@ -244,10 +248,28 @@ export default function WildlifeDetails() {
       setPendingImages([]);
       alert("Changes saved!");
     } catch (error) {
-      console.error("Full error response:", error.response?.data);
-      alert("Save failed: " + JSON.stringify(error.response?.data));
+      console.error("Full error:", error);           // the error object itself
+      console.error("Message:", error.message);      // always exists
+      console.error("Stack:", error.stack);          // tells you where it threw
+      alert("Save failed: " + error.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${wildlife.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await apiService.deleteWildlife(wildlifeId);
+      alert("Butterfly deleted.");
+      navigate(-1); // or navigate("/admin") — wherever your list lives
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Delete failed: " + error.message);
     }
   };
 
@@ -382,7 +404,14 @@ export default function WildlifeDetails() {
         {/* Fixed Admin Save Bar */}
         {admin && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white px-8 py-4 rounded-full shadow-2xl border border-pink-100 flex items-center gap-6 z-50">
-            <p className="text-pink-700 font-bold text-sm">Admin Mode Active</p>
+            {!isNew && (
+              <button
+                onClick={handleDelete}
+                style={{ marginLeft: "auto", color: "red" }} // or use your existing CSS classes
+              >
+                Delete Butterfly
+              </button>
+            )}
             <button 
               onClick={handleSave}
               disabled={isSaving}
