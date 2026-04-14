@@ -330,12 +330,12 @@ export default function WildlifeDetails() {
 
         if (isReplacement) {
           // Edit of existing image — replace in place
-          await apiService.replaceImage(pending.tempId, pending.file);
+          await apiService.replaceImage(pending.tempId, pending.file, category);
           savedImageId = pending.tempId; // ID stays the same
         } else {
           // Brand new image
           const result = await apiService.saveImage(
-            savedWildlifeId, pending.file, pending.dateTaken, pending.locationTaken
+            savedWildlifeId, pending.file, pending.dateTaken, pending.locationTaken, category
           );
           savedImageId = result?.image_id;
         }
@@ -344,6 +344,7 @@ export default function WildlifeDetails() {
           await apiService.setThumbnail({
             wildlife_id: savedWildlifeId,
             thumbnail_id: savedImageId,
+            dataset: category,
           });
           setWildlife(prev => ({ ...prev, thumbnail_id: savedImageId }));  // ← keep in sync
           setThumbnail(images.find(img => img.id === savedImageId)?.image_path || thumbnail);
@@ -358,6 +359,7 @@ export default function WildlifeDetails() {
           await apiService.setThumbnail({
             wildlife_id: savedWildlifeId,
             thumbnail_id: matchedImage.id,
+            dataset: category,
           });
           setWildlife(prev => ({ ...prev, thumbnail_id: matchedImage.id }));
         }
@@ -392,8 +394,8 @@ export default function WildlifeDetails() {
     if (!confirmed) return;
 
     try {
-      await apiService.deleteWildlife(wildlifeId);
-      alert("Butterfly deleted.");
+      await apiService.deleteWildlife(wildlifeId, category);
+      alert("Successfully deleted.");
       navigate(-1); // or navigate("/admin") — wherever your list lives
     } catch (error) {
       console.error("Delete failed:", error);
@@ -593,8 +595,15 @@ export default function WildlifeDetails() {
             currentThumbnailId={wildlife?.thumbnail_id}
             onClose={() => setEditingImage(null)}
             onDelete={async () => {
+              // Don't attempt server delete for unsaved images
+              if (String(editingImage.id).startsWith("pending-")) {
+                setImages(prev => prev.filter(img => img.id !== editingImage.id));
+                setPendingImages(prev => prev.filter(p => p.tempId !== editingImage.id));
+                setEditingImage(null);
+                return;
+              }
               try {
-                await apiService.deleteImage(editingImage.id);
+                await apiService.deleteImage(editingImage.id, category);
                 setImages(prev => prev.filter(img => img.id !== editingImage.id));
                 // If deleted image was highlighted, reset to first remaining
                 if (editingImage.image_path === thumbnail) {
