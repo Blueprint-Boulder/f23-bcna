@@ -9,6 +9,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": "http://localhost:5000"
-    }
+    },
+    allowedHosts: true
   }
 });
