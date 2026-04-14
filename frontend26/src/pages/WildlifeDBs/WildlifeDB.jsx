@@ -32,6 +32,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
             src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            onError={ev => {ev.target.src = '/lindenballing.png';ev.target.style.objectFit='fill'}}
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full text-sand-200">

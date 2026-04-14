@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import apiService from "../services/apiService";
 import { AdminContext } from "../services/adminContext";
-import { X, Camera } from "lucide-react"
+import { X, Camera, Trash } from "lucide-react"
 
 function ImageEditModal({ image, baseUrl, onClose, onSave, onDelete, currentThumbnailId }) {
   const [preview, setPreview] = useState(image?.image_path ? `${baseUrl}${image.image_path}` : null);
@@ -257,6 +257,8 @@ export default function WildlifeDetails() {
     }
   };
 
+  const navigate = useNavigate()
+
   const handleDelete = async () => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${wildlife.name}"? This cannot be undone.`
@@ -289,7 +291,7 @@ export default function WildlifeDetails() {
             ← Back to Database
           </Link>
           {admin ? (
-            <div className="flex flex-col gap-2 items-center w-full max-w-md">
+            <div className="flex flex-col gap-2 items-center w-max">
               <input
                 type="text"
                 placeholder="Common Name"
@@ -407,9 +409,9 @@ export default function WildlifeDetails() {
             {!isNew && (
               <button
                 onClick={handleDelete}
-                className="border border-red-300 text-red-600 hover:bg-red-50 px-6 py-2 rounded-full font-bold transition-all"
+                className="flex gap-2 border border-red-300 text-red-600 hover:bg-red-50 px-6 py-2 rounded-full font-bold transition-all"
               >
-                Delete Butterfly
+                <Trash /> Destroy
               </button>
             )}
             <button 
