@@ -6,3 +6,7 @@ services:
     stop_signal: SIGINT
     ports:
       - "3698:5000"
+  frontend:
+    build: ./frontend26
+    ports:
+      - "3699:80"
