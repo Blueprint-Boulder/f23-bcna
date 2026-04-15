@@ -4,7 +4,7 @@
  */
 import axios from "axios";
 
-const BASE_URL = "http://127.0.0.1:5000";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const api = axios.create({
   baseURL: BASE_URL
@@ -27,7 +27,7 @@ const apiService = {
   },
 
   // getCategoriesAndFields returns category metadata and field definitions for a dataset.
-  getCategoriesAndFields: async (dataset = 'butterflies') => {
+  getCategoriesAndFields: async (dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/get-categories-and-fields?dataset=${dataset}`);
       return response.data;
@@ -61,7 +61,7 @@ const apiService = {
   },
 
   // getAllWildlife returns all wildlife entries for the specified dataset.
-  getAllWildlife: async (dataset = 'butterflies') => {
+  getAllWildlife: async (dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/get-wildlife?dataset=${dataset}`);
       return response.data;
@@ -71,7 +71,7 @@ const apiService = {
   },
 
   // getWildlifeById fetches a single wildlife record by its ID within the dataset.
-  getWildlifeById: async (wildlifeId, dataset = 'butterflies') => {
+  getWildlifeById: async (wildlifeId, dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/get-wildlife-by-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
@@ -81,7 +81,7 @@ const apiService = {
   },
 
   // getImagesByWildlifeId returns all photos associated with a particular wildlife entry.
-  getImagesByWildlifeId: async (wildlifeId, dataset = 'butterflies') => {
+  getImagesByWildlifeId: async (wildlifeId, dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/get-images-by-wildlife-id/${wildlifeId}?dataset=${dataset}`);
       return response.data;
@@ -91,7 +91,7 @@ const apiService = {
   },
 
   // getImageByImageId fetches a single image asset by its image ID.
-  getImageByImageId: async (imageId, dataset = 'butterflies') => {
+  getImageByImageId: async (imageId, dataset = "butterflies") => {
     try {
       const response = await api.get(`/api/get-image-by-image-id/${imageId}?dataset=${dataset}`);
       return response.data;
@@ -130,7 +130,7 @@ const apiService = {
   },
 
   // createWildlife sends a new wildlife record and optional thumbnail image to the backend.
-  createWildlife: async (categoryId, wildlifeData, imageFile = null, dataset = 'butterflies') => {
+  createWildlife: async (categoryId, wildlifeData, imageFile = null, dataset = "butterflies") => {
     try {
       const form = new FormData();
       form.append("name", wildlifeData.name || "");
@@ -150,28 +150,27 @@ const apiService = {
   },
 
   // updateWildlife edits an existing wildlife record and sends updated values to the backend.
-  updateWildlife: async (wildlifeId, categoryId, wildlifeData, dataset = 'butterflies') => {
-  try {
-
-    const form = new FormData();
-    form.append("wildlife_id", wildlifeId);
-    form.append("category_id", categoryId);  // ← direct param, not from wildlifeData
-    form.append("name", wildlifeData.name || "");
-    form.append("scientific_name", wildlifeData.scientific_name || "");
-    Object.entries(wildlifeData).forEach(([key, value]) => {
-      if (!["name", "scientific_name", "category_id"].includes(key)) {
-        form.append(key, value);
-      }
-    });
-    const response = await api.post(`/api/edit-wildlife/?dataset=${dataset}`, form);
-    return response.data;
-  } catch (error) {
-    handleError(error);
-  }
-},
+  updateWildlife: async (wildlifeId, categoryId, wildlifeData, dataset = "butterflies") => {
+    try {
+      const form = new FormData();
+      form.append("wildlife_id", wildlifeId);
+      form.append("category_id", categoryId); // ← direct param, not from wildlifeData
+      form.append("name", wildlifeData.name || "");
+      form.append("scientific_name", wildlifeData.scientific_name || "");
+      Object.entries(wildlifeData).forEach(([key, value]) => {
+        if (!["name", "scientific_name", "category_id"].includes(key)) {
+          form.append(key, value);
+        }
+      });
+      const response = await api.post(`/api/edit-wildlife/?dataset=${dataset}`, form);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
 
   // saveImage uploads a new image for a wildlife entry, including optional metadata.
-  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null, dataset = 'butterflies') => {
+  saveImage: async (wildlifeId, imageFile, dateTaken = null, locationTaken = null, dataset = "butterflies") => {
     try {
       const form = new FormData();
       form.append("wildlife_id", wildlifeId);
@@ -186,7 +185,7 @@ const apiService = {
   },
 
   // replaceImage swaps the file for an existing image record.
-  replaceImage: async (imageId, imageFile, dataset = 'butterflies') => {
+  replaceImage: async (imageId, imageFile, dataset = "butterflies") => {
     try {
       const form = new FormData();
       form.append("image_file", imageFile);
@@ -198,7 +197,7 @@ const apiService = {
   },
 
   // deleteImage removes an image from the backend by image ID.
-  deleteImage: async (imageId, dataset = 'butterflies') => {
+  deleteImage: async (imageId, dataset = "butterflies") => {
     try {
       const response = await api.delete(`/api/delete_image/?id=${imageId}&dataset=${dataset}`);
       return response.data;
@@ -218,7 +217,7 @@ const apiService = {
   },
 
   // setThumbnail marks a specific image as the featured thumbnail for a wildlife entry.
-  setThumbnail: async ({ wildlife_id, thumbnail_id, dataset = 'butterflies' }) => {
+  setThumbnail: async ({ wildlife_id, thumbnail_id, dataset = "butterflies" }) => {
     try {
       const form = new FormData();
       form.append("wildlife_id", wildlife_id);
@@ -229,7 +228,6 @@ const apiService = {
       handleError(error);
     }
   },
-
 
   // editWildlife is an alternate backend endpoint for editing wildlife records.
   // It is kept for compatibility with multiple edit flows.
@@ -243,7 +241,7 @@ const apiService = {
   },
 
   // deleteWildlife removes an entire wildlife record from the dataset.
-  deleteWildlife: async (wildlifeId, dataset = 'butterflies') => {
+  deleteWildlife: async (wildlifeId, dataset = "butterflies") => {
     try {
       const response = await api.delete(`/api/delete-wildlife/?id=${wildlifeId}&dataset=${dataset}`);
       return response.data;
@@ -253,7 +251,7 @@ const apiService = {
   },
 
   // reorderFields updates the field display order for a category.
-  reorderFields: async (categoryId, fieldIds, dataset = 'butterflies') => {
+  reorderFields: async (categoryId, fieldIds, dataset = "butterflies") => {
     try {
       const form = new FormData();
       form.append("category_id", categoryId);
@@ -266,7 +264,7 @@ const apiService = {
   },
 
   // adminLogin authenticates an admin user and returns a session token.
-  adminLogin: async (password) => {
+  adminLogin: async password => {
     try {
       const response = await api.post("/api/admin-login", { password });
       return response.data;
@@ -276,7 +274,7 @@ const apiService = {
   },
 
   // adminVerify checks a stored token for validity with the backend.
-  adminVerify: async (token) => {
+  adminVerify: async token => {
     try {
       const response = await api.post("/api/admin-verify", { token });
       return response.data;
@@ -295,7 +293,6 @@ const apiService = {
       handleError(error);
     }
   }
-
 };
 
 export default apiService;
