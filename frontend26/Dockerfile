@@ -2,6 +2,7 @@
 FROM node:25-alpine AS build
 WORKDIR /app
 
+RUN printenv | grep VITE
 # Install dependencies first for better caching
 COPY package*.json ./
 RUN npm install
