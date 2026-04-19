@@ -131,7 +131,7 @@ function buildWatermarkedCanvas(imageSrc, metadata) {
       // Build metadata lines
       const lines = [
         metadata.name,
-        metadata.scientific_name && `(${metadata.scientific_name})`,
+        metadata.scientific_name && `${metadata.scientific_name}`,
         metadata.dateTaken && `📅 ${metadata.dateTaken}`,
         metadata.locationTaken && `📍 ${metadata.locationTaken}`,
         `© ${new Date().getFullYear()} Boulder County Nature Association`,
@@ -153,6 +153,13 @@ function buildWatermarkedCanvas(imageSrc, metadata) {
 
       lines.forEach((line, i) => {
         const y = img.naturalHeight - blockHeight + padding + i * lineHeight;
+
+        if (metadata.scientific_name && line === `${metadata.scientific_name}`) {
+          ctx.font = `italic ${fontSize}px sans-serif`;
+        } else {
+          ctx.font = `${fontSize}px sans-serif`;
+        }
+
         ctx.fillText(line, padding, y);
       });
 
@@ -200,7 +207,6 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
           className="max-h-full max-w-full object-contain rounded-xl opacity-50"
         />
       )}
-      <p className="text-white/40 text-xs mt-3">Metadata is embedded in saved images</p>
       <button className="absolute top-5 right-5 text-white text-3xl" onClick={onClose}>&times;</button>
     </div>
   );
