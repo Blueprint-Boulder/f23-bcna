@@ -1,13 +1,42 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 import os
+import json
 from app import db_helpers
+
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
 from app.utils import save_file  # Adjust import if needed
 import sqlite3
+from exif import Image
 
-images_bp = Blueprint('images', __name__)
+images_bp = Blueprint("images", __name__)
 
-@images_bp.route("/api/get-image/<string:filename>/", strict_slashes = False, methods=["GET"])
+
+def normalize(value):
+    # bytes → string
+    if isinstance(value, bytes):
+        return value.decode(errors="ignore")
+
+    # rational numbers → float
+    if hasattr(value, "numerator") and hasattr(value, "denominator"):
+        try:
+            return float(value)
+        except Exception:
+            return str(value)
+
+    # iterables (e.g., tuples of rationals)
+    if isinstance(value, (list, tuple)):
+        return [normalize(v) for v in value]
+
+    # fallback: convert unknown objects (like Flash) to string
+    if not isinstance(value, (str, int, float, bool, type(None))):
+        return str(value)
+
+    return value
+
+
+@images_bp.route(
+    "/api/get-image/<string:filename>/", strict_slashes=False, methods=["GET"]
+)
 def get_image(filename):
     """
     Gets a user-uploaded image file by its filename. Used for getting images associated with wildlife.
@@ -32,7 +61,6 @@ def get_image(filename):
     return send_from_directory(image_folder, filename)
 
 
-
 @images_bp.route("/api/add-image/", methods=["POST"])
 def add_image():
     """
@@ -48,19 +76,59 @@ def add_image():
     image_file.seek(0, os.SEEK_SET)
     print("file_length", file_length)
     if file_length > 10 * 1024 * 1024:
-        return jsonify({"error": f"The image file {image_file.filename} is too large (max 10 MB)"}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"The image file {image_file.filename} is too large (max 10 MB)"
+                }
+            ),
+            400,
+        )
     if not image_file.mimetype.startswith("image/"):
-        return jsonify({"error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"The file {image_file.filename} is not an image (its MIME type is {image_file.mimetype}, which doesn't start with 'image/')"
+                }
+            ),
+            400,
+        )
 
     saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
+
+    with open(
+        os.path.join(db_helpers.get_active_image_upload_folder(), saved_filename), "rb"
+    ) as f:
+        img = Image(f)
+        exif_dict = {}
+
+        if img.has_exif:
+            for tag in img.list_all():
+                try:
+                    raw = getattr(img, tag)
+                    exif_dict[tag] = normalize(raw)
+                except Exception:
+                    continue
+
+        print(exif_dict, json.dumps(exif_dict))
+
     # Insert the image and get its ID
     image_id = db_helpers.insert(
-        "INSERT INTO Images (wildlife_id, image_path) VALUES (?, ?)",
-        (wildlife_id, saved_filename)
+        "INSERT INTO Images (wildlife_id, image_path, metadata) VALUES (?, ?, JSONB(?))",
+        (wildlife_id, saved_filename, json.dumps(exif_dict)),
     )
 
+    return (
+        jsonify(
+            {
+                "message": "Image added successfully",
+                "image_id": image_id,
+                "image_path": saved_filename,
+            }
+        ),
+        201,
+    )
 
-    return jsonify({"message": "Image added successfully", "image_id": image_id, "image_path": saved_filename}), 201
 
 @images_bp.route("/api/replace-image/<int:image_id>", methods=["PUT"])
 def replace_image(image_id):
@@ -97,15 +165,20 @@ def replace_image(image_id):
     # Save new file
     saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
     db_helpers.update(
-        "UPDATE Images SET image_path = ? WHERE id = ?",
-        (saved_filename, image_id)
+        "UPDATE Images SET image_path = ? WHERE id = ?", (saved_filename, image_id)
     )
 
-    return jsonify({
-        "message": "Image replaced successfully",
-        "image_id": image_id,
-        "image_path": saved_filename
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Image replaced successfully",
+                "image_id": image_id,
+                "image_path": saved_filename,
+            }
+        ),
+        200,
+    )
+
 
 @images_bp.route("/api/set-thumbnail", methods=["PUT"])
 def set_thumbnail():
@@ -118,23 +191,43 @@ def set_thumbnail():
         return jsonify({"error": "wildlife_id and thumbnail_id are required"}), 400
 
     # Check if wildlife exists
-    wildlife = db_helpers.select_one("SELECT id FROM Wildlife WHERE id = ?", [wildlife_id])
+    wildlife = db_helpers.select_one(
+        "SELECT id FROM Wildlife WHERE id = ?", [wildlife_id]
+    )
     if not wildlife:
         return jsonify({"error": f"Wildlife with id {wildlife_id} does not exist"}), 404
 
     # Check if image exists and belongs to the wildlife
-    if thumbnail_id != 'null':
-        image = db_helpers.select_one("SELECT id FROM Images WHERE id = ? AND wildlife_id = ?", [thumbnail_id, wildlife_id])
+    if thumbnail_id != "null":
+        image = db_helpers.select_one(
+            "SELECT id FROM Images WHERE id = ? AND wildlife_id = ?",
+            [thumbnail_id, wildlife_id],
+        )
         if not image:
-            return jsonify({"error": f"Image with id {thumbnail_id} does not exist for wildlife {wildlife_id}"}), 404
+            return (
+                jsonify(
+                    {
+                        "error": f"Image with id {thumbnail_id} does not exist for wildlife {wildlife_id}"
+                    }
+                ),
+                404,
+            )
 
     # Update the thumbnail_id in the Wildlife table
     db_helpers.mutate(
-        "UPDATE Wildlife SET thumbnail_id = ? WHERE id = ?",
-        (thumbnail_id, wildlife_id)
+        "UPDATE Wildlife SET thumbnail_id = ? WHERE id = ?", (thumbnail_id, wildlife_id)
     )
 
-    return jsonify({"message": "Thumbnail updated successfully", "wildlife_id": wildlife_id, "thumbnail_id": thumbnail_id}), 200
+    return (
+        jsonify(
+            {
+                "message": "Thumbnail updated successfully",
+                "wildlife_id": wildlife_id,
+                "thumbnail_id": thumbnail_id,
+            }
+        ),
+        200,
+    )
 
 
 @images_bp.route("/api/get-images-by-wildlife-id/<int:wildlife_id>", methods=["GET"])
@@ -145,7 +238,14 @@ def get_images_by_wildlife_id(wildlife_id):
     """
     print("get_images_by_wildlife_id", wildlife_id)
     try:
-        images = db_helpers.select_multiple("SELECT id, image_path FROM Images WHERE wildlife_id = ?", [wildlife_id])
+        images = db_helpers.select_multiple(
+            "SELECT id, image_path, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
+            [wildlife_id],
+        )
+        for image in images:
+            print(image)
+            print(image["metadata"])
+            image["metadata"] = json.loads(image["metadata"])
         # print(images)
         return jsonify(images), 200
     except Exception as e:
@@ -160,7 +260,9 @@ def get_image_by_image_id(image_id):
     Example request:
     GET /api/get-image-by-image-id/2
     """
-    image = db_helpers.select_one("SELECT image_path FROM Images WHERE id = ?", [image_id])
+    image = db_helpers.select_one(
+        "SELECT image_path FROM Images WHERE id = ?", [image_id]
+    )
     if image is None:
         return jsonify({"error": "Image not found"}), 404
 
@@ -197,7 +299,10 @@ def delete_image_by_id(image_id):
             print(f"Error deleting image file {file_path}: {e}")
 
     # Check if the image is the thumbnail for its wildlife
-    wildlife = db_helpers.select_one("SELECT id, thumbnail_id, name FROM Wildlife WHERE id = ?", [image["wildlife_id"]])
+    wildlife = db_helpers.select_one(
+        "SELECT id, thumbnail_id, name FROM Wildlife WHERE id = ?",
+        [image["wildlife_id"]],
+    )
     is_thumbnail = False
     if wildlife and wildlife["thumbnail_id"] is not None:
         is_thumbnail = str(wildlife["thumbnail_id"]) == str(image_id)
@@ -206,24 +311,31 @@ def delete_image_by_id(image_id):
     db_helpers.delete("DELETE FROM Images WHERE id = ?", [image_id])
 
     if is_thumbnail and wildlife:
-        db_helpers.mutate("UPDATE Wildlife SET thumbnail_id = NULL WHERE id = ?", [wildlife["id"]])
-        return jsonify({
-            "message": (
-                f"Image successfully deleted. Warning: this was the thumbnail for wildlife '{wildlife.get('name', '')}' "
-                f"(ID: {wildlife['id']}). Please set a new thumbnail."
-            )
-        }), 200
-    else: 
+        db_helpers.mutate(
+            "UPDATE Wildlife SET thumbnail_id = NULL WHERE id = ?", [wildlife["id"]]
+        )
+        return (
+            jsonify(
+                {
+                    "message": (
+                        f"Image successfully deleted. Warning: this was the thumbnail for wildlife '{wildlife.get('name', '')}' "
+                        f"(ID: {wildlife['id']}). Please set a new thumbnail."
+                    )
+                }
+            ),
+            200,
+        )
+    else:
         return jsonify({"message": "Image successfully deleted"}), 200
 
 
 @images_bp.route("/api/delete_image/", methods=["DELETE"])
-def delete_image(): 
+def delete_image():
     """
     Deletes an image. If that image is the thumbnail, sets thumbnail_id to null until a new thumbnail is assigned.
     Also deletes the image file from uploaded_images.
 
-    Example request: 
+    Example request:
     DELETE /api/delete_image/?id=2
     """
     image_id = request.args["id"]
