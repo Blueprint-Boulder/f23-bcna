@@ -158,8 +158,8 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
         onContextMenu={e => e.preventDefault()}
       />
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
-        <p>{wildlife.name}</p>
-        <p>{wildlife.scientific_name}</p>
+        <p className="font-bold">{wildlife.name}</p>
+        <p className="italic">{wildlife.scientific_name}</p>
         {matchedImage?.metadata?.datetime && (
           <p>{parseExifDateTime(matchedImage.metadata.datetime).toLocaleDateString()}</p>
         )}
