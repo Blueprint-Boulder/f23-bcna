@@ -8,7 +8,9 @@ PROJECT_ROOT = os.path.dirname(THIS_FOLDER)
 DATA_FOLDER = os.path.join(PROJECT_ROOT, "data")
 
 DEFAULT_DB_PATH = os.path.join(DATA_FOLDER, "butterflies", "database.db")
-DEFAULT_IMAGE_UPLOAD_FOLDER = os.path.join(DATA_FOLDER, "butterflies", "uploaded_images")
+DEFAULT_IMAGE_UPLOAD_FOLDER = os.path.join(
+    DATA_FOLDER, "butterflies", "uploaded_images"
+)
 
 
 def _normalize_dataset_name(name: str) -> str:
@@ -53,6 +55,7 @@ def get_active_database_path() -> str:
         return current_app.config.get("DATABASE", DEFAULT_DB_PATH)
     return DEFAULT_DB_PATH
 
+
 def ensure_upload_folder_exists():
     folder = get_active_image_upload_folder()
     if not os.path.exists(folder):
@@ -60,13 +63,16 @@ def ensure_upload_folder_exists():
         print(f"[DB DEBUG] Created missing folder: {folder}")
     return folder
 
+
 def get_active_image_upload_folder() -> str:
     dataset_config = _get_dataset_config()
     if dataset_config:
         return dataset_config["image_upload_folder"]
 
     if has_app_context():
-        return current_app.config.get("IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER)
+        return current_app.config.get(
+            "IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER
+        )
     return DEFAULT_IMAGE_UPLOAD_FOLDER
 
 
@@ -82,7 +88,9 @@ def find_existing_image_folder(filename: str) -> str | None:
             if os.path.exists(os.path.join(folder, filename)):
                 return folder
 
-        fallback_folder = current_app.config.get("IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER)
+        fallback_folder = current_app.config.get(
+            "IMAGE_UPLOAD_FOLDER", DEFAULT_IMAGE_UPLOAD_FOLDER
+        )
         if os.path.exists(os.path.join(fallback_folder, filename)):
             return fallback_folder
 
@@ -94,7 +102,7 @@ def get_connection():
     print(f"[DB DEBUG] Attempting to connect to database: {db_path}")  # Debug
     try:
         conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row 
+        conn.row_factory = sqlite3.Row
         print("[DB DEBUG] Database connection established.")
         return conn
     except Exception as e:
@@ -117,7 +125,8 @@ def insert(query: str, params: Sequence[Any] = ()) -> int:
 
 def mutate(query: str, params: Sequence[Any] = ()) -> int:
     """Executes a mutating query (UPDATE or DELETE) and returns the number of affected rows.
-    This also works with INSERT, but if you want to get the last inserted row ID, you should use the insert function instead."""
+    This also works with INSERT, but if you want to get the last inserted row ID, you should use the insert function instead.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query, params)
