@@ -5,6 +5,7 @@
 import { useState, useEffect, useContext, useMemo } from "react";
 import { AdminContext } from "../../services/adminContext";
 import { NavLink } from "react-router-dom";
+import { Filter, X } from "lucide-react";
 import apiService from "../../services/apiService";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
@@ -130,6 +131,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   const [wildlife, setWildlife] = useState([]);
   const [openFamilies, setOpenFamilies] = useState(new Set());
   const [selectedGenera, setSelectedGenera] = useState(new Set());
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { admin } = useContext(AdminContext);
 
   // Fetch all wildlife entries for the selected dataset each time `type` changes.
@@ -226,9 +228,9 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       </section>
 
       <div className="p-5">
-        <div className="flex max-w-[1500px] mx-auto gap-5">
-          {/* Sidebar */}
-          <aside className="w-[280px] shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
+        <div className="flex max-w-375 mx-auto gap-5">
+          {/* Sidebar - Desktop Only */}
+          <aside className="hidden md:block w-70 shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
             <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
               Filters
             </h5>
@@ -249,6 +251,32 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
 
           {/* Main content */}
           <main className="w-full min-w-0">
+            {/* Mobile Filter Button */}
+            <div className="md:hidden mb-4 flex justify-between items-center">
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-sand-100 border border-sand-200 rounded-lg text-sand-600 font-medium hover:bg-sand-200 transition-colors"
+              >
+                <Filter size={18} />
+                Filters
+                {hasFilters && (
+                  <span className="bg-sand-400 text-white text-xs px-2 py-0.5 rounded-full">
+                    {selectedGenera.size}
+                  </span>
+                )}
+              </button>
+              
+              {/* Clear filters button for mobile */}
+              {hasFilters && (
+                <button
+                  onClick={() => setSelectedGenera(new Set())}
+                  className="text-sand-400 text-sm hover:text-sand-600 transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
             <input
               type="text"
               value={search}
@@ -279,6 +307,60 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
           </main>
         </div>
       </div>
+
+      {/* Mobile Filters Modal */}
+      {showMobileFilters && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
+          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+            <div className="flex items-center justify-between p-4 border-b border-sand-200">
+              <h3 className="font-['Montserrat',sans-serif] text-sand-600 text-lg font-semibold">
+                Filters
+              </h3>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="p-2 text-sand-400 hover:text-sand-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="font-['Playfair_Display']">
+                {[...familyMap.entries()].map(([family, genera]) => (
+                  <FamilyFilter
+                    key={family}
+                    family={family}
+                    genera={genera}
+                    openFamilies={openFamilies}
+                    setOpenFamilies={setOpenFamilies}
+                    familyChecked={familyState(family)}
+                    toggleFamily={toggleFamily}
+                    selectedGenera={selectedGenera}
+                    toggleGenus={toggleGenus}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-sand-200 p-4">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSelectedGenera(new Set())}
+                  className="flex-1 px-4 py-2 border border-sand-300 text-sand-600 rounded-lg hover:bg-sand-50 transition-colors"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="flex-1 px-4 py-2 bg-sand-400 text-white rounded-lg hover:bg-sand-500 transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
