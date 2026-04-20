@@ -229,6 +229,7 @@ def init_all_dbs():
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
+        # cursor.execute("ALTER TABLE Images ADD COLUMN metadata JSONB")
         cursor.executescript(sql_script)
         conn.commit()
 
