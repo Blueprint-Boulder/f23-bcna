@@ -57,7 +57,7 @@ export const Footer = () => {
           <div className="flex flex-wrap gap-x-16 gap-y-10">
             <div className="flex flex-col gap-2">
               <h5 className="text-sand-400 text-xs font-bold tracking-[0.1em] uppercase mb-2">Pages</h5>
-              {['wildlife', 'glossary', 'about', 'resources', 'contact'].map((page) => (
+              {['Wildlife', 'Glossary', 'About', 'Resources', 'Contact'].map((page) => (
                 <Link 
                   key={page}
                   to={`/${page === 'wildlife' ? 'butterflies' : page}`} 
@@ -78,7 +78,7 @@ export const Footer = () => {
                 rel="noopener noreferrer" 
                 className={linkUnderlineStyles}
               >
-                main website
+                Main Website
                 <span className={underlineSpan} />
               </a>
             </div>

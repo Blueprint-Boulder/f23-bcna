@@ -4,7 +4,7 @@
  */
 import { useParams, Link, NavLink } from "react-router-dom";
 import { useState, useContext } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
 import { AdminContext } from "../services/adminContext";
 import { AdminLogin } from "./AdminLogin";
 
@@ -25,6 +25,7 @@ const navLinks = [
 
 export const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { category } = useParams();
   // currentSite is the dataset currently selected via the URL param.
   const currentSite = sites.find(s => s.id === category) || sites[0];
@@ -45,9 +46,9 @@ export const NavBar = () => {
           You are currently in admin mode.
         </div>
       )}
-      <nav className={`flex items-center justify-between px-[17px] py-[6px] h-[110px] bg-sand-50`}>
+      <nav className={`flex items-center justify-between px-4.25 py-1.5 h-27.5 bg-sand-50 relative`}>
         
-        {/* Left side */}
+        {/* Left side - Logo and Site Switcher */}
         <div 
           className="relative group"
           onMouseEnter={() => setIsMenuOpen(true)}
@@ -56,37 +57,37 @@ export const NavBar = () => {
           <div className="flex items-center cursor-pointer">
             <Link 
               to={currentSite.path} 
-              className={`w-[312px] h-[98px] flex items-center ${currentSite.hoverBg} rounded-xl relative`}
+              className={`w-78 h-24.5 flex items-center ${currentSite.hoverBg} rounded-xl relative md:w-78 md:h-24.5 sm:w-50 sm:h-15`}
             >
-              <img src={currentSite.logo} alt={currentSite.label} className="w-[300px] h-[98px] object-cover"/>
+              <img src={currentSite.logo} alt={currentSite.label} className="w-75 h-24.5 object-cover md:w-75 md:h-24.5 sm:w-45 sm:h-15"/>
 
               <ChevronDown
                 size={24}
                 strokeWidth={1.75}
-                className={`text-sand-400 transition-all duration-300 ml-[-10px] ${
+                className={`text-sand-400 transition-all duration-300 -ml-2.5 md:block hidden ${
                   isMenuOpen ? 'rotate-180' : ''
                 }`}
               />
             </Link>
           </div>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu - Desktop */}
           {isMenuOpen && (
-            <div className="absolute top-[98px] left-0 w-[350px] bg-white border border-gray-100 rounded-2xl shadow-lg p-2 z-40 flex flex-col">
+            <div className="absolute top-24.5 left-0 w-87.5 bg-white border border-gray-100 rounded-2xl shadow-lg p-2 z-40 flex flex-col hidden md:flex">
               {otherSites.map((site) => (
                 <Link 
                   key={site.id}
                   to={site.path} 
-                  className={`group/item flex items-center justify-between h-[114px] w-[334px] ${site.hoverBg} py-2 rounded-xl transition-colors`}
+                  className={`group/item flex items-center justify-between h-28.5 w-83.5 ${site.hoverBg} py-2 rounded-xl transition-colors`}
                 >
                   <img 
                     src={site.logo}
                     alt={site.label}
-                    className="h-[98px] object-contain" 
+                    className="h-24.5 object-contain" 
                   />
                   
                   <ChevronRight 
-                    className="text-sand-400 ml-[-10px] opacity-0 transition-all duration-300 group-hover/item:opacity-100 z-50" 
+                    className="text-sand-400 -ml-2.5 opacity-0 transition-all duration-300 group-hover/item:opacity-100 z-50" 
                     size={24}
                     strokeWidth={1.75}
                   />
@@ -96,8 +97,8 @@ export const NavBar = () => {
           )}
         </div>
       
-        {/* Right side */}
-        <div className="flex items-center gap-[36px] px-3">
+        {/* Right side - Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-9 px-3">
           {navLinks.map((link) => (
             <NavLink
               key={link.name}
@@ -109,6 +110,56 @@ export const NavBar = () => {
             </NavLink>
           ))}
         </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden text-sand-400 p-2"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden">
+            {/* Mobile Site Switcher */}
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex flex-col space-y-2">
+                {otherSites.map((site) => (
+                  <Link
+                    key={site.id}
+                    to={site.path}
+                    className={`flex items-center justify-left h-28.5 w-full ${site.hoverBg} py-2 rounded-xl transition-colors`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <img
+                      src={site.logo}
+                      alt={site.label}
+                      className="h-24.5 object-contain"
+                    />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Navigation Links */}
+            <div className="p-4">
+              <div className="flex flex-col space-y-4">
+                {navLinks.map((link) => (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    className="text-sand-600 font-medium py-2 px-3 rounded-lg hover:bg-sand-50 transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
     </>
   );
