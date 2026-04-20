@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 import os
+import json
 from app import db_helpers
 
 # from .utils import save_file, get_parent_ids  # Adjust import if needed
@@ -8,6 +9,29 @@ import sqlite3
 from exif import Image
 
 images_bp = Blueprint("images", __name__)
+
+
+def normalize(value):
+    # bytes → string
+    if isinstance(value, bytes):
+        return value.decode(errors="ignore")
+
+    # rational numbers → float
+    if hasattr(value, "numerator") and hasattr(value, "denominator"):
+        try:
+            return float(value)
+        except Exception:
+            return str(value)
+
+    # iterables (e.g., tuples of rationals)
+    if isinstance(value, (list, tuple)):
+        return [normalize(v) for v in value]
+
+    # fallback: convert unknown objects (like Flash) to string
+    if not isinstance(value, (str, int, float, bool, type(None))):
+        return str(value)
+
+    return value
 
 
 @images_bp.route(
@@ -70,19 +94,28 @@ def add_image():
             400,
         )
 
-    with open(saved_filename) as f:
-        img = Image(image_file.stream)
-        img.set("copyright", "All Rights Reserved bcna.org")
-        img.set("creator", "Boulder County Nature Association")
-        meta = img.get_all()
-        saved_filename = save_file(
-            img.get_file(), db_helpers.get_active_image_upload_folder()
-        )
+    saved_filename = save_file(image_file, db_helpers.get_active_image_upload_folder())
+
+    with open(
+        os.path.join(db_helpers.get_active_image_upload_folder(), saved_filename), "rb"
+    ) as f:
+        img = Image(f)
+        exif_dict = {}
+
+        if img.has_exif:
+            for tag in img.list_all():
+                try:
+                    raw = getattr(img, tag)
+                    exif_dict[tag] = normalize(raw)
+                except Exception:
+                    continue
+
+        print(exif_dict, json.dumps(exif_dict))
 
     # Insert the image and get its ID
     image_id = db_helpers.insert(
-        "INSERT INTO Images (wildlife_id, image_path, metadata) VALUES (?, ?, ?)",
-        (wildlife_id, saved_filename, meta),
+        "INSERT INTO Images (wildlife_id, image_path, metadata) VALUES (?, ?, JSONB(?))",
+        (wildlife_id, saved_filename, json.dumps(exif_dict)),
     )
 
     return (
@@ -206,8 +239,13 @@ def get_images_by_wildlife_id(wildlife_id):
     print("get_images_by_wildlife_id", wildlife_id)
     try:
         images = db_helpers.select_multiple(
-            "SELECT id, image_path FROM Images WHERE wildlife_id = ?", [wildlife_id]
+            "SELECT id, image_path, JSON(metadata) AS metadata FROM Images WHERE wildlife_id = ?",
+            [wildlife_id],
         )
+        for image in images:
+            print(image)
+            print(image["metadata"])
+            image["metadata"] = json.loads(image["metadata"])
         # print(images)
         return jsonify(images), 200
     except Exception as e:
