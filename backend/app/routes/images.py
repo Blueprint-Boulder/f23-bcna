@@ -1,3 +1,4 @@
+# images.py
 from flask import Blueprint, request, jsonify, send_from_directory
 import os
 import json
@@ -243,9 +244,8 @@ def get_images_by_wildlife_id(wildlife_id):
             [wildlife_id],
         )
         for image in images:
-            print(image)
-            print(image["metadata"])
-            image["metadata"] = json.loads(image["metadata"])
+            if image["metadata"]:
+                image["metadata"] = json.loads(image["metadata"])
         # print(images)
         return jsonify(images), 200
     except Exception as e:
