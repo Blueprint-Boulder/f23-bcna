@@ -15,6 +15,26 @@ export const Glossary = () => {
   const [pendingScroll, setPendingScroll] = useState(null);
   const [highlightedTerm, setHighlightedTerm] = useState(null);
   const highlightTimeout = useRef(null);
+  const indexRef = useRef(null);
+
+  const scrollToIndexCentered = () => {
+    const el = indexRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const target = Math.max(0, top + el.offsetHeight / 2 - window.innerHeight / 2);
+    const start = window.scrollY;
+    const distance = target - start;
+    const duration = 80;
+    const startTime = performance.now();
+    const easeInOut = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      window.scrollTo(0, start + distance * easeInOut(progress));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
 
   const flashHighlight = (id) => {
     clearTimeout(highlightTimeout.current);
@@ -66,7 +86,7 @@ export const Glossary = () => {
       </div>
 
       {/* Index of Terms */}
-      <div className="max-w-4xl mx-auto px-8 mt-8 mb-6">
+      <div ref={indexRef} className="max-w-4xl mx-auto px-8 mt-8 mb-6">
         <h2 className="font-serif text-xl font-bold text-sand-700 mb-3">Index of Terms</h2>
         <div className="columns-2 sm:columns-3 md:columns-4 gap-x-8">
           {glossaryTerms.map(({ term }) => (
@@ -106,6 +126,19 @@ export const Glossary = () => {
             })}
           </dl>
         </div>
+      )}
+
+      {/* Floating Back to Top */}
+      {glossaryVisible && (
+        <button
+          onClick={scrollToIndexCentered}
+          className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-sand-700 hover:bg-sand-800 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-colors duration-10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+          Back to Top
+        </button>
       )}
 
     </div>
