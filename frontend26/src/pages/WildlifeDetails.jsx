@@ -172,6 +172,131 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
   );
 }
 
+// Generates a self-contained HTML page for printing/saving as PDF.
+function generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc) {
+  const fields = fieldOrder
+    .filter(key => filteredData[key])
+    .map(key => {
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      return `<p><strong>${label}:</strong> ${filteredData[key]}</p>`;
+    })
+    .join("");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${wildlife.name || "Wildlife"}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #b0b0b0; display: flex; justify-content: center; padding: 40px; font-family: Georgia, serif; }
+  .card { background: white; border: 2px solid #5b9bd5; padding: 16px 18px; width: 560px; }
+  .header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .name { font-size: 20px; font-weight: bold; }
+  .sci { font-size: 18px; font-style: italic; }
+  .photo { width: 100%; height: 310px; object-fit: cover; border: 1px solid #bbb; display: block; margin-bottom: 16px; }
+  .fields p { margin-bottom: 13px; font-size: 15px; line-height: 1.55; }
+  @media print {
+    body { background: white; padding: 0; justify-content: flex-start; }
+    .card { border: 2px solid #5b9bd5; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <span class="name">${wildlife.name || ""}</span>
+    <span class="sci">${wildlife.scientific_name || ""}</span>
+  </div>
+  <img class="photo" src="${imageSrc}" alt="${wildlife.name}" />
+  <div class="fields">${fields}</div>
+</div>
+</body>
+</html>`;
+}
+
+// PrintLayoutModal shows a preview of the print card and lets the user open
+// a print/save dialog in a new window.
+function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumbnail, baseUrl, onClose }) {
+  const rawSrc = highlight || thumbnail;
+  const imageSrc =
+    rawSrc?.startsWith("blob:") || rawSrc?.startsWith("http") ? rawSrc : `${baseUrl}${rawSrc}`;
+
+  const handlePrint = () => {
+    const html = generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc);
+    const win = window.open("", "_blank");
+    if (!win) { alert("Pop-up blocked — please allow pop-ups for this site."); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 600);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-xl bg-zinc-300 p-8 rounded-2xl shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-4 text-zinc-500 hover:text-zinc-800 text-2xl leading-none"
+        >
+          &times;
+        </button>
+
+        {/* Card preview */}
+        <div className="bg-white border-2 border-blue-400 p-4 font-serif">
+          {/* Header row */}
+          <div className="flex justify-between items-baseline mb-3">
+            <span className="text-lg font-bold">{wildlife.name}</span>
+            <span className="text-base italic">{wildlife.scientific_name}</span>
+          </div>
+
+          {/* Photo */}
+          <img
+            src={imageSrc}
+            alt={wildlife.name}
+            className="w-full h-56 object-cover border border-gray-300 mb-4"
+          />
+
+          {/* Fields */}
+          <div className="text-sm leading-relaxed space-y-2">
+            {fieldOrder
+              .filter(key => filteredData[key])
+              .map(key => (
+                <p key={key}>
+                  <strong className="capitalize">{key.replace(/_/g, " ")}:</strong>{" "}
+                  {filteredData[key]}
+                </p>
+              ))}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-3 mt-5">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 border border-zinc-400 rounded-full text-zinc-700 hover:bg-zinc-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePrint}
+            className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-semibold"
+          >
+            ⬇ Download / Print
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // WildlifeDetails is the main detail page for a single wildlife entity.
 // It supports viewing, editing, image management, and metadata ordering.
 export default function WildlifeDetails() {
@@ -190,6 +315,7 @@ export default function WildlifeDetails() {
   const [editingImage, setEditingImage] = useState(null);
   const [pendingThumbnail, setPendingThumbnail] = useState(null);
   const [pendingImages, setPendingImages] = useState([]);
+  const [showPrintLayout, setShowPrintLayout] = useState(false);
 
   const [fieldOrder, setFieldOrder] = useState([]); // array of field name strings
   const [fieldsNameToId, setFieldsNameToId] = useState({}); // { fieldName: fieldId }
@@ -538,6 +664,15 @@ export default function WildlifeDetails() {
                 <Trash /> Destroy
               </button>
             )}
+
+            {/* ↓ NEW */}
+            <button
+              onClick={() => setShowPrintLayout(true)}
+              className="px-6 py-2 font-bold text-blue-600 transition-all border border-blue-300 rounded-full hover:bg-blue-50"
+            >
+              Print Layout
+            </button>
+
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -556,6 +691,17 @@ export default function WildlifeDetails() {
             highlight={highlight}
             BASE_IMG_URL={BASE_IMG_URL}
             onClose={() => setImageClicked(null)}
+          />
+        )}
+        {showPrintLayout && (
+          <PrintLayoutModal
+            wildlife={wildlife}
+            filteredData={filteredData}
+            fieldOrder={fieldOrder}
+            highlight={highlight}
+            thumbnail={thumbnail}
+            baseUrl={BASE_IMG_URL}
+            onClose={() => setShowPrintLayout(false)}
           />
         )}
         {editingImage !== null && (
