@@ -19,7 +19,7 @@ export const About = () => {
       <div className="max-w-[1183px] mx-32 mt-14 mb-20">
 
         <h2 className="text-3xl font-bold font-serif text-[#193024] mb-6">
-          Replace with Better Header
+          About This Site
         </h2>
 
         <h3 className="font-serif text-xl font-semibold text-[#193024] mb-3">

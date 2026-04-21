@@ -14,6 +14,7 @@ export const Glossary = () => {
   const [glossaryVisible, setGlossaryVisible] = useState(false);
   const [pendingScroll, setPendingScroll] = useState(null);
   const [highlightedTerm, setHighlightedTerm] = useState(null);
+  const [buttonBottom, setButtonBottom] = useState(32);
   const highlightTimeout = useRef(null);
   const indexRef = useRef(null);
 
@@ -55,6 +56,24 @@ export const Glossary = () => {
   }, [glossaryVisible, pendingScroll]);
 
   useEffect(() => () => clearTimeout(highlightTimeout.current), []);
+
+  useEffect(() => {
+    if (!glossaryVisible) return;
+    const updateBottom = () => {
+      const footer = document.querySelector("footer");
+      if (!footer) return;
+      const footerTop = footer.getBoundingClientRect().top;
+      const overflow = window.innerHeight - footerTop;
+      setButtonBottom(overflow > 0 ? overflow + 8 : 32);
+    };
+    updateBottom();
+    window.addEventListener("scroll", updateBottom);
+    window.addEventListener("resize", updateBottom);
+    return () => {
+      window.removeEventListener("scroll", updateBottom);
+      window.removeEventListener("resize", updateBottom);
+    };
+  }, [glossaryVisible]);
 
   // handleTermClick navigates to a glossary term and highlights it.
   // When the glossary content is hidden, it opens the section first.
@@ -132,7 +151,8 @@ export const Glossary = () => {
       {glossaryVisible && (
         <button
           onClick={scrollToIndexCentered}
-          className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-sand-700 hover:bg-sand-800 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-colors duration-10"
+          style={{ bottom: buttonBottom }}
+          className="fixed right-8 z-50 flex items-center gap-2 bg-sand-700 hover:bg-sand-800 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-colors duration-10"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
