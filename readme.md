@@ -22,6 +22,8 @@ A full-stack web application for the Boulder County Nature Association (BCNA) th
 - **React Router** - Client-side routing
 - **Axios** - HTTP client for API calls
 - **Lucide React** - Icon library
+- **FlexSearch** - Full-text search library for wildlife entries
+- **Vite React Markdown Plugin** - Import markdown files as React components
 
 ### Backend
 - **Flask** - Python web framework
@@ -90,32 +92,81 @@ The backend will run on `http://localhost:5000`.
 ```
 ├── backend/              # Flask backend application
 │   ├── app/             # Main application package
-│   │   ├── __init__.py
+│   │   ├── __init__.py  # Flask app initialization
+│   │   ├── db_helpers.py # Database utility functions
+│   │   ├── models.py    # Data models
+│   │   ├── create.sql   # Database schema
 │   │   ├── routes/      # API route handlers
 │   │   │   ├── auth.py
 │   │   │   ├── categories.py
 │   │   │   ├── images.py
+│   │   │   └── wildlife.py
 │   │   └── utils.py
 │   ├── data/            # Database files (auto-generated)
 │   │   ├── butterflies/
 │   │   ├── dragonflies/
 │   │   └── wildflowers/
+│   ├── tests/           # Test files
 │   ├── main.py          # Application entry point
-│   └── requirements.txt # Python dependencies
+│   ├── requirements.txt # Python dependencies
+│   └── Dockerfile       # Backend container configuration
 ├── frontend26/          # React frontend application
-│   ├── public/          # Static assets
+│   ├── public/          # Static assets (images)
 │   ├── src/
 │   │   ├── components/  # Reusable UI components
+│   │   │   ├── ActionButton.jsx
+│   │   │   ├── AdminLogin.jsx
+│   │   │   ├── FilterBar.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── Layouts.jsx
+│   │   │   ├── NavBar.jsx
+│   │   │   ├── SearchBar.jsx
+│   │   │   ├── icons/   # Icon components
+│   │   │   └── ResultTypes/  # Result display components
+│   │   ├── content/     # Markdown content files
+│   │   │   ├── About.md
+│   │   │   └── Resources.md
+│   │   ├── data/        # Static data
+│   │   │   └── glossaryTerms.json
 │   │   ├── pages/       # Page components
+│   │   │   ├── About.jsx
+│   │   │   ├── Contact.jsx
+│   │   │   ├── Glossary.jsx
+│   │   │   ├── Resources.jsx
+│   │   │   ├── WildlifeDetails.jsx
 │   │   │   └── WildlifeDBs/  # Database-specific pages
-│   │   └── services/    # API service layer
+│   │   │       ├── ButterflyDB.jsx
+│   │   │       ├── DragonflyDB.jsx
+│   │   │       ├── WildflowerDB.jsx
+│   │   │       ├── WildlifeDB.jsx  # Base component for all databases
+│   │   │       └── TemplateDB.jsx  # Template for new databases
+│   │   ├── services/    # API service layer
+│   │   │   ├── adminContext.jsx
+│   │   │   └── apiService.js
+│   │   ├── App.jsx      # Root component
+│   │   ├── main.jsx     # Entry point
+│   │   ├── App.css
+│   │   └── index.css
 │   ├── package.json
-│   └── vite.config.js
+│   ├── vite.config.js
+│   ├── eslint.config.js
+│   ├── tailwind.config.js
+│   ├── nginx.conf       # Nginx configuration for production
+│   └── Dockerfile       # Frontend container configuration
 ├── compose.yaml         # Docker Compose configuration
-├── run_website.py       # Development setup script
+├── run_website.py       # Development setup and startup script
 ├── .env                 # Environment variables
-└── readme.md           # This file
+└── README.md            # This file
 ```
+
+## Markdown-Based Pages
+
+The About and Resources pages are built from markdown files located in `frontend26/src/content/`:
+
+- **About.md** - Rendered on the About page
+- **Resources.md** - Rendered on the Resources page
+
+These markdown files are imported and rendered as React components using the Vite React Markdown plugin, allowing for easy content updates without modifying React code.
 
 ## Creating a New Wildlife Database
 
