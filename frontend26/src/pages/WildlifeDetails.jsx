@@ -234,7 +234,7 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-6 p-6 bg-black/70 overflow-y-auto"
       onClick={onClose}
     >
       <div
@@ -653,7 +653,7 @@ export default function WildlifeDetails() {
           </div>
         </div>
 
-        {/* Fixed Admin Save Bar */}
+        {/* Admin Save Bar */}
         {admin && (
           <div className="fixed z-50 flex items-center gap-6 px-8 py-4 -translate-x-1/2 bg-white border border-pink-100 rounded-full shadow-2xl bottom-8 left-1/2">
             {!isNew && (
@@ -665,7 +665,6 @@ export default function WildlifeDetails() {
               </button>
             )}
 
-            {/* ↓ NEW */}
             <button
               onClick={() => setShowPrintLayout(true)}
               className="px-6 py-2 font-bold text-blue-600 transition-all border border-blue-300 rounded-full hover:bg-blue-50"
