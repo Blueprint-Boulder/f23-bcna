@@ -41,7 +41,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
             src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-            onError={ev => {ev.target.src = '/lindenballing.png';ev.target.style.objectFit='fill'}}
+            //onError={ev => {ev.target.src = '/errorphoto.png';ev.target.style.objectFit='fill'}}
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full text-sand-200">
@@ -309,9 +309,9 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       </div>
 
       {/* Mobile Filters Modal */}
-      {showMobileFilters && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden">
-          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+      <div className={`fixed inset-0 z-50 md:hidden ${showMobileFilters ? 'bg-black bg-opacity-20' : 'bg-transparent pointer-events-none'}`} onClick={() => setShowMobileFilters(false)}>
+        <div className={`fixed inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${showMobileFilters ? 'translate-x-0' : '-translate-x-full'}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`flex flex-col h-full ${showMobileFilters ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <div className="flex items-center justify-between p-4 border-b border-sand-200">
               <h3 className="font-['Montserrat',sans-serif] text-sand-600 text-lg font-semibold">
                 Filters
@@ -360,7 +360,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
             </div>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }
