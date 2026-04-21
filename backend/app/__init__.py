@@ -5,12 +5,12 @@ from app.routes.wildlife import wildlife_bp
 from app.routes.categories import categories_bp
 from app.routes.images import images_bp
 from app.routes.auth import auth_bp
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 
 def _normalize_dataset_name(name: str) -> str:
@@ -70,15 +70,19 @@ def create_app(test_config=None):
                 app.config["DATASET_CONFIGS"].keys()
             )[0]
 
+    app = ProxyFix(app, x_for=1, x_host=1)
+
     # Enable CORS for frontend
     CORS(
         app,
         origins=[
-            o for o in [
+            o
+            for o in [
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 os.getenv("FRONTEND_URL"),
-            ] if o is not None
+            ]
+            if o is not None
         ],
         supports_credentials=True,
     )
