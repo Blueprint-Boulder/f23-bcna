@@ -1,6 +1,6 @@
-# BCNA Wildlife Database Frontend
+# BCNA Wildlife Database
 
-This is the React frontend for the Boulder County Nature Association (BCNA) wildlife database application. It provides a searchable, filterable interface for exploring local wildlife including butterflies, dragonflies, and wildflowers.
+A full-stack web application for the Boulder County Nature Association (BCNA) that provides a searchable, filterable database of local wildlife including butterflies, dragonflies, and wildflowers.
 
 ## Features
 
@@ -10,15 +10,25 @@ This is the React frontend for the Boulder County Nature Association (BCNA) wild
 - **Admin Panel**: Administrative interface for adding/editing wildlife entries
 - **Image Gallery**: Display wildlife photos with thumbnails
 - **Multi-Dataset Support**: Support for multiple wildlife datasets
+- **RESTful API**: Backend API for data management
+- **Database Auto-Discovery**: Automatically detects and initializes new datasets
 
 ## Tech Stack
 
+### Frontend
 - **React 19** - Frontend framework
 - **Vite** - Build tool and development server
 - **Tailwind CSS** - Utility-first CSS framework
 - **React Router** - Client-side routing
 - **Axios** - HTTP client for API calls
 - **Lucide React** - Icon library
+
+### Backend
+- **Flask** - Python web framework
+- **SQLite** - Database engine
+- **Flask-CORS** - Cross-origin resource sharing
+- **python-dotenv** - Environment variable management
+- **Werkzeug** - WSGI utility library
 
 ## Development
 
@@ -56,46 +66,55 @@ If you prefer to run frontend and backend separately:
 #### Frontend Only
 
 ```bash
+cd frontend26
 npm install
 npm run dev
 ```
 
-The development server will start on `http://localhost:5173` (Vite's default port).
+The development server will start on `http://localhost:3000`.
 
 #### Backend Only
 
-See the main project README in the root directory for backend setup instructions.
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+The backend will run on `http://localhost:5000`.
 
 ## Project Structure
 
 ```
-src/
-├── components/          # Reusable UI components
-│   ├── ActionButton.jsx
-│   ├── AdminLogin.jsx
-│   ├── FilterBar.jsx
-│   ├── Footer.jsx
-│   ├── Layouts.jsx
-│   ├── NavBar.jsx
-│   ├── SearchBar.jsx
-│   └── icons/
-├── data/
-│   └── glossaryTerms.json
-├── pages/               # Page components
-│   ├── About.jsx
-│   ├── Contact.jsx
-│   ├── Glossary.jsx
-│   ├── Resources.jsx
-│   ├── WildlifeDetails.jsx
-│   └── WildlifeDBs/     # Database-specific pages
-│       ├── ButterflyDB.jsx
-│       ├── DragonflyDB.jsx
-│       ├── TemplateDB.jsx
-│       └── WildlifeDB.jsx
-├── services/
-│   ├── adminContext.jsx
-│   └── apiService.js
-└── main.jsx            # App entry point
+├── backend/              # Flask backend application
+│   ├── app/             # Main application package
+│   │   ├── __init__.py
+│   │   ├── routes/      # API route handlers
+│   │   │   ├── auth.py
+│   │   │   ├── categories.py
+│   │   │   ├── images.py
+│   │   └── utils.py
+│   ├── data/            # Database files (auto-generated)
+│   │   ├── butterflies/
+│   │   ├── dragonflies/
+│   │   └── wildflowers/
+│   ├── main.py          # Application entry point
+│   └── requirements.txt # Python dependencies
+├── frontend26/          # React frontend application
+│   ├── public/          # Static assets
+│   ├── src/
+│   │   ├── components/  # Reusable UI components
+│   │   ├── pages/       # Page components
+│   │   │   └── WildlifeDBs/  # Database-specific pages
+│   │   └── services/    # API service layer
+│   ├── package.json
+│   └── vite.config.js
+├── compose.yaml         # Docker Compose configuration
+├── run_website.py       # Development setup script
+├── .env                 # Environment variables
+└── readme.md           # This file
 ```
 
 ## Creating a New Wildlife Database
@@ -104,17 +123,17 @@ The application supports multiple wildlife datasets. To add a new database (e.g.
 
 ### Backend Setup
 
-1. **Create Dataset Folder**: In the `data/` directory (at the project root), create a new folder for your dataset:
+1. **Create Dataset Folder**: In the `backend/data/` directory, create a new folder for your dataset:
    ```bash
-   mkdir ../data/birds
-   mkdir ../data/birds/uploaded_images
+   mkdir backend/data/birds
+   mkdir backend/data/birds/uploaded_images
    ```
 
 2. **Database Initialization**: The backend will automatically discover the new dataset folder and create the SQLite database with the proper schema when the application starts.
 
 ### Frontend Setup
 
-1. **Create Database Component**: Create a new component in `src/pages/WildlifeDBs/` following the pattern of `TemplateDB.jsx`:
+1. **Create Database Component**: Create a new component in `frontend26/src/pages/WildlifeDBs/` following the pattern of `TemplateDB.jsx`:
 
    ```jsx
    // BirdDB.jsx
@@ -135,29 +154,28 @@ The application supports multiple wildlife datasets. To add a new database (e.g.
    }
    ```
 
-2. **Add Route**: Update the routing configuration to include the new database page. Check `src/App.jsx` or the routing setup to add the new route.
+2. **Add Route**: Update the routing configuration to include the new database page. Check `frontend26/src/App.jsx` or the routing setup to add the new route.
 
 3. **Add Navigation**: Update navigation components (like `NavBar.jsx`) to include links to the new database.
 
-4. **Hero Image**: Add the hero image referenced in the component to the `public/` directory.
+4. **Hero Image**: Add the hero image referenced in the component to the `frontend26/public/` directory.
 
 ### Key Points
 
 - The `type` prop must match the dataset folder name (normalized to lowercase with underscores)
-- The backend auto-discovers datasets by scanning the `data/` directory
+- The backend auto-discovers datasets by scanning the `backend/data/` directory
 - Each dataset gets its own SQLite database file
 - The `WildlifeDB` component handles all the common functionality (search, filtering, display)
 - Images are stored in `uploaded_images/` subfolders within each dataset directory
 
-## API Integration
+## API Documentation
 
-The frontend communicates with a Flask backend API. Key endpoints include:
+The backend provides a RESTful API with the following endpoints:
 
 - `GET /api/wildlife?dataset={type}` - Fetch all wildlife entries
 - `GET /api/get-image-by-image-id/{id}?dataset={type}` - Get wildlife images
 - `POST /api/auth/login` - Admin authentication
-
-See `src/services/apiService.js` for the complete API integration.
+- `GET /api/get-categories-and-fields?dataset={type}` - Get category metadata
 
 ## Contributing
 
@@ -165,4 +183,14 @@ See `src/services/apiService.js` for the complete API integration.
 2. Use Tailwind CSS classes for styling
 3. Ensure responsive design works on mobile devices
 4. Test with multiple datasets to ensure compatibility
-5. Run the linter before committing: `npm run lint`
+5. Run the linter before committing: `npm run lint` (frontend) or `pytest` (backend)
+
+## Deployment
+
+The application can be deployed using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This will build and run both frontend and backend services in containers.
