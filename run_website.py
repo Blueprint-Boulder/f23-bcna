@@ -24,21 +24,53 @@ def get_venv_python():
     return venv_python
 
 
+def check_prerequisites():
+    """Check if required tools are available."""
+    # Check Python version
+    python_version = subprocess.run([sys.executable, "--version"], capture_output=True, text=True)
+    if python_version.returncode != 0:
+        raise EnvironmentError("Python is not available.")
+    
+    version_str = python_version.stdout.strip()
+    print(f"Using {version_str}")
+    
+    # Check npm
+    npm_check = subprocess.run(["npm", "--version"], capture_output=True, text=True)
+    if npm_check.returncode != 0:
+        raise EnvironmentError("npm is not installed or not found in PATH. Please install Node.js.")
+    
+    print(f"Using npm {npm_check.stdout.strip()}")
+
+
 def setup_virtualenv():
     if not os.path.exists(venv_path):
         print("Creating virtual environment...")
         subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+    else:
+        print("Virtual environment already exists.")
 
 
 def install_python_dependencies():
     requirements_path = os.path.join(base_dir, "backend", "requirements.txt")
     if os.path.exists(requirements_path):
-        print("Installing Python dependencies...")
+        print("Installing/updating Python dependencies...")
         subprocess.run(
             [venv_python, "-m", "pip", "install", "-r", requirements_path], check=True
         )
     else:
         print("No requirements.txt found.")
+
+
+def check_env_file():
+    env_path = os.path.join(base_dir, ".env")
+    if not os.path.exists(env_path):
+        print("Warning: .env file not found. Creating with default values...")
+        with open(env_path, "w") as f:
+            f.write("VITE_BACKEND_URL=http://localhost:5000\n")
+            f.write("ADMIN_PASSWORD=SueCass\n")
+            f.write("SECRET_KEY=25a4ff20e399babc58ab4f32d72a7f2e4869e3b73a39b851c25d49bec06828e2\n")
+    else:
+        print(".env file found.")
 
 
 def run_backend():
@@ -67,6 +99,8 @@ def setup_frontend():
 
 
 def main():
+    check_prerequisites()
+    check_env_file()
     setup_virtualenv()
     install_python_dependencies()
     backend_process = run_backend()
