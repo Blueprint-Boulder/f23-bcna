@@ -538,24 +538,22 @@ export default function WildlifeDetails() {
               <input
                 type="text"
                 placeholder="Common Name"
-                className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-center bg-transparent border-b-2 border-pink-400 outline-none w-full placeholder:text-sand-200/50"
+                className="text-4xl md:text-5xl font-serif font-bold text-center bg-transparent border-b-2 border-pink-400 outline-none w-full placeholder:text-sand-200/50"
                 value={wildlife?.name || ""}
                 onChange={e => setWildlife({ ...wildlife, name: e.target.value })}
               />
               <input
                 type="text"
                 placeholder="Scientific Name"
-                className="text-xl md:text-2xl font-['Playfair_Display'] italic mt-2 opacity-90 bg-transparent border-b border-pink-300 outline-none text-center w-full placeholder:text-sand-200/50"
+                className="text-xl md:text-2xl font-serif italic mt-2 opacity-90 bg-transparent border-b border-pink-300 outline-none text-center w-full placeholder:text-sand-200/50"
                 value={wildlife?.scientific_name || ""}
                 onChange={e => setWildlife({ ...wildlife, scientific_name: e.target.value })}
               />
             </div>
           ) : (
             <>
-              <h1 className="text-4xl md:text-5xl font-['Playfair_Display'] font-bold text-center">{wildlife.name}</h1>
-              <p className="text-xl md:text-2xl font-['Playfair_Display'] italic mt-2 opacity-90">
-                {wildlife.scientific_name}
-              </p>
+              <h1 className="text-4xl md:text-5xl font-serif font-bold text-center">{wildlife.name}</h1>
+              <p className="text-xl md:text-2xl font-serif italic mt-2 opacity-90">{wildlife.scientific_name}</p>
             </>
           )}
         </div>

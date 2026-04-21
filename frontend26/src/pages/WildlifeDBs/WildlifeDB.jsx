@@ -52,8 +52,8 @@ function Result({ wildlifeType, id, name, sub, image }) {
         )}
       </div>
       <div className="p-3">
-        <p className="font-['Playfair_Display'] font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
-        <p className="font-['Playfair_Display'] italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
+        <p className="font-serif font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
+        <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
     </NavLink>
   );
@@ -241,7 +241,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       <div className="p-5">
         <div className="flex gap-5 mx-auto max-w-375">
           {/* Sidebar - Desktop Only */}
-          <aside className="hidden md:block w-70 shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
+          <aside className="hidden md:block w-70 shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-serif">
             <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
               Filters
             </h5>
@@ -291,7 +291,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={`Search ${wildlife.length.toLocaleString()} ${type}…`}
-              className="w-full font-['Playfair_Display'] bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
+              className="w-full font-serif bg-white px-3 py-2.5 text-xl rounded border border-sand-200 placeholder:text-sand-200 placeholder:italic outline-none focus:ring-2 focus:ring-sand-400 focus:ring-opacity-30"
             />
 
             <div className="flex flex-wrap gap-5 mt-5">
@@ -309,7 +309,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
             </div>
 
             {filtered.length === 0 && (
-              <p className="font-['Playfair_Display'] italic text-sand-400 mt-10 text-center">
+              <p className="font-serif italic text-sand-400 mt-10 text-center">
                 No {type} found for "{search}"
               </p>
             )}
@@ -340,7 +340,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto">
-              <div className="font-['Playfair_Display']">
+              <div className="font-serif">
                 {[...familyMap.entries()].map(([family, genera]) => (
                   <FamilyFilter
                     key={family}

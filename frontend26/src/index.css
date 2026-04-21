@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-sand-50: #faf8f4;
@@ -25,9 +26,15 @@ html {
 }
 
 @keyframes highlight-fade {
-  0%   { background-color: var(--color-sand-100); }
-  60%  { background-color: var(--color-sand-100); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: var(--color-sand-100);
+  }
+  60% {
+    background-color: var(--color-sand-100);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .glossary-term:target {
