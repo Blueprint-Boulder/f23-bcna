@@ -221,13 +221,15 @@ function generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc) {
 // a print/save dialog in a new window.
 function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumbnail, baseUrl, onClose }) {
   const rawSrc = highlight || thumbnail;
-  const imageSrc =
-    rawSrc?.startsWith("blob:") || rawSrc?.startsWith("http") ? rawSrc : `${baseUrl}${rawSrc}`;
+  const imageSrc = rawSrc?.startsWith("blob:") || rawSrc?.startsWith("http") ? rawSrc : `${baseUrl}${rawSrc}`;
 
   const handlePrint = () => {
     const html = generatePrintHTML(wildlife, filteredData, fieldOrder, imageSrc);
     const win = window.open("", "_blank");
-    if (!win) { alert("Pop-up blocked — please allow pop-ups for this site."); return; }
+    if (!win) {
+      alert("Pop-up blocked — please allow pop-ups for this site.");
+      return;
+    }
     win.document.write(html);
     win.document.close();
     win.focus();
@@ -236,44 +238,39 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-6 p-6 bg-black/70 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center p-6 pt-6 overflow-y-auto bg-black/70"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-zinc-300 p-8 rounded-2xl shadow-2xl"
+        className="relative w-full max-w-xl p-8 shadow-2xl bg-zinc-300 rounded-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-zinc-500 hover:text-zinc-800 text-2xl leading-none"
+          className="absolute text-2xl leading-none top-3 right-4 text-zinc-500 hover:text-zinc-800"
         >
           &times;
         </button>
 
         {/* Card preview */}
-        <div className="bg-white border-2 border-blue-400 p-4 font-serif">
+        <div className="p-4 font-serif bg-white border-2 border-blue-400">
           {/* Header row */}
-          <div className="flex justify-between items-baseline mb-3">
+          <div className="flex items-baseline justify-between mb-3">
             <span className="text-lg font-bold">{wildlife.name}</span>
             <span className="text-base italic">{wildlife.scientific_name}</span>
           </div>
 
           {/* Photo */}
-          <img
-            src={imageSrc}
-            alt={wildlife.name}
-            className="w-full h-56 object-cover border border-gray-300 mb-4"
-          />
+          <img src={imageSrc} alt={wildlife.name} className="object-cover w-full h-56 mb-4 border border-gray-300" />
 
           {/* Fields */}
-          <div className="text-sm leading-relaxed space-y-2">
+          <div className="space-y-2 text-sm leading-relaxed">
             {fieldOrder
               .filter(key => filteredData[key])
               .map(key => (
                 <p key={key}>
-                  <strong className="capitalize">{key.replace(/_/g, " ")}:</strong>{" "}
-                  {filteredData[key]}
+                  <strong className="capitalize">{key.replace(/_/g, " ")}:</strong> {filteredData[key]}
                 </p>
               ))}
           </div>
@@ -283,13 +280,13 @@ function PrintLayoutModal({ wildlife, filteredData, fieldOrder, highlight, thumb
         <div className="flex justify-end gap-3 mt-5">
           <button
             onClick={onClose}
-            className="px-5 py-2 border border-zinc-400 rounded-full text-zinc-700 hover:bg-zinc-200 transition-colors"
+            className="px-5 py-2 transition-colors border rounded-full border-zinc-400 text-zinc-700 hover:bg-zinc-200"
           >
             Cancel
           </button>
           <button
             onClick={handlePrint}
-            className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-semibold"
+            className="px-6 py-2 font-semibold text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-700"
           >
             ⬇ Download / Print
           </button>
@@ -325,7 +322,7 @@ export default function WildlifeDetails() {
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
 
-  const BASE_IMG_URL = "http://127.0.0.1:5000/api/get-image/";
+  const BASE_IMG_URL = `${import.meta.env.VITE_BACKEND_URL}/api/get-image/`;
 
   // Load category metadata and wildlife record data whenever the route changes.
   // When creating a new wildlife item, initialize blank fields. Otherwise load

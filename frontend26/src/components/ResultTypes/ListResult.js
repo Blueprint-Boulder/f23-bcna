@@ -8,24 +8,18 @@ const ListResult = ({ data }) => {
   );
   useEffect(() => {
     if (data.thumbnail_id) {
-      setThumbnail(
-        `http://127.0.0.1:5000/api/get-image-by-image-id/${data.thumbnail_id}`
-      );
+      setThumbnail(`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${data.thumbnail_id}`);
     }
   }, [data]);
   return (
-    <div className="list-result flex items-center p-4 border mb-4 rounded-lg">
+    <div className="flex items-center p-4 mb-4 border rounded-lg list-result">
       {/* Image on the left */}
-      <img
-        src={thumbnail}
-        alt={data.name}
-        className="w-36 h-22 object-contain mr-4"
-      />
+      <img src={thumbnail} alt={data.name} className="object-contain mr-4 w-36 h-22" />
 
       {/* Details on the right */}
       <div className="flex flex-col">
         {/* Name at the top in larger font */}
-        <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.id}`}>
+        <Link className="mb-2 text-lg font-bold" to={`/wildlife/${data.id}`}>
           {data.name}
         </Link>
 

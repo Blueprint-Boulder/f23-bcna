@@ -16,8 +16,8 @@ function AddCard({ wildlifeType, label }) {
       className="group flex flex-col w-full sm:w-[calc(33.333%-14px)] lg:w-[calc(25%-15px)] rounded-lg overflow-hidden border-2 border-dashed border-pink-200 bg-pink-50/30 hover:bg-pink-50 transition-all duration-200"
       to={`/${wildlifeType}/new`}
     >
-      <div className="aspect-square flex items-center justify-center">
-        <div className="text-pink-300 text-6xl font-light group-hover:scale-110 transition-transform">+</div>
+      <div className="flex items-center justify-center aspect-square">
+        <div className="text-6xl font-light text-pink-300 transition-transform group-hover:scale-110">+</div>
       </div>
       <div className="p-3 bg-white border-t border-pink-100">
         <p className="font-serif text-sm font-semibold text-pink-700">Add {label}</p>
@@ -38,7 +38,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
       <div className="overflow-hidden aspect-square bg-sand-100">
         {image ? (
           <img
-            src={`http://127.0.0.1:5000/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
+            src={`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
             //onError={ev => {ev.target.src = '/errorphoto.png';ev.target.style.objectFit='fill'}}
@@ -61,7 +61,16 @@ function Result({ wildlifeType, id, name, sub, image }) {
 
 // FamilyFilter renders a collapsible filter section for one taxonomic family.
 // It includes a tri-state checkbox for the family and nested genus checkboxes.
-function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, familyChecked, toggleFamily, selectedGenera, toggleGenus }) {
+function FamilyFilter({
+  family,
+  genera,
+  openFamilies,
+  setOpenFamilies,
+  familyChecked,
+  toggleFamily,
+  selectedGenera,
+  toggleGenus
+}) {
   const isOpen = openFamilies.has(family);
 
   const toggle = () =>
@@ -81,7 +90,9 @@ function FamilyFilter({ family, genera, openFamilies, setOpenFamilies, familyChe
         <input
           type="checkbox"
           className="accent-sand-400 w-3.5 h-3.5 shrink-0"
-          ref={el => { if (el) el.indeterminate = familyChecked === "indeterminate"; }}
+          ref={el => {
+            if (el) el.indeterminate = familyChecked === "indeterminate";
+          }}
           checked={familyChecked === "checked"}
           onChange={() => toggleFamily(family)}
           onClick={e => e.stopPropagation()}
@@ -164,7 +175,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   }, [wildlife]);
 
   // Toggle all genera within a family: select all if any are unchecked, otherwise clear them.
-  const toggleFamily = (family) => {
+  const toggleFamily = family => {
     const genera = familyMap.get(family) || new Set();
     setSelectedGenera(prev => {
       const next = new Set(prev);
@@ -175,14 +186,14 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     });
   };
 
-  const toggleGenus = (genus) =>
+  const toggleGenus = genus =>
     setSelectedGenera(prev => {
       const next = new Set(prev);
       next.has(genus) ? next.delete(genus) : next.add(genus);
       return next;
     });
 
-  const familyState = (family) => {
+  const familyState = family => {
     const genera = familyMap.get(family) || new Set();
     if (genera.size === 0) return "unchecked";
     let count = 0;
@@ -205,12 +216,12 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   return (
     <>
       {/* Hero */}
-      <section className="relative h-130 w-full overflow-hidden">
+      <section className="relative w-full overflow-hidden h-130">
         <div
-          className="absolute inset-0 bg-cover bg-no-repeat"
+          className="absolute inset-0 bg-no-repeat bg-cover"
           style={{
             backgroundImage: `url('${heroImage}')`,
-            backgroundPosition: heroPosition,
+            backgroundPosition: heroPosition
           }}
         >
           <div className="absolute inset-0 bg-black/10" />
@@ -228,7 +239,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       </section>
 
       <div className="p-5">
-        <div className="flex max-w-375 mx-auto gap-5">
+        <div className="flex gap-5 mx-auto max-w-375">
           {/* Sidebar - Desktop Only */}
           <aside className="hidden md:block w-70 shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-['Playfair_Display']">
             <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
@@ -252,25 +263,23 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
           {/* Main content */}
           <main className="w-full min-w-0">
             {/* Mobile Filter Button */}
-            <div className="md:hidden mb-4 flex justify-between items-center">
+            <div className="flex items-center justify-between mb-4 md:hidden">
               <button
                 onClick={() => setShowMobileFilters(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-sand-100 border border-sand-200 rounded-lg text-sand-600 font-medium hover:bg-sand-200 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 font-medium transition-colors border rounded-lg bg-sand-100 border-sand-200 text-sand-600 hover:bg-sand-200"
               >
                 <Filter size={18} />
                 Filters
                 {hasFilters && (
-                  <span className="bg-sand-400 text-white text-xs px-2 py-0.5 rounded-full">
-                    {selectedGenera.size}
-                  </span>
+                  <span className="bg-sand-400 text-white text-xs px-2 py-0.5 rounded-full">{selectedGenera.size}</span>
                 )}
               </button>
-              
+
               {/* Clear filters button for mobile */}
               {hasFilters && (
                 <button
                   onClick={() => setSelectedGenera(new Set())}
-                  className="text-sand-400 text-sm hover:text-sand-600 transition-colors"
+                  className="text-sm transition-colors text-sand-400 hover:text-sand-600"
                 >
                   Clear all
                 </button>
@@ -309,22 +318,28 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       </div>
 
       {/* Mobile Filters Modal */}
-      <div className={`fixed inset-0 z-50 md:hidden ${showMobileFilters ? 'bg-black bg-opacity-20' : 'bg-transparent pointer-events-none'}`} onClick={() => setShowMobileFilters(false)}>
-        <div className={`fixed inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${showMobileFilters ? 'translate-x-0' : '-translate-x-full'}`} onClick={(e) => e.stopPropagation()}>
-          <div className={`flex flex-col h-full ${showMobileFilters ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${showMobileFilters ? "bg-black bg-opacity-20" : "bg-transparent pointer-events-none"}`}
+        onClick={() => setShowMobileFilters(false)}
+      >
+        <div
+          className={`fixed inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${showMobileFilters ? "translate-x-0" : "-translate-x-full"}`}
+          onClick={e => e.stopPropagation()}
+        >
+          <div
+            className={`flex flex-col h-full ${showMobileFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          >
             <div className="flex items-center justify-between p-4 border-b border-sand-200">
-              <h3 className="font-['Montserrat',sans-serif] text-sand-600 text-lg font-semibold">
-                Filters
-              </h3>
+              <h3 className="font-['Montserrat',sans-serif] text-sand-600 text-lg font-semibold">Filters</h3>
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="p-2 text-sand-400 hover:text-sand-600 transition-colors"
+                className="p-2 transition-colors text-sand-400 hover:text-sand-600"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 p-4 overflow-y-auto">
               <div className="font-['Playfair_Display']">
                 {[...familyMap.entries()].map(([family, genera]) => (
                   <FamilyFilter
@@ -342,17 +357,17 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
               </div>
             </div>
 
-            <div className="border-t border-sand-200 p-4">
+            <div className="p-4 border-t border-sand-200">
               <div className="flex gap-3">
                 <button
                   onClick={() => setSelectedGenera(new Set())}
-                  className="flex-1 px-4 py-2 border border-sand-300 text-sand-600 rounded-lg hover:bg-sand-50 transition-colors"
+                  className="flex-1 px-4 py-2 transition-colors border rounded-lg border-sand-300 text-sand-600 hover:bg-sand-50"
                 >
                   Clear All
                 </button>
                 <button
                   onClick={() => setShowMobileFilters(false)}
-                  className="flex-1 px-4 py-2 bg-sand-400 text-white rounded-lg hover:bg-sand-500 transition-colors"
+                  className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-sand-400 hover:bg-sand-500"
                 >
                   Apply Filters
                 </button>

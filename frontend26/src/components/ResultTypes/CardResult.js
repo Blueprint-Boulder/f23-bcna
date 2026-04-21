@@ -7,24 +7,19 @@ const CardResult = ({ data }) => {
   );
   useEffect(() => {
     if (data.thumbnail_id) {
-      setThumbnail(
-        `http://127.0.0.1:5000/api/get-image-by-image-id/${data.thumbnail_id}`
-      );
+      setThumbnail(`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${data.thumbnail_id}`);
     }
   }, [data]);
 
   return (
-    <div className="card-result p-4 border mb-4 rounded-lg">
+    <div className="p-4 mb-4 border rounded-lg card-result">
       {/* Image on the top */}
-      <img
-        src={thumbnail}
-        className="mx-auto object-contain w-64 aspect-video"
-      />
+      <img src={thumbnail} className="object-contain w-64 mx-auto aspect-video" />
 
       {/* Details underneath */}
       <div className="flex flex-col">
         {/* Name */}
-        <Link className="text-lg font-bold mb-2" to={`/wildlife/${data.id}`}>
+        <Link className="mb-2 text-lg font-bold" to={`/wildlife/${data.id}`}>
           {data.name}
         </Link>
 
