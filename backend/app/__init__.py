@@ -38,9 +38,11 @@ def _discover_dataset_configs(base_dir: str) -> dict[str, dict[str, str]]:
 
 
 def create_app(test_config=None):
-    app = Flask(__name__)
     root_dir = os.path.dirname(os.path.dirname(__file__))
     data_dir = os.path.join(root_dir, "data")
+
+    app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # Set default config
     app.config.from_mapping(
@@ -69,8 +71,6 @@ def create_app(test_config=None):
             app.config["DEFAULT_DATASET"] = sorted(
                 app.config["DATASET_CONFIGS"].keys()
             )[0]
-
-    app = ProxyFix(app, x_for=1, x_host=1)
 
     # Enable CORS for frontend
     CORS(
