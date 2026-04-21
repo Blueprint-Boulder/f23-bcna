@@ -62,15 +62,25 @@ def install_python_dependencies():
 
 
 def check_env_file():
+    # Create .env in repo root for backend
     env_path = os.path.join(base_dir, ".env")
     if not os.path.exists(env_path):
-        print("Warning: .env file not found. Creating with default values...")
+        print("Warning: .env file not found in repo root. Creating with default values...")
         with open(env_path, "w") as f:
             f.write("VITE_BACKEND_URL=http://localhost:5000\n")
             f.write("ADMIN_PASSWORD=SueCass\n")
             f.write("SECRET_KEY=25a4ff20e399babc58ab4f32d72a7f2e4869e3b73a39b851c25d49bec06828e2\n")
     else:
-        print(".env file found.")
+        print(".env file found in repo root.")
+    
+    # Create .env in frontend26 for Vite (frontend only needs VITE_BACKEND_URL)
+    frontend_env_path = os.path.join(base_dir, "frontend26", ".env")
+    if not os.path.exists(frontend_env_path):
+        print("Creating .env file in frontend26 for Vite...")
+        with open(frontend_env_path, "w") as f:
+            f.write("VITE_BACKEND_URL=http://localhost:5000\n")
+    else:
+        print(".env file found in frontend26.")
 
 
 def run_backend():
