@@ -1,93 +1,168 @@
-# Boulder County Nature Association Project
+# BCNA Wildlife Database Frontend
 
----
+This is the React frontend for the Boulder County Nature Association (BCNA) wildlife database application. It provides a searchable, filterable interface for exploring local wildlife including butterflies, dragonflies, and wildflowers.
 
-## Table of Contents
+## Features
 
-- [Summary](#summary)
-- [Running The App Locally](#running-the-app-locally)
-- [Contributing Code](#contributing-code)
+- **Searchable Database**: Search through wildlife entries by name
+- **Advanced Filtering**: Filter by taxonomic family and genus
+- **Responsive Design**: Mobile-friendly interface with collapsible filters
+- **Admin Panel**: Administrative interface for adding/editing wildlife entries
+- **Image Gallery**: Display wildlife photos with thumbnails
+- **Multi-Dataset Support**: Support for multiple wildlife datasets
 
-## Summary
+## Tech Stack
 
-You can run the website with the `run_website.py` script.
+- **React 19** - Frontend framework
+- **Vite** - Build tool and development server
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Router** - Client-side routing
+- **Axios** - HTTP client for API calls
+- **Lucide React** - Icon library
 
-This project consists of two main components: a wildlife search engine that can sort and filter results based on various attributes such as name, color, and habitat, and an administrative platform to add, edit, and delete data.
+## Development
 
-The goal is for people to be able to learn more about the local wildlife in Boulder County, but the technology can be adapted to wildlife anywhere. Our database is structured into categories, and each wildlife entry belongs to a category. Categories contain fields which organize relevant information for each category of animals, whether that be wingspan for birds or favorite food for bears.
+### Prerequisites
 
-More information can be found in the [More Details Section](#more-details)
+- **Python 3.12 or higher** (the script will check this)
+- **Node.js (v20 LTS recommended)** with npm (the script will check this)
 
-## Running The App Locally
+### Running the Full Application
 
-#### Running Through `run_website.py`
+The easiest way to run both frontend and backend together is using the `run_website.py` script from the project root:
 
-Prerequisites:
+```bash
+# From the project root directory
+python run_website.py
+```
 
-- [Python 3.12](https://www.python.org/downloads/)
-- [NodeJS (best to download v20 LTS)](https://nodejs.org/en/download/prebuilt-installer)
-- Note: On the first page of the Python installer, ensure that the "Add Python to PATH" option at the bottom is checked. Aside from that, the default settings in each installer can be left alone as you click through the steps.
+This script will:
+- Check for required prerequisites (Python 3.12+, npm)
+- Create a Python virtual environment (if needed)
+- Install/update Python dependencies from `backend/requirements.txt`
+- Create a `.env` file with default configuration (if missing)
+- Start the Flask backend server on `http://localhost:5000`
+- Install Node.js dependencies (if needed)
+- Start the Vite development server on `http://localhost:3000`
 
-Running the script:
+The application will be available at `http://localhost:3000`.
 
-- In a terminal, navigate to the project's directory
-- Windows: Run `python run_website.py`
-- MacOS/Linux: Run `python3 run_website.py` or `python3.12 run_website.py`
+**For new users**: The script handles all setup automatically. Just ensure Python 3.12+ and Node.js are installed on your system.
 
-The website should now be available on `localhost:3000` in the browser, with pages such as 'admin' being at `localhost:3000/admin`. Backend updates will be shown live in the terminal. The script can be exited by hitting `CTRL+C`.
+### Individual Development (Alternative)
 
-On Mac/Linux, if it can't find the `python3.12` command, you don't have Python 3.12 installed. Install it [here](https://www.python.org/downloads/).
+If you prefer to run frontend and backend separately:
 
-On Windows, if it fails, make sure you have Python 3.12 installed. You can check this with `python --version`. If it's not 3.12, install it [here](https://www.python.org/downloads/). You may also need to close and reopen your terminal after installing Python and NodeJS.
+#### Frontend Only
 
-If it still doesn't work, here's how to run it manually on Mac/Linux (Windows instructions TBA):
+```bash
+npm install
+npm run dev
+```
 
-#### Frontend
+The development server will start on `http://localhost:5173` (Vite's default port).
 
-- Start from the root directory of the project
-- Run `cd frontend` in your terminal
-- Run `npm i` to install frontend packages like TailwindCSS
-- Run `npm start` and the app should now be running on `localhost:3000`
-- NOTE: you will NOT see any data from the database unless you also follow steps to run the backend
+#### Backend Only
 
-#### Backend
+See the main project README in the root directory for backend setup instructions.
 
-- Start from the root directory of the project
-- Run `cd backend` in your terminal (you may need to create a new terminal if you're also running the frontend)
-- (Only on the first time) Run `python3.12 -m venv venv` to create the Python virtual environment. If this fails, you need to [install Python 3.12](https://www.python.org/downloads/).
-- Run `source venv/bin/activate` to activate the virtual environment for this terminal window.
-- (Only on the first time) Run `pip install -r requirements.txt` to install the necessary libraries.
-- Run `python main.py` which will create the database for you the first time it runs, and then host the backend at `http://127.0.0.1:5000`
-- _Optional:_ Run `sqlite3 database.db` in a new terminal form the `backend` folder if you'd like to check the database has the data you expect as you interact with API routes. You may need to run `source venv/bin/activate` again.
+## Project Structure
 
-## Contributing Code
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ActionButton.jsx
+│   ├── AdminLogin.jsx
+│   ├── FilterBar.jsx
+│   ├── Footer.jsx
+│   ├── Layouts.jsx
+│   ├── NavBar.jsx
+│   ├── SearchBar.jsx
+│   └── icons/
+├── data/
+│   └── glossaryTerms.json
+├── pages/               # Page components
+│   ├── About.jsx
+│   ├── Contact.jsx
+│   ├── Glossary.jsx
+│   ├── Resources.jsx
+│   ├── WildlifeDetails.jsx
+│   └── WildlifeDBs/     # Database-specific pages
+│       ├── ButterflyDB.jsx
+│       ├── DragonflyDB.jsx
+│       ├── TemplateDB.jsx
+│       └── WildlifeDB.jsx
+├── services/
+│   ├── adminContext.jsx
+│   └── apiService.js
+└── main.jsx            # App entry point
+```
 
-- To start, clone the repository onto your local machine.
-- If you already have the repo but haven't updated in a while, make sure to run `git pull origin main` to get the latest changes to main before creating a new branch
-- Create your branch with `git checkout -b branch-name` , replacing branch name with your name and what you're working on
-- Run the relevant parts of [Running The App Locally](#running-the-app-locally) if you need to see live changes
-- After you've changed the code, run the following commands
-  - `git add file-1-here file-2-here` or just `git add .`
-  - `git status` to ensure that you added the correct files to be committed
-  - `git commit -m 'what i did in this commit'`
-  - `git push`
+## Creating a New Wildlife Database
 
-Once your code is pushed to your remote branch, you can open a pull request.
+The application supports multiple wildlife datasets. To add a new database (e.g., for birds, mammals, etc.), follow these steps:
 
-- Navigate to the `Pull Requests` tab at the top of the repository
-- Press the green `New pull request` button
-- Ensure that `base: main` is selected and `compare: your-branch` is selected
-- Press the green `Create pull request` button
-- After review, you can approve and merge the pull request into main
-- Optionally, you can delete your branch if you were just using it for one feature and it is no longer needed
+### Backend Setup
 
-## More Details
+1. **Create Dataset Folder**: In the `data/` directory (at the project root), create a new folder for your dataset:
+   ```bash
+   mkdir ../data/birds
+   mkdir ../data/birds/uploaded_images
+   ```
 
-Categories are hierarchal such that you can have a category like "Animals" which contains subcategories like "Mammals, Birds," etc depending on how you want to organize the data. Fields will be inherited from parent categories so that all categories of butterflies can share the same fields.
+2. **Database Initialization**: The backend will automatically discover the new dataset folder and create the SQLite database with the proper schema when the application starts.
 
-Our technology stack includes...
+### Frontend Setup
 
-- **ReactJS** for Frontend components and pages
-- **TailwindCSS** for styling our website
-- **Flask** for handling our API routes and backend code
-- **SQLite** as our SQL database
+1. **Create Database Component**: Create a new component in `src/pages/WildlifeDBs/` following the pattern of `TemplateDB.jsx`:
+
+   ```jsx
+   // BirdDB.jsx
+   import { WildlifeDB } from "./WildlifeDB";
+
+   export function BirdDB() {
+     return (
+       <WildlifeDB
+         type="birds"                    // Dataset name (matches folder name)
+         label="Bird"                   // Singular label for UI
+         heroImage="/bird-hero.jpg"     // Hero image path
+         heroPosition="50% 50%"         // Background position
+         title={                        // Hero title (can include JSX)
+           <>Explore the <br /> Birds of <br /> Colorado's <br /> Front Range</>
+         }
+       />
+     );
+   }
+   ```
+
+2. **Add Route**: Update the routing configuration to include the new database page. Check `src/App.jsx` or the routing setup to add the new route.
+
+3. **Add Navigation**: Update navigation components (like `NavBar.jsx`) to include links to the new database.
+
+4. **Hero Image**: Add the hero image referenced in the component to the `public/` directory.
+
+### Key Points
+
+- The `type` prop must match the dataset folder name (normalized to lowercase with underscores)
+- The backend auto-discovers datasets by scanning the `data/` directory
+- Each dataset gets its own SQLite database file
+- The `WildlifeDB` component handles all the common functionality (search, filtering, display)
+- Images are stored in `uploaded_images/` subfolders within each dataset directory
+
+## API Integration
+
+The frontend communicates with a Flask backend API. Key endpoints include:
+
+- `GET /api/wildlife?dataset={type}` - Fetch all wildlife entries
+- `GET /api/get-image-by-image-id/{id}?dataset={type}` - Get wildlife images
+- `POST /api/auth/login` - Admin authentication
+
+See `src/services/apiService.js` for the complete API integration.
+
+## Contributing
+
+1. Follow the existing code patterns and component structure
+2. Use Tailwind CSS classes for styling
+3. Ensure responsive design works on mobile devices
+4. Test with multiple datasets to ensure compatibility
+5. Run the linter before committing: `npm run lint`
