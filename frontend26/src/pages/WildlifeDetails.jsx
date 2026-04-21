@@ -156,6 +156,7 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
         className="object-contain max-w-full max-h-full rounded-xl"
         onClick={e => e.stopPropagation()}
         onContextMenu={e => e.preventDefault()}
+        onDragStart={e => e.preventDefault()}
       />
       <div className="absolute bottom-0 w-full p-4 text-center text-white bg-black/50">
         <p className="font-bold">{wildlife.name}</p>
@@ -164,6 +165,7 @@ function FullscreenModal({ src, wildlife, images, highlight, onClose }) {
           <p>{parseExifDateTime(matchedImage.metadata.datetime).toLocaleDateString()}</p>
         )}
         {matchedImage?.metadata?.model && <p>{matchedImage.metadata.model}</p>}
+        <p className="">© 2026 Boulder County Nature Association</p>
       </div>
       <button className="absolute text-3xl text-white top-5 right-5" onClick={onClose}>
         &times;
@@ -527,6 +529,8 @@ export default function WildlifeDetails() {
           src={pendingThumbnail || `${BASE_IMG_URL}${thumbnail}`}
           className="absolute inset-0 object-cover w-full h-full scale-110 blur-md"
           alt="background"
+          onContextMenu={e => e.preventDefault()}
+          onDragStart={e => e.preventDefault()}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-sand-50">
           <Link to={`/${category}`} className="absolute text-sm top-4 left-4 md:text-base hover:underline">
@@ -606,6 +610,8 @@ export default function WildlifeDetails() {
                 alt={wildlife.name}
                 className="w-full h-[400px] object-cover rounded-2xl shadow-md transition-transform"
                 onClick={() => !admin && setImageClicked(highlight)}
+                onContextMenu={e => e.preventDefault()}
+                onDragStart={e => e.preventDefault()}
               />
               {admin && (
                 <div
@@ -636,6 +642,8 @@ export default function WildlifeDetails() {
                             : "opacity-70 hover:opacity-100"
                         }`}
                         onClick={() => setHighlight(img.isPending ? img.previewUrl : img.image_path)}
+                        onContextMenu={e => e.preventDefault()}
+                        onDragStart={e => e.preventDefault()}
                       />
                     </div>
                   );
