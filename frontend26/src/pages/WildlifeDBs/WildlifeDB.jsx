@@ -1,15 +1,16 @@
 /**
  * WildlifeDB renders a searchable catalog of wildlife items for a given dataset.
  * It includes a filter sidebar, searchable results, and an admin-only add card.
+ * Uses FlexSearch to search across name, scientific_name, and all field_values.
  */
-import { useState, useEffect, useContext, useMemo } from "react";
+import { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { AdminContext } from "../../services/adminContext";
 import { NavLink } from "react-router-dom";
 import { Filter, X } from "lucide-react";
+import FlexSearch from "flexsearch";
 import apiService from "../../services/apiService";
 
 // AddCard renders the admin-only card that links to the new wildlife entry form.
-// It is only shown when the user is in admin mode.
 function AddCard({ wildlifeType, label }) {
   return (
     <NavLink
@@ -28,7 +29,6 @@ function AddCard({ wildlifeType, label }) {
 }
 
 // Result renders a single wildlife card in the database grid.
-// It includes an image fallback when no thumbnail is available.
 function Result({ wildlifeType, id, name, sub, image }) {
   return (
     <NavLink
@@ -41,7 +41,6 @@ function Result({ wildlifeType, id, name, sub, image }) {
             src={`${import.meta.env.VITE_BACKEND_URL}/api/get-image-by-image-id/${image}?dataset=${wildlifeType}`}
             alt={name}
             className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-            //onError={ev => {ev.target.src = '/errorphoto.png';ev.target.style.objectFit='fill'}}
           />
         ) : (
           <div className="flex items-center justify-center w-full h-full text-sand-200">
@@ -52,7 +51,7 @@ function Result({ wildlifeType, id, name, sub, image }) {
         )}
       </div>
       <div className="p-3">
-        <p className="font-serif font-semibold text-sand-600 text-sm leading-tight truncate">{name}</p>
+        <p className="font-serif text-sm font-semibold leading-tight truncate text-sand-600">{name}</p>
         <p className="font-serif italic text-sand-400 text-xs mt-0.5 truncate">{sub}</p>
       </div>
     </NavLink>
@@ -60,7 +59,6 @@ function Result({ wildlifeType, id, name, sub, image }) {
 }
 
 // FamilyFilter renders a collapsible filter section for one taxonomic family.
-// It includes a tri-state checkbox for the family and nested genus checkboxes.
 function FamilyFilter({
   family,
   genera,
@@ -82,7 +80,6 @@ function FamilyFilter({
 
   return (
     <div className="mb-2.5">
-      {/* Family row */}
       <label
         className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer text-sand-600 hover:bg-sand-200 transition-colors select-none"
         onClick={toggle}
@@ -114,7 +111,6 @@ function FamilyFilter({
         </svg>
       </label>
 
-      {/* Genera list */}
       {isOpen && (
         <div className="ml-3.5 mt-2 pl-5 border-l border-sand-200 flex flex-col gap-2.5 pb-1">
           {[...genera].map(genus => (
@@ -137,6 +133,12 @@ function FamilyFilter({
   );
 }
 
+// Build a flat searchable string from a wildlife item's field values.
+function buildFieldText(item) {
+  if (!item.field_values?.length) return "";
+  return item.field_values.map(fv => fv.value).join(" ");
+}
+
 export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", title }) {
   const [search, setSearch] = useState("");
   const [wildlife, setWildlife] = useState([]);
@@ -145,8 +147,10 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { admin } = useContext(AdminContext);
 
-  // Fetch all wildlife entries for the selected dataset each time `type` changes.
-  // The backend returns an object, so we normalize it into an array for rendering.
+  // FlexSearch document index — rebuilt whenever wildlife data changes.
+  // We index three fields: name, scientific_name, and a flattened field_values string.
+  const indexRef = useRef(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -159,8 +163,34 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     fetchData();
   }, [type]);
 
+  // Rebuild the FlexSearch index whenever the wildlife array changes.
+  useEffect(() => {
+    const index = new FlexSearch.Document({
+      tokenize: "forward",
+      cache: 100,
+      document: {
+        id: "id",
+        index: [
+          { field: "name", tokenize: "forward", resolution: 9 },
+          { field: "scientific_name", tokenize: "forward", resolution: 7 },
+          { field: "field_text", tokenize: "forward", resolution: 5 }
+        ]
+      }
+    });
+
+    for (const w of wildlife) {
+      index.add({
+        id: w.id,
+        name: w.name ?? "",
+        scientific_name: w.scientific_name ?? "",
+        field_text: buildFieldText(w)
+      });
+    }
+
+    indexRef.current = index;
+  }, [wildlife]);
+
   // Build a map of family -> Set of genera from field_values.
-  // This is memoized so it only recomputes when wildlife data changes.
   const familyMap = useMemo(() => {
     const map = new Map();
     for (const w of wildlife) {
@@ -174,7 +204,6 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
     return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
   }, [wildlife]);
 
-  // Toggle all genera within a family: select all if any are unchecked, otherwise clear them.
   const toggleFamily = family => {
     const genera = familyMap.get(family) || new Set();
     setSelectedGenera(prev => {
@@ -205,13 +234,25 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
 
   const hasFilters = selectedGenera.size > 0;
 
-  // Apply search and genus filters to the wildlife list.
-  const filtered = wildlife.filter(w => {
-    if (!w.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (!hasFilters) return true;
-    const genus = w.scientific_name ? w.scientific_name.split(" ")[0] : null;
-    return !!genus && selectedGenera.has(genus);
-  });
+  // Apply FlexSearch and genus filters to produce the final result list.
+  // When the search box is empty we skip the index lookup and use the full list.
+  const filtered = useMemo(() => {
+    let base = wildlife;
+
+    if (search.trim() && indexRef.current) {
+      // Search across all three indexed fields and union the matching IDs.
+      const results = indexRef.current.search(search.trim(), { limit: 1000, enrich: false });
+      const matchedIds = new Set(results.flatMap(r => r.result));
+      base = wildlife.filter(w => matchedIds.has(w.id));
+    }
+
+    if (!hasFilters) return base;
+
+    return base.filter(w => {
+      const genus = w.scientific_name ? w.scientific_name.split(" ")[0] : null;
+      return !!genus && selectedGenera.has(genus);
+    });
+  }, [search, wildlife, hasFilters, selectedGenera]);
 
   return (
     <>
@@ -241,7 +282,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
       <div className="p-5">
         <div className="flex gap-5 mx-auto max-w-375">
           {/* Sidebar - Desktop Only */}
-          <aside className="hidden md:block w-70 shrink-0 p-5 rounded border border-sand-200 bg-sand-100 h-max font-serif">
+          <aside className="hidden p-5 font-serif border rounded md:block w-70 shrink-0 border-sand-200 bg-sand-100 h-max">
             <h5 className="font-['Montserrat',sans-serif] text-sand-300 text-xs font-semibold tracking-widest uppercase mb-5 ml-2">
               Filters
             </h5>
@@ -275,7 +316,6 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
                 )}
               </button>
 
-              {/* Clear filters button for mobile */}
               {hasFilters && (
                 <button
                   onClick={() => setSelectedGenera(new Set())}
@@ -309,7 +349,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
             </div>
 
             {filtered.length === 0 && (
-              <p className="font-serif italic text-sand-400 mt-10 text-center">
+              <p className="mt-10 font-serif italic text-center text-sand-400">
                 No {type} found for "{search}"
               </p>
             )}
