@@ -1,3 +1,16 @@
+"""
+test_wildlife.py
+
+Unit tests for wildlife API endpoints.
+Tests CRUD operations, error handling, and edge cases for wildlife management.
+
+Test Coverage:
+    - GET /api/get-wildlife/: Empty database retrieval
+    - GET /api/get-wildlife-by-id/<id>: Not found error
+    - DELETE /api/delete-wildlife/: Not found error
+    - POST /api/create-wildlife/: Missing required fields
+"""
+
 import pytest
 import logging
 

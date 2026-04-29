@@ -1,4 +1,26 @@
-# images.py
+"""
+images.py
+
+API routes for managing wildlife images and EXIF metadata in the Blueprint Wildlife Database.
+Handles image uploads, retrieval, replacement, and thumbnail management.
+
+Key Features:
+    - Upload images for wildlife entries with automatic EXIF metadata extraction
+    - Set and manage thumbnail images for wildlife display
+    - Replace existing images while preserving database records
+    - Retrieve images by filename or image ID
+    - EXIF data normalization for consistent JSON serialization
+    - File size validation (max 10MB) and MIME type checking
+
+Routes include:
+    - GET /api/get-image/<filename>: Retrieve image by filename
+    - GET /api/get-image-by-image-id/<id>: Retrieve image by database ID
+    - GET /api/get-images-by-wildlife-id/<id>: Get all images for a wildlife entry
+    - POST /api/add-image/: Upload new image to wildlife entry
+    - PUT /api/replace-image/<id>: Replace existing image file
+    - PUT /api/set-thumbnail: Set thumbnail for wildlife display
+    - DELETE /api/delete_image/: Delete image and associated file
+"""
 from flask import Blueprint, request, jsonify, send_from_directory
 import os
 import json
@@ -13,6 +35,17 @@ images_bp = Blueprint("images", __name__)
 
 
 def normalize(value):
+    """Recursively normalize EXIF metadata values to JSON-serializable types.
+    
+    EXIF data from PIL Image library includes special types (Rational, Flash, etc.)
+    that don't serialize to JSON by default. This function converts them to standard types.
+    
+    Args:
+        value: EXIF metadata value of unknown type
+    
+    Returns:
+        JSON-serializable value (str, int, float, bool, None, or list/dict thereof)
+    """
     # bytes → string
     if isinstance(value, bytes):
         return value.decode(errors="ignore")

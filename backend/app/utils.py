@@ -51,7 +51,18 @@ def get_parent_ids(category_id):
 
 
 def save_file(file, upload_folder):
-    """Generates a unique filename and saves the file to the given upload_folder."""
+    """Save an uploaded file with a unique randomly-generated filename.
+    
+    Preserves the original file extension and uses UUID4 for uniqueness.
+    Creates the upload folder if it doesn't exist.
+    
+    Args:
+        file: Werkzeug FileStorage object from request.files
+        upload_folder: Path to the directory where the file should be saved
+    
+    Returns:
+        str: The unique filename under which the file was saved
+    """
     original_name = secure_filename(file.filename)
     extension = original_name.rsplit('.', 1)[1] if '.' in original_name else ''
     unique_filename = f"{uuid.uuid4().hex}.{extension}"
