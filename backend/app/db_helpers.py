@@ -1,3 +1,4 @@
+#db_helpers.py
 import os
 import sqlite3
 from typing import Sequence, Any
@@ -229,9 +230,15 @@ def init_all_dbs():
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        # cursor.execute("ALTER TABLE Images ADD COLUMN metadata JSONB")
         cursor.executescript(sql_script)
         conn.commit()
+
+        # Migrate: add metadata column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE Images ADD COLUMN metadata JSONB")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
         # Migrate: add field_order column if it doesn't exist
         try:
