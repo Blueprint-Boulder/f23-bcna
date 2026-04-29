@@ -23,6 +23,26 @@ def get_venv_python():
         raise EnvironmentError("Virtual environment not found. Please create it first.")
     return venv_python
 
+def check_node_version():
+    """Check that Node.js meets the minimum version requirement."""
+    result = subprocess.run(["node", "--version"], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise EnvironmentError("Node.js is not installed or not found in PATH.")
+    
+    version_str = result.stdout.strip().lstrip("v")  # e.g. "20.18.0"
+    try:
+        major, minor, *_ = map(int, version_str.split("."))
+    except ValueError:
+        raise EnvironmentError(f"Could not parse Node.js version: {version_str}")
+    
+    # Vite 5 requires Node 18+
+    if major < 18:
+        raise EnvironmentError(
+            f"Node.js {version_str} is too old. Vite requires Node 18 or higher.\n"
+            "Please upgrade: https://nodejs.org"
+        )
+    
+    print(f"Using Node.js {version_str}")
 
 def check_prerequisites():
     """Check if required tools are available."""
@@ -38,8 +58,10 @@ def check_prerequisites():
     npm_check = subprocess.run(["npm", "--version"], capture_output=True, text=True)
     if npm_check.returncode != 0:
         raise EnvironmentError("npm is not installed or not found in PATH. Please install Node.js.")
-    
     print(f"Using npm {npm_check.stdout.strip()}")
+
+    # Check Node.js version 
+    check_node_version()
 
 
 def setup_virtualenv():
