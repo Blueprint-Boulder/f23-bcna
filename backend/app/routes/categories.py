@@ -1,4 +1,23 @@
-# categories.py
+"""
+categories.py
+
+API routes for managing wildlife categories in the Blueprint Wildlife Database.
+Supports hierarchical category structures and field-to-category associations.
+
+Key Features:
+    - Create nested categories with parent-child relationships
+    - Retrieve complete category hierarchies with field associations
+    - Delete categories with options to reassign or delete members
+    - Field ordering within categories
+    - Support for inheritance of fields from parent categories
+
+Routes include:
+    - POST /api/create-category/: Create new category
+    - GET /api/get-categories/: Retrieve all categories
+    - GET /api/get-categories-and-fields/: Get hierarchical structure with fields
+    - DELETE /api/delete-category/: Delete category
+    - POST /api/update-field-order/: Customize field display order
+"""
 
 from flask import Blueprint, request, jsonify, current_app
 import os

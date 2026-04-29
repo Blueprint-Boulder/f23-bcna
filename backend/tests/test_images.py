@@ -1,3 +1,18 @@
+"""
+test_images.py
+
+Unit tests for image management API endpoints.
+Tests image upload, retrieval, replacement, and error handling for image operations.
+
+Test Coverage:
+    - GET /api/get-image/<filename>: File not found
+    - GET /api/get-image-by-image-id/<id>: ID not found
+    - POST /api/add-image/: Missing required data and invalid file types
+    - PUT /api/replace-image/<id>: Image replacement operations
+    - PUT /api/set-thumbnail: Thumbnail assignment
+    - DELETE /api/delete_image/: Image deletion with file cleanup
+"""
+
 import pytest
 import logging
 from io import BytesIO

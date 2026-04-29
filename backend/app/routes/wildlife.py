@@ -1,4 +1,27 @@
-# wildlife.py
+"""
+wildlife.py
+
+API routes for managing wildlife entries in the Blueprint Wildlife Database.
+Handles CRUD operations for wildlife records, field management, and advanced search functionality.
+
+Key Features:
+    - Create wildlife entries with custom fields and images
+    - Search by name, scientific name, text fields, and integer fields
+    - Edit wildlife records and associated metadata
+    - Delete wildlife entries with cascading image deletion
+    - Retrieve wildlife by ID or list all wildlife
+
+Routes include:
+    - GET /api/get-wildlife/: Retrieve all wildlife
+    - GET /api/get-wildlife-by-id/<id>: Get specific wildlife entry
+    - POST /api/create-wildlife/: Create new wildlife entry
+    - POST /api/edit-wildlife/: Modify existing wildlife entry
+    - DELETE /api/delete-wildlife/: Delete wildlife entry
+    - GET /api/search-wildlife-names/: Search by name/scientific name
+    - GET /api/search-wildlife-text-field/: Search by custom text field
+    - GET /api/search-wildlife-by-integer-field/: Search by integer field with range support
+    - POST /api/create-field/: Create new custom field
+"""
 
 from flask import Blueprint, request, jsonify, current_app
 import os

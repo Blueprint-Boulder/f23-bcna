@@ -1,4 +1,24 @@
-#db_helpers.py
+"""
+db_helpers.py
+
+Database abstraction layer for the Blueprint Wildlife Database backend.
+Handles all SQLite database operations, dataset management, and file path resolution.
+
+Key Features:
+    - Multi-dataset support (butterflies, dragonflies, wildflowers)
+    - Dataset-aware query execution based on request context
+    - Automatic database schema initialization and migration
+    - Image upload folder management with fallback search
+
+Database Operations:
+    - insert(): Execute INSERT queries and return last inserted row ID
+    - mutate(): Execute UPDATE or DELETE queries and return affected row count
+    - update(): Alias for mutate() for UPDATE queries
+    - delete(): Alias for mutate() for DELETE queries
+    - select_multiple(): Execute SELECT queries and return all results as list of dicts
+    - select_one(): Execute SELECT queries and return first result as dict
+"""
+
 import os
 import sqlite3
 from typing import Sequence, Any
