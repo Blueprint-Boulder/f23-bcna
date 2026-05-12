@@ -2,7 +2,7 @@
  * AdminLogin displays a password prompt for admin authentication.
  * It delegates login state management to AdminContext.
  */
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { AdminContext } from "../services/adminContext";
 
 export function AdminLogin({ onClose }) {
@@ -10,10 +10,25 @@ export function AdminLogin({ onClose }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef(null);
+  const failCountRef = useRef(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(cooldownRef.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(cooldownRef.current);
+  }, [cooldown]);
 
   // handleSubmit attempts to authenticate the admin password,
   // toggles loading UI, and reports an error message if authentication fails.
   const handleSubmit = async () => {
+    if (cooldown > 0) return;
     setLoading(true);
     setError("");
     try {
@@ -21,6 +36,10 @@ export function AdminLogin({ onClose }) {
       onClose();
     } catch {
       setError("Incorrect password.");
+      failCountRef.current += 1;
+      if (failCountRef.current > 4) {
+        setCooldown(prev => Math.max(prev * 2, 3));
+      }
     } finally {
       setLoading(false);
     }
@@ -45,10 +64,10 @@ export function AdminLogin({ onClose }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || cooldown > 0}
             className="px-5 py-2 rounded-full bg-pink-700 text-white hover:bg-pink-800 disabled:opacity-50"
           >
-            {loading ? "Verifying..." : "Login"}
+            {loading ? "Verifying..." : cooldown > 0 ? `Retry in ${cooldown}s` : "Login"}
           </button>
         </div>
       </div>
