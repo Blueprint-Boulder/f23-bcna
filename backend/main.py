@@ -16,7 +16,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from parent directory (.env file)
-parent_dir = Path(__file__).parent.parent
+parent_dir = Path(__file__).resolve().parent.parent
 env_file = parent_dir / ".env"
 if env_file.exists():
     load_dotenv(str(env_file))

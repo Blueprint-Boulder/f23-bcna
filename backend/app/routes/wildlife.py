@@ -160,15 +160,15 @@ def search_wildlife_by_integer_field():
     params = [field_id]
 
     if exact_value is not None:
-        sql_query += " AND fv.value = ?"
-        params.append(str(exact_value))
+        sql_query += " AND CAST(fv.value AS INTEGER) = ?"
+        params.append(exact_value)
     else:
         if min_value is not None:
-            sql_query += " AND fv.value > ?"
-            params.append(str(min_value))
+            sql_query += " AND CAST(fv.value AS INTEGER) > ?"
+            params.append(min_value)
         if max_value is not None:
-            sql_query += " AND fv.value < ?"
-            params.append(str(max_value))
+            sql_query += " AND CAST(fv.value AS INTEGER) < ?"
+            params.append(max_value)
 
     results = db_helpers.select_multiple(sql_query, params)
     return jsonify(results), 200
