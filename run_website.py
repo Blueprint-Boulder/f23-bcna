@@ -13,7 +13,7 @@ The script will:
     2. Create/verify virtual environment for backend
     3. Install Python and frontend dependencies
     4. Configure environment variables
-    5. Launch both backend (port 5000) and frontend (port 5173) servers
+    5. Launch both backend (port 5001) and frontend (port 5173) servers
     6. Handle graceful shutdown on Ctrl+C
 
 Requirements:
@@ -224,7 +224,7 @@ def check_env_file():
     if not os.path.exists(env_path):
         print("Warning: .env file not found in repo root. Creating with default values...")
         with open(env_path, "w") as f:
-            f.write("VITE_BACKEND_URL=http://localhost:5000\n")
+            f.write("VITE_BACKEND_URL=http://localhost:5001\n")
             f.write("ADMIN_PASSWORD=TEMPLATEPASSWORD\n")
             f.write("SECRET_KEY=TEMPLATEKEY\n")
     else:
@@ -235,7 +235,7 @@ def check_env_file():
     if not os.path.exists(frontend_env_path):
         print("Creating .env file in frontend26 for Vite...")
         with open(frontend_env_path, "w") as f:
-            f.write("VITE_BACKEND_URL=http://localhost:5000\n")
+            f.write("VITE_BACKEND_URL=http://localhost:5001\n")
     else:
         print(".env file found in frontend26.")
 

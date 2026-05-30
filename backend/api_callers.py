@@ -12,7 +12,7 @@ Note: This module is designed to be called from external scripts or CLI tools.
 from typing import Literal
 import requests
 
-BASE_URL = "http://127.0.0.1:5000/api"
+BASE_URL = "http://127.0.0.1:5001/api"
 
 
 def server_running() -> bool:

@@ -53,7 +53,7 @@ This script will:
 - Create a Python virtual environment (if needed)
 - Install/update Python dependencies from `backend/requirements.txt`
 - Create a `.env` file with default configuration (if missing)
-- Start the Flask backend server on `http://localhost:5000`
+- Start the Flask backend server on `http://localhost:5001`
 - Install Node.js dependencies (if needed)
 - Start the Vite development server on `http://localhost:3000`
 
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The backend will run on `http://localhost:5000`.
+The backend will run on `http://localhost:5001`.
 
 ## Project Structure
 

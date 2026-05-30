@@ -3,7 +3,7 @@ main.py
 
 Application entry point for the Blueprint Wildlife Database Flask backend.
 Initializes the Flask application, loads environment variables, and sets up all databases.
-Runs the development server on http://0.0.0.0:5000 with debug mode enabled.
+Runs the development server on http://0.0.0.0:5001 with debug mode enabled.
 
 Environment Variables:
     - .env file is loaded from the parent directory (project root)
@@ -34,5 +34,6 @@ app = create_app()
 
 if __name__ == "__main__":
     # Run development server with debug mode enabled
-    # Accessible from all network interfaces (0.0.0.0) on port 5000
-    app.run(host="0.0.0.0", debug=True)
+    # Accessible from all network interfaces (0.0.0.0) on port 5001
+    # Port 5001 avoids the macOS AirPlay Receiver, which occupies port 5000.
+    app.run(host="0.0.0.0", port=5001, debug=True)
