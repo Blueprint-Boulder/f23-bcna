@@ -369,7 +369,7 @@ def create_wildlife():
         "SELECT 1 FROM Wildlife WHERE name = ?", [name]
     )
     if wildlife_with_name_exists:
-        return jsonify({"message": f"Wildlife with namne {name} already exists"}), 400
+        return jsonify({"message": f"Wildlife with name {name} already exists"}), 400
 
     wildlife_with_scientific_name_exists = db_helpers.select_multiple(
         "SELECT 1 FROM Wildlife WHERE scientific_name = ?", [scientific_name]
@@ -490,40 +490,56 @@ def create_wildlife():
             400,
         )
 
-    # Insert the wildlife entry
-    wildlife_id = db_helpers.insert(
-        "INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
-        (name, scientific_name, category_id),
-    )
+    # Insert the wildlife entry and all of its field values atomically, so a
+    # failure partway through doesn't leave behind an orphan Wildlife row that
+    # would block retries with "already exists".
+    conn = db_helpers.get_connection()
+    try:
+        cursor = conn.cursor()
 
-    # Insert the non-image field values
-    for field_name, value in provided_nonimage_fields.items():
-        field_row = db_helpers.select_one(
-            "SELECT id FROM Fields WHERE name = ?", [field_name]
+        cursor.execute(
+            "INSERT INTO Wildlife (name, scientific_name, category_id) VALUES (?, ?, ?)",
+            (name, scientific_name, category_id),
         )
-        if not field_row:
-            continue  # or handle error as appropriate
-        field_id = field_row["id"]
-        db_helpers.insert(
-            "INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-            (wildlife_id, field_id, value),
-        )
+        wildlife_id = cursor.lastrowid
 
-    # Insert the image field values
-    for field_name, image_file in request.files.items():
-        field_row = db_helpers.select_one(
-            "SELECT id FROM Fields WHERE name = ?", [field_name]
-        )
-        if not field_row:
-            continue  # or handle error as appropriate
-        field_id = field_row["id"]
-        saved_filename = save_file(
-            image_file, current_app.config["IMAGE_UPLOAD_FOLDER"]
-        )
-        db_helpers.insert(
-            "INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
-            (wildlife_id, field_id, saved_filename),
-        )
+        # Insert the non-image field values
+        for field_name, value in provided_nonimage_fields.items():
+            cursor.execute(
+                "SELECT id FROM Fields WHERE name = ?", [field_name]
+            )
+            field_row = cursor.fetchone()
+            if not field_row:
+                continue  # or handle error as appropriate
+            field_id = field_row["id"]
+            cursor.execute(
+                "INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                (wildlife_id, field_id, value),
+            )
+
+        # Insert the image field values
+        for field_name, image_file in request.files.items():
+            cursor.execute(
+                "SELECT id FROM Fields WHERE name = ?", [field_name]
+            )
+            field_row = cursor.fetchone()
+            if not field_row:
+                continue  # or handle error as appropriate
+            field_id = field_row["id"]
+            saved_filename = save_file(
+                image_file, current_app.config["IMAGE_UPLOAD_FOLDER"]
+            )
+            cursor.execute(
+                "INSERT INTO FieldValues (wildlife_id, field_id, value) VALUES (?, ?, ?)",
+                (wildlife_id, field_id, saved_filename),
+            )
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Failed to create wildlife"}), 500
+    finally:
+        conn.close()
 
     return (
         jsonify(

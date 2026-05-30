@@ -20,6 +20,7 @@ Database Operations:
 """
 
 import os
+import json
 import sqlite3
 from typing import Sequence, Any
 from flask import current_app, has_app_context, has_request_context, request
@@ -198,10 +199,95 @@ def init_db():
     print("[DB DEBUG] Database initialized!")
 
 
+def _dedupe_family_field(conn):
+    """Merge any case-variant duplicates of the 'family' field into a single
+    lowercase 'family' field.
+
+    The earlier `_seed_family_field` used a case-sensitive existence check, so
+    on a dataset that already had a capital 'Family' field it would create a
+    second lowercase 'family' row. This collapses those duplicates: the field
+    with the most existing values is kept as canonical, everything pointing at
+    the redundant rows is repointed to it, the redundant rows are deleted, and
+    the survivor is renamed to lowercase 'family'.
+    """
+    cursor = conn.cursor()
+
+    # Find all fields whose name is some case-variant of "family".
+    cursor.execute("SELECT id, name FROM Fields WHERE LOWER(name) = 'family'")
+    family_fields = [
+        (r[0] if isinstance(r, tuple) else r["id"]) for r in cursor.fetchall()
+    ]
+    if not family_fields:
+        return
+
+    # Pick the canonical field: the one with the most FieldValues (the
+    # data-bearing original), tie-broken by lowest id.
+    def value_count(field_id):
+        cursor.execute(
+            "SELECT COUNT(*) FROM FieldValues WHERE field_id = ?", (field_id,)
+        )
+        return cursor.fetchone()[0]
+
+    canonical_id = max(family_fields, key=lambda fid: (value_count(fid), -fid))
+    redundant_ids = [fid for fid in family_fields if fid != canonical_id]
+
+    for redundant_id in redundant_ids:
+        # Repoint FieldValues to the canonical field where it doesn't already
+        # have a value for that wildlife; drop the rest (PK collisions).
+        cursor.execute(
+            """UPDATE FieldValues SET field_id = ?
+               WHERE field_id = ?
+                 AND wildlife_id NOT IN (
+                     SELECT wildlife_id FROM FieldValues WHERE field_id = ?
+                 )""",
+            (canonical_id, redundant_id, canonical_id),
+        )
+        cursor.execute("DELETE FROM FieldValues WHERE field_id = ?", (redundant_id,))
+
+        # Repoint category associations, then drop the redundant ones.
+        cursor.execute(
+            """INSERT OR IGNORE INTO FieldsToCategories (field_id, category_id)
+               SELECT ?, category_id FROM FieldsToCategories WHERE field_id = ?""",
+            (canonical_id, redundant_id),
+        )
+        cursor.execute(
+            "DELETE FROM FieldsToCategories WHERE field_id = ?", (redundant_id,)
+        )
+
+        # Strip the redundant id from any stored field_order. The canonical id
+        # is re-derived from the category's fields when reading, so we only need
+        # to remove the dangling reference here.
+        cursor.execute(
+            "SELECT id, field_order FROM Categories WHERE field_order IS NOT NULL"
+        )
+        for cat_row in cursor.fetchall():
+            cat_id = cat_row[0] if isinstance(cat_row, tuple) else cat_row["id"]
+            order_json = cat_row[1] if isinstance(cat_row, tuple) else cat_row["field_order"]
+            try:
+                order = json.loads(order_json)
+            except (TypeError, ValueError):
+                continue
+            new_order = [fid for fid in order if fid != redundant_id]
+            if new_order != order:
+                cursor.execute(
+                    "UPDATE Categories SET field_order = ? WHERE id = ?",
+                    (json.dumps(new_order), cat_id),
+                )
+
+        cursor.execute("DELETE FROM Fields WHERE id = ?", (redundant_id,))
+
+    # Standardize the survivor's name to lowercase 'family'.
+    cursor.execute(
+        "UPDATE Fields SET name = 'family' WHERE id = ? AND name != 'family'",
+        (canonical_id,),
+    )
+    conn.commit()
+
+
 def _seed_family_field(conn):
     """Ensure a 'family' TEXT field exists and is associated with all root categories."""
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM Fields WHERE name = 'family'")
+    cursor.execute("SELECT id FROM Fields WHERE LOWER(name) = 'family'")
     row = cursor.fetchone()
     if row is None:
         cursor.execute("INSERT INTO Fields (name, type) VALUES ('family', 'TEXT')")
@@ -267,6 +353,7 @@ def init_all_dbs():
         except sqlite3.OperationalError:
             pass  # Column already exists
 
+        _dedupe_family_field(conn)
         _seed_family_field(conn)
         conn.close()
         print(f"[DB DEBUG] Dataset '{entry.name}' initialized with 'family' field.")

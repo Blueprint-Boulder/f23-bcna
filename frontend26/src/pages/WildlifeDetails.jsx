@@ -477,7 +477,9 @@ export default function WildlifeDetails() {
       console.error("Full error:", error); // the error object itself
       console.error("Message:", error.message); // always exists
       console.error("Stack:", error.stack); // tells you where it threw
-      alert("Save failed: " + error.message);
+      const backendMessage =
+        error.response?.data?.message || error.response?.data?.error || error.message;
+      alert("Save failed: " + backendMessage);
     } finally {
       setIsSaving(false);
     }
@@ -495,7 +497,9 @@ export default function WildlifeDetails() {
       navigate(-1); // or navigate("/admin") — wherever your list lives
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Delete failed: " + error.message);
+      const backendMessage =
+        error.response?.data?.message || error.response?.data?.error || error.message;
+      alert("Delete failed: " + backendMessage);
     }
   };
 

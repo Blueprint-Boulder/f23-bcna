@@ -336,7 +336,7 @@ export function WildlifeDB({ type, label, heroImage, heroPosition = "50% 50%", t
 
             <div className="flex flex-wrap gap-5 mt-5">
               {admin && <AddCard wildlifeType={type} label={label} />}
-              {filtered.slice(0, 20).map(w => (
+              {filtered.map(w => (
                 <Result
                   key={w.id}
                   wildlifeType={type}
